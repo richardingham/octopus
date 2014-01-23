@@ -92,9 +92,17 @@ class Step (util.BaseStep):
 		self.state = State.COMPLETE
 		return self.__cb(self.complete.callback, self.dependents.cancel, result)
 
+	def _complete_cb (self, result = None):
+		self._complete(result)
+		return result
+
 	def _error (self, failure):
 		self.state = State.ERROR
 		return self.__cb(self.complete.errback, self.dependents.abort, failure)
+
+	def _error_cb (self, failure):
+		self._error(failure)
+		return failure
 
 	def __cb (self, cb_fn, dep_fn, value):
 		def cb (result):
@@ -348,18 +356,19 @@ class Sequence (_StepWithChildren):
 		def advance (result = None):
 			if self.state is State.PAUSED:
 				self._onResume = advance
-				return
-
-			try:
-				step = iterator.next()
-			except StopIteration:
-				self._complete(result)
 			else:
-				reactor.callLater(0,
-					lambda step: step.run(parent = self) \
-						.addCallbacks(advance, self._error),
-					step
-				)
+				try:
+					step = iterator.next()
+				except StopIteration:
+					self._complete(result)
+				else:
+					reactor.callLater(0,
+						lambda step: step.run(parent = self) \
+							.addCallbacks(advance, self._error),
+						step
+					)
+
+			return result
 
 		advance()
 
@@ -389,9 +398,11 @@ class Parallel (Sequence):
 			if self._stepsFinished >= count:
 				self._complete()
 
+			return result
+
 		for s in self._steps:
 			# intercept error to abort all steps?
-			s.run(parent = self).addCallbacks(finish, self._error)
+			s.run(parent = self).addCallbacks(finish, self._error_cb)
 
 		return self.complete
 
@@ -411,7 +422,7 @@ class IfStep (_StepWithChildren):
 		_StepWithChildren._run(self)
 
 		step = self._steps[int(not bool(self._expr))]
-		step.run(parent = self).addCallbacks(self._complete, self._error)
+		step.run(parent = self).addCallbacks(self._complete_cb, self._error_cb)
 
 		return self.complete
 
@@ -433,7 +444,7 @@ class SetStep (Step):
 		Step._run(self)
 
 		d = defer.maybeDeferred(self._var.set, self._expr.value)
-		d.addCallbacks(self._complete, self._error)
+		d.addCallbacks(self._complete_cb, self._error_cb)
 
 		return self.complete
 
@@ -692,7 +703,7 @@ class CallStep (Step):
 		except Exception as e:
 			d = defer.fail(e)
 
-		d.addCallbacks(self._complete, self._error)
+		d.addCallbacks(self._complete_cb, self._error_cb)
 
 		return self.complete
 
