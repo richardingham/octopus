@@ -148,7 +148,7 @@ class InterfaceSectionSet (OrderedDict):
 		OrderedDict.__delitem__(self, name)
 
 	def _delitem (self, name):
-		section = self["name"]
+		section = self[name]
 
 		for c in section.controls:
 			del self.controls[p.alias]
