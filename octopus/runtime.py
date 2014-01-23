@@ -30,9 +30,12 @@ def id (id):
 def title (title):
 	_experiment.title = title
 
-def ui (**kwargs):
-	_experiment.interface.clear()
-	_experiment.interface["experiment"] = machine_ui(**kwargs)
+def ui (replace = "experiment", **kwargs):
+	if replace is True:
+		_experiment.interface.clear()
+		replace = "experiment"
+
+	_experiment.interface[replace] = machine_ui(**kwargs)
 
 def chdir (dir):
 	return os.chdir(dir)
