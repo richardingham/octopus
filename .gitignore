@@ -34,3 +34,9 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Twisted trial
+_trial_temp/
+
+# Twisted plugins
+twisted/plugins/dropin.cache
