@@ -14,7 +14,8 @@ defining methods to be called.
 Installation
 ============
 
-Install the dependencies:
+Install the dependencies
+------------------------
 
 ```
 $ sudo apt-get install python-setuptools
@@ -69,6 +70,11 @@ on
 ```
 
  *  [Read the full documentation](doc/Octopus Documentation.md)
+ 
+I recommend the use of [GNU screen](https://www.gnu.org/software/screen/) when
+running long experiments on a remote computer, to avoid having a network 
+disconnection terminate the experiment. For a good introduction to screen, 
+visit [aperiodic.net](http://aperiodic.net/screen/start).
 
 
 Running the Server Software
