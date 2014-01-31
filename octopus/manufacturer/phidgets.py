@@ -116,13 +116,15 @@ class TemperatureSensor (Machine):
 				t = Thermocouple(index)
 
 				input["stream"] = t.temperature
-				self.thermocouples.append(t)				
+				self.thermocouples.append(t)	
+
+			self.ambient = Stream(title = "Ambient Temperature", type = float, unit = "C")
 
 		self.ui = ui(
 			traces = [{
 				"title": "Temperature",
 				"unit":  "C",
-				"traces": [t.temperature for t in self.thermocouples]
+				"traces": [t.temperature for t in self.thermocouples] + [self.ambient]
 			}],
 			properties = [] #[t.temperature for t in self.thermocouples]
 		)
@@ -150,12 +152,19 @@ class TemperatureSensor (Machine):
 		# Function to record changes
 		def update_value ():
 			try:
+				# Read thermocouple sensors
 				for input in self._inputs:
 					index = input["index"]
 					temp = self.protocol.getTemperature(index)
 
 					if abs(inputs[index].value - temp) > input["min_change"]:
-						inputs[index]._push(round(e.temperature, self.precision))
+						inputs[index]._push(round(temp, self.precision))
+
+				# Read ambient sensor
+				temp = self.protocol.getAmbientTemperature()
+
+				if abs(ambient.value - temp) > 0.5:
+					self.ambient._push(round(temp, self.precision))
 
 			except (KeyError, AttributeError, PhidgetException):
 				pass
