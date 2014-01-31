@@ -113,7 +113,7 @@ Imagine we have a Knauer K120 connected by serial on `/dev/ttyUSB0`. We can
 connect to this pump as described earlier:
 
 ```python
->>> pump = knauer.K120(serial("/dev/ttyUSB0"))
+>>> pump = knauer.K120(serial("/dev/ttyUSB0", baudrate = 9600))
 ``` 
 
 The Knauer K120 has the following properties:
@@ -196,18 +196,26 @@ seq = Sequence([
 	LogStep("This is the third step"),
 ])
 
+import sys
+from twisted.python import log
+log.startLogging(sys.stdout)
+seq.log += log
+
 reactor.callWhenRunning(seq.run)
 seq.addCallback(reactor.stop)
 reactor.run()
 ```
 
-Note. `reactor` is part of Twisted, a library which `octopus` is built upon in 
-order to perform asynchronous processing. The event loop (`reactor`) must be 
-started before sequences can be run or machines can be connected to, otherwise
-nothing will happen. The event loop must also be stopped at the end, otherwise
-the program will never end. Starting and stopping `reactor` is performed for you
-in the octopus command line environment, but in a script you have to do this
-yourself.
+Note. `reactor` is part of [Twisted][twisted], a library which `octopus` is 
+built upon in order to perform asynchronous processing. `reactor` is an 
+[event loop][wp-event-loop] and must be started before sequences can be run 
+or machines can be connected to, otherwise nothing will happen. The event loop 
+must also be stopped once the sequence has finished, otherwise the program 
+will never end. Starting and stopping `reactor` is performed for you in the 
+octopus command line environment, but in a script you have to do this yourself.
+
+[twisted]: http://www.twistedmatrix.com/
+[wp-event-loop]: http://en.wikipedia.org/wiki/Event_loop
 
 Further reading:
  - [Twisted Event Loop](http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html)
@@ -215,7 +223,8 @@ Further reading:
  
 If the above example were to be run using python (i.e. `$ python example.py`), 
 then `"This is the first step"` would be displayed, and then after a five second 
-pause, `"This is the third step"` would be displayed.
+pause, `"This is the third step"` would be displayed. (Along with some other
+messages).
 
 `Sequence.run` calls each of its child `Step`s in turn using their own `run` 
 methods. A `LogStep()` will complete almost immediately, whereas a `WaitStep(5)`
@@ -237,6 +246,11 @@ seq = Parallel([
 	WaitStep(5),
 	LogStep("This is the third step"),
 ])
+
+import sys
+from twisted.python import log
+log.startLogging(sys.stdout)
+seq.log += log
 
 reactor.callWhenRunning(seq.run)
 seq.addCallback(reactor.stop)
@@ -300,7 +314,7 @@ from octopus.sequence import Sequence, LogStep, WaitStep
 from octopus.transport.basic import serial
 from octopus.manufacturer import knauer
 
-pump = knauer.K120(serial("/dev/ttyUSB0"))
+pump = knauer.K120(serial("/dev/ttyUSB0", baudrate = 9600))
 
 exp = Experiment()
 exp.register_machine(pump)
@@ -315,7 +329,7 @@ seq = Sequence([
 ])
 
 reactor.callWhenRunning(exp.run)
-seq.addCallback(reactor.stop)
+exp.finished += reactor.stop
 reactor.run()
 ```
 
@@ -373,7 +387,7 @@ from octopus.runtime import *
 from octopus.transport.basic import serial
 from octopus.manufacturer import knauer
 
-pump = knauer.K120(serial("/dev/ttyUSB0"))
+pump = knauer.K120(serial("/dev/ttyUSB0", baudrate = 9600))
 
 seq = sequence(
 	log("Starting pump"),

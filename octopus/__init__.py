@@ -1,7 +1,7 @@
 
 __version__ = "trunk"
 
-def run (runnable):
+def run (runnable, logging = True):
 	from twisted.internet import reactor
 
 	if reactor.running:
@@ -13,6 +13,12 @@ def run (runnable):
 
 		def _run ():
 			runnable.run().addBoth(_complete)
+
+		if logging:
+			import sys
+			from twisted.python import log
+			log.startLogging(sys.stdout)
+			runnable.log += log
 
         reactor.callWhenRunning(_run)
         reactor.run() 
