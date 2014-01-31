@@ -144,17 +144,26 @@ class TemperatureSensor (Machine):
 				self.protocol.setTemperatureChangeTrigger(i, input["min_change"])
 				inputs[i] = input["stream"]
 
-			except TypeError, PhidgetError:
+			except (TypeError, PhidgetException):
 				log.err()
 
 		# Function to record changes
-		def update_value (e):
+		def update_value ():
 			try:
-				inputs[e.index]._push(round(e.temperature, self.precision))
-			except KeyError, AttributeError:
+				for input in self._inputs:
+					index = input["index"]
+					temp = self.protocol.getTemperature(index)
+
+					if abs(inputs[index].value - temp) > input["min_change"]:
+						inputs[index]._push(round(e.temperature, self.precision))
+
+			except (KeyError, AttributeError, PhidgetException):
 				pass
 
-		self.protocol.setOnTemperatureChangeHandler(update_value)
+		self._tick(update_value, 0.1)
+
+	def stop (self):
+		self._stopTicks()
 
 
 class PHSensor (Machine):
