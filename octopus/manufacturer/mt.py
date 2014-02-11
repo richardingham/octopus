@@ -101,7 +101,7 @@ class ICIR (Machine):
 
 			stream = Stream(title = i, type = float, unit = "mAU")
 			streams.append(stream)
-			self._streams[name] = stream
+			self._streams[i] = stream
 
 			setattr(self, safe_name, stream)
 

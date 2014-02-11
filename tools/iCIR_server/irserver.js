@@ -7,21 +7,26 @@
  * format of ${Date}_{$Time}_TrendData so that all of the files
  * end up in the same directory.
  *
+ * Update directory variable below to reflect the folder.
+ *
  * This script checks this directory and picks data from the
  * file with the greatest filename. It updates the internal data as
  * new files are added.
  *
- * You may need to open port 
+ * You may need to open port 8124.
  *
  * Usage: node irserver.js
  * 
  * Ctrl+C to quit.
  */
  
-var net = require('net');
-var fs  = require('fs');
+var net  = require('net');
+var fs   = require('fs');
+var path = require('path');
 
-var directory = "C:\\Documents and Settings\\Administrator\\My Documents\\IR-Export\\";
+// Directory that will contain the data files
+// NB the trailing "\\" is required.
+var directory = "C:\\Users\\[my-user]\\IR-Export\\";
 
 var server = net.createServer(function (socket) {
 
@@ -44,14 +49,10 @@ var server = net.createServer(function (socket) {
 			var line = buffer.substring(0, pos);
 			buffer = buffer.substring(pos + delimeterLength);
 
-			//console.log("Request:", line);
-
 			action(line, function (error, response) {
 				if (error) {
-					//console.error(error);
 					socket.write("error" + delimeter, encoding);
 				} else {
-					//console.log("Response:", response);
 					socket.write(response + delimeter, encoding);
 				}
 			});
@@ -81,8 +82,6 @@ function updateStreams (callback) {
 
 		var latestFile = "";
 
-		//console.log("dirlist", dirlist);
-
 		dirlist.forEach(function (fileName) {
 			if (fileName.substr(-13) === "TrendData.txt")
 				if (fileName > latestFile)
@@ -90,7 +89,6 @@ function updateStreams (callback) {
 		});
 
 		if (latestFile.length) {
-			//console.log("Using data file", latestFile);
 			return readFile(directory + latestFile, callback);
 		} else {
 			return callback();
@@ -102,11 +100,30 @@ function readFile (fileName, callback) {
 	fs.readFile(fileName, 'utf8', function (error, data) {
 		if (error) callback(error);
 
-		var lines = data.split("\n").map(function (line) { return line.trim().split(",").map(function (v) { return v.slice(1,-1).trim(); }); });
+		// Pull the time out of the filename. Expects the filename
+		// to be in the format "YYYY-MM-DD_HH-MM-SS_TrendData.txt"
+		// Uses the local timezone.
+		var time = +(new (Date.bind.apply(
+			Date, 
+			path.basename(fileName).split("_").splice(0, 2).map(function (s) {
+				return s.split("-"); 
+			}).reduce(function (p, c) {
+				return p.concat(c); 
+			}, [Date]).map(function (i) {
+				return +i;
+			})
+		)));
+
 		var data = {
-			time: (new Date(lines.shift()[1])).valueOf(),
+			time: time,
 			streams: []
 		};
+
+		var lines = data.split("\n").map(function (line) {
+			return line.trim().split(",").map(function (v) {
+				return v.slice(1,-1).trim(); 
+			}); 
+		});
 
 		lines.forEach(function (line) {
 			if (line[0] === "") return;
@@ -116,8 +133,6 @@ function readFile (fileName, callback) {
 				value: parseFloat(line[1])
 			});
 		});
-
-		//console.log("Extracted data:", data);
 
 		lastData = data;
 
