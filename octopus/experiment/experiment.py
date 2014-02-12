@@ -180,7 +180,7 @@ class Experiment (object):
 				)
 			except:
 				self._log("Error")
-				raise # deal with Busy / errback.			
+				raise # deal with Busy / errback.
 
 			# reset machines
 			# todo: with some timeout
@@ -318,11 +318,10 @@ class Experiment (object):
 		"""
 
 		if self.state in (State.RUNNING, State.PAUSED):
-			# Throws an exception that the stepError function catches.
-			# Todo: make this fire an event instead
 			self.cancelled(self)
+
 			return defer.gatherResults(
-				[self.step.stop(abort = True)] # Needs a try in case this throws an exception...
+				[self.step.abort()] # Needs a try in case this throws an exception...
 				+ [defer.maybeDeferred(m.pause) for m in self._machines]
 			)
 	#
