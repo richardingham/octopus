@@ -11,11 +11,6 @@ from ..protocol.basic import QueuedLineReceiver
 
 __all__ = ["K120", "S100"]
 
-class KnauerLineReceiver (QueuedLineReceiver):
-	delimiter = "\r"
-
-class ProtocolFactory (Factory):
-	protocol = KnauerLineReceiver
 
 class K120LineReceiver (QueuedLineReceiver):
 	delimiter = "\r"
@@ -49,10 +44,6 @@ class K120LineReceiver (QueuedLineReceiver):
 			print "Manual stop attempt ignored"
 
 
-class K120ProtocolFactory (Factory):
-	protocol = K120LineReceiver
-
-
 class K120 (Machine):
 	"""
 	Control class for a Knauer WellChrom K120 HPLC pump.
@@ -63,7 +54,7 @@ class K120 (Machine):
 	Requires a crossover serial cable.
 	"""
 
-	protocolFactory = K120ProtocolFactory()
+	protocolFactory = Factory.forProtocol(K120LineReceiver)
 	name = "Knauer K120 HPLC Pump"
 
 	def setup (self):
@@ -175,7 +166,7 @@ class S100 (Machine):
 	Requires a crossover serial cable.
 	"""
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(QueuedLineReceiver, delimiter = "\r")
 	name = "Knauer S100 HPLC Pump"
 
 	def setup (self):

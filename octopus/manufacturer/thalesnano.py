@@ -10,12 +10,10 @@ from ..protocol.basic import QueuedLineReceiver
 
 __all__ = ["HCube"]
 
-class HCubeLineReceiver (QueuedLineReceiver):
-	delimiter = "\r"
 
 class HCube (Machine):
 
-	protocolFactory = Factory.forProtocol(HCubeLineReceiver)
+	protocolFactory = Factory.forProtocol(QueuedLineReceiver, delimiter = "\r")
 	name = "H-Cube hydrogenation reactor"
 
 	_messages = ["", "OK", "Switch on the pump.", "Switch off the pump.", "Building pressure...", "Building temperature...",

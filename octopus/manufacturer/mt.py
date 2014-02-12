@@ -11,8 +11,6 @@ import json, re
 
 __all__ = ["SICSBalance"]
 
-class ProtocolFactory (Factory):
-    protocol = QueuedLineReceiver
 
 _SICS_status_text = {
 	"+": "overload",
@@ -38,9 +36,10 @@ def _SICS_interpret_weight (result, self):
 				if unit == "g":
 					self.weight._push(float(result[2]))
 
+
 class SICSBalance (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(QueuedLineReceiver)
 	name = "MT Balance (SICS)"
 
 	def setup (self):
@@ -83,9 +82,10 @@ class SICSBalance (Machine):
 	def tare (self):
 		return self.protocol.write("Z", expectReply = False, wait = 5)
 
+
 class ICIR (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(QueuedLineReceiver)
 	name = "MT iC IR Connector"
 
 	def setup (self, stream_names = None):

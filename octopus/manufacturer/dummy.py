@@ -9,11 +9,12 @@ from ..protocol.basic import QueuedLineReceiver as _qlr
 
 __all__ = ["Dummy"]
 
+
 class QueuedLineReceiver (_qlr):
-	
+
 	delimiter = "\n\r"
 	out_delimiter = "\n"
-	
+
 	def sendLine (self, line):
 	   """
 	   Sends a line to the other end of the connection.
@@ -23,13 +24,10 @@ class QueuedLineReceiver (_qlr):
 	   """
 	   return self.transport.write(line + self.out_delimiter)
 
-class ProtocolFactory (Factory):
-    protocol = QueuedLineReceiver
-
 
 class Dummy (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(QueuedLineReceiver)
 	name = "Dummy Machine"
 
 	def setup (self):

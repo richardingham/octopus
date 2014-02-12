@@ -34,10 +34,6 @@ class HeidolphLineReceiver (QueuedLineReceiver):
 	   return self.transport.write(line + "\n")
 
 
-class ProtocolFactory (Factory):
-    protocol = HeidolphLineReceiver
-
-
 class _heater (Component):
 	def __init__ (self, set_power, set_temp, set_delta):
 		self.power = Property(title = "Hotplate Power", type = str, options = ("on", "off"), setter = set_power)
@@ -98,7 +94,7 @@ def _set_stirrer_target (machine):
 
 class HeiEnd (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(HeidolphLineReceiver)
 	name = "Heidolph Hei-End Stirrer Hotplate"
 
 	def setup (self):

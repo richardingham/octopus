@@ -20,14 +20,9 @@ class Error (Exception):
 	"Base class for exceptions in this module"
 	pass
 
-class ProtocolFactory (Factory):
-    protocol = basic.QueuedLineReceiver
-
-class ControlModuleProtocolFactory (Factory):
-    protocol = gsioc.Receiver
 
 class GSIOC (Machine):
-	protocolFactory = ControlModuleProtocolFactory()
+	protocolFactory = Factory.forProtocol(gsioc.Receiver)
 	name = "GSIOC Connection"
 
 	def setup (self):
@@ -67,7 +62,7 @@ def _set_output (machine, i):
 	return set_output
 
 class ControlModule506C (Machine):
-	protocolFactory = ControlModuleProtocolFactory()
+	protocolFactory = Factory.forProtocol(gsioc.Receiver)
 	name = "Gilson 506C Control Module"
 
 	A = 1
@@ -204,7 +199,7 @@ class ControlModule506C (Machine):
 
 class SampleInjector233 (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(basic.QueuedLineReceiver)
 	name = "Gilson Sampling Injector"
 
 	_layouts = {}
@@ -358,7 +353,7 @@ class SampleInjector233 (Machine):
 
 class Pump305 (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(basic.QueuedLineReceiver)
 	name = "Gilson 305 HPLC Pump"
 
 
@@ -596,7 +591,7 @@ class _syringe_piston (Component):
 
 class SyringePump402 (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(basic.QueuedLineReceiver)
 	name = "Gilson Piston Pump 402"
 
 	initialise_on_start = True
@@ -732,7 +727,7 @@ def _set_sensitivity (machine, i):
 
 class UVVis151 (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(basic.QueuedLineReceiver)
 	name = "Gilson 151 UV/VIS Spectrometer"
 
 	analogue_sample_frequency = 0.1

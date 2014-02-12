@@ -9,12 +9,10 @@ from ..protocol.basic import QueuedLineReceiver
 
 __all__ = ["PCB"]
 
-class ProtocolFactory (Factory):
-    protocol = QueuedLineReceiver
 
 class PCB (Machine):
 
-	protocolFactory = ProtocolFactory()
+	protocolFactory = Factory.forProtocol(QueuedLineReceiver)
 	name = "Kern PCB Balance"
 
 	def setup (self):
