@@ -16,7 +16,7 @@ def simple_step ():
 	step.reset = Mock(return_value = ok)
 	step.pause = Mock(return_value = ok)
 	step.resume = Mock(return_value = ok)
-	step.cencel = Mock(return_value = ok)
+	step.cancel = Mock(return_value = ok)
 
 	step.event = Mock()
 	step.event.__iadd__ = Mock()
