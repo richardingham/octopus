@@ -21,7 +21,6 @@ def run ():
 		locals = {
 			"tcp": basic.tcp,
 			"serial": basic.serial,
-			"vapourtec": vapourtec,
 			"knauer": knauer,
 			"gilson": gilson,
 			"s": shortcuts
