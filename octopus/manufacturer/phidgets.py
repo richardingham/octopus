@@ -118,7 +118,7 @@ class TemperatureSensor (Machine):
 				input["stream"] = t.temperature
 				self.thermocouples.append(t)	
 
-			self.ambient = Stream(title = "Ambient Temperature", type = float, unit = "C")
+		self.ambient = Stream(title = "Ambient Temperature", type = float, unit = "C")
 
 		self.ui = ui(
 			traces = [{
@@ -156,7 +156,8 @@ class TemperatureSensor (Machine):
 					index = input["index"]
 					temp = self.protocol.getTemperature(index)
 
-					if abs(inputs[index].value - temp) > input["min_change"]:
+					if inputs[index].value is None 
+					or abs(inputs[index].value - temp) > input["min_change"]:
 						inputs[index]._push(round(temp, self.precision))
 
 				# Read ambient sensor
