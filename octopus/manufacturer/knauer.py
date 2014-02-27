@@ -155,6 +155,8 @@ class K120 (Machine):
 	def allowKeypad (self, allow):
 		return self.protocol.write("S%d" % int(not allow))
 
+class S100LineReceiver (QueuedLineReceiver):
+	delimiter = "\r"
 
 class S100 (Machine):
 	"""
@@ -166,7 +168,7 @@ class S100 (Machine):
 	Requires a crossover serial cable.
 	"""
 
-	protocolFactory = Factory.forProtocol(QueuedLineReceiver, delimiter = "\r")
+	protocolFactory = Factory.forProtocol(S100LineReceiver)
 	name = "Knauer S100 HPLC Pump"
 
 	def setup (self):
