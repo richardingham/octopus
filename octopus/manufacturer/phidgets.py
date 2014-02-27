@@ -143,7 +143,6 @@ class TemperatureSensor (Machine):
 			try:
 				i = input["index"]
 				self.protocol.setThermocoupleType(i, input["type"])
-				self.protocol.setTemperatureChangeTrigger(i, input["min_change"])
 				inputs[i] = input["stream"]
 
 			except (TypeError, PhidgetException):
