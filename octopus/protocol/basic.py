@@ -35,7 +35,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 	timeoutDuration = 1
 
-	def __init__ (self, delimiter = None):
+	def __init__ (self):
 		self.connection_name = "disconnected"
 
 		self.queue = AsyncQueue(self._advance, paused = True)
@@ -45,10 +45,6 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		self._queue_d = None
 		self._timeout = None
 		self._running = False
-
-		# Allow passing in the delimiter on creation
-		if delimiter is not None:
-			self.delimiter = delimiter
 
 	def connectionMade (self):
 		self.queue.resume()
