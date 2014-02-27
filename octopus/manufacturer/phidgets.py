@@ -156,14 +156,15 @@ class TemperatureSensor (Machine):
 					index = input["index"]
 					temp = self.protocol.getTemperature(index)
 
-					if inputs[index].value is None 
+					if inputs[index].value is None \
 					or abs(inputs[index].value - temp) > input["min_change"]:
 						inputs[index]._push(round(temp, self.precision))
 
 				# Read ambient sensor
 				temp = self.protocol.getAmbientTemperature()
 
-				if abs(ambient.value - temp) > 0.5:
+				if self.ambient.value is None \
+				or abs(self.ambient.value - temp) > 0.5:
 					self.ambient._push(round(temp, self.precision))
 
 			except (KeyError, AttributeError, PhidgetException):
