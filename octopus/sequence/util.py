@@ -391,14 +391,11 @@ class Trigger (Tick):
 		return bool(self._expr)
 
 
-class Dependents (Runnable, Pausable, Cancellable):
+class Dependents (Dependent):
 	
 	def __init__ (self):
+		Dependent.__init__(self)
 		self._dependents = set()
-		self.event = Event()
-		self.log = Event()
-
-		self.state = State.READY
 
 	def add (self, dep):
 		if hasattr(dep, "container") and dep.container is not None:
