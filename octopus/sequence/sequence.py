@@ -356,6 +356,8 @@ class Sequence (_StepWithChildren):
 		def advance (result = None):
 			if self.state is State.PAUSED:
 				self._onResume = advance
+			elif self.state is State.CANCELLED:
+				return None
 			else:
 				try:
 					step = iterator.next()
