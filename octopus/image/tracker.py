@@ -171,7 +171,6 @@ class MultiBlobTracker (Machine):
 
 		if pos is not None:
 			for x, y in pos:
-				x, y = pos
 				img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width = 6)
 
 		return img
