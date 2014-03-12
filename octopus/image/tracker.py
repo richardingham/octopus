@@ -108,6 +108,8 @@ class MultiBlobTracker (Machine):
 		else:
 			self.process_fn = fn
 
+		self._get_centroids = _get_centroids(count)
+
 		# setup variables
 		for i in range(count):
 			stream = Stream(title = "Height %s" % (i + 1), type = int)
