@@ -1,4 +1,3 @@
-
 # Package Imports
 from ..constants import State
 from ..util import now
@@ -35,7 +34,7 @@ class Bind (util.Looping, util.Dependent):
 		else:
 			new_val = self.expr.value
 
-		self.response.set(new)
+		self.variable.set(new_val)
 
 
 
