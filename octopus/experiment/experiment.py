@@ -290,7 +290,7 @@ class Experiment (object):
 			self.paused(self)
 
 			return defer.gatherResults(
-				[self.step.pause()]
+				[defer.maybeDeferred(self.step.pause)]
 				+ [defer.maybeDeferred(m.pause) for m in self._machines]
 			)
 
@@ -306,7 +306,7 @@ class Experiment (object):
 			self.resumed(self)
 
 			return defer.gatherResults(
-				[self.step.resume()]
+				[defer.maybeDeferred(self.step.resume)]
 				+ [defer.maybeDeferred(m.resume) for m in self._machines]
 			)
 
@@ -321,7 +321,7 @@ class Experiment (object):
 			self.cancelled(self)
 
 			return defer.gatherResults(
-				[self.step.abort()] # Needs a try in case this throws an exception...
+				[defer.maybeDeferred(self.step.abort)]
 				+ [defer.maybeDeferred(m.pause) for m in self._machines]
 			)
 	#
