@@ -106,7 +106,7 @@ class Cancellable (object):
 		self._onResume = None
 
 		self.state = State.CANCELLED
-		return defer.maybeDeferred(self._cancel)
+		return defer.maybeDeferred(self._cancel, abort)
 
 	def abort (self):
 		"""
