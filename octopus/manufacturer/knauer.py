@@ -59,7 +59,7 @@ class K120 (Machine):
 
 	def setup (self):
 		def set_power (power):
-			return self.protocol.write("M%d" % (1 if power is "on" else 0))
+			return self.protocol.write("M%d" % int(power == "on"))
 
 		def set_target (target):
 			d = defer.Deferred()
@@ -174,7 +174,7 @@ class S100 (Machine):
 	def setup (self):
 	
 		def set_power (power):
-			cmd = "ON" if power is "on" else "OFF"
+			cmd = "ON" if power == "on" else "OFF"
 			return self.protocol.write(cmd)
 
 		def set_target (target):

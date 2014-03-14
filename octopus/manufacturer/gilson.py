@@ -292,7 +292,7 @@ class SampleInjector233 (Machine):
 		def set_valve (valve):
 			c = "I{:d}" + ("/" if valve == "switching" else "")
 			def set_valve (pos):
-				return self.protocol.buffered_command(c.format(1 if pos is "inject" else 0));
+				return self.protocol.buffered_command(c.format(1 if pos == "inject" else 0));
 
 			return set_valve
 
@@ -709,7 +709,7 @@ class SyringePump402 (Machine):
 
 def _set_lamp (machine):
 	def set_lamp (power):
-		return machine.protocol.buffered_command("L%d" % (1 if power is "on" else 0));
+		return machine.protocol.buffered_command("L%d" % (1 if power == "on" else 0));
 
 	return set_lamp
 

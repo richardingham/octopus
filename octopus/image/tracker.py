@@ -31,14 +31,18 @@ class SingleBlobTracker (Machine):
 	name = "Follow Green Blobs on a webcam"
 	update_frequency = 1
 
-	def setup (self):
+	def setup (self, fn = None):
 		# setup variables
 		self.height = Stream(title = "Height", type = int)
 		self.status = Property(title = "Status", type = str)
 		self.image = Image(title = "Tracked", fn = self._get_image)
 		self.visualisation = Image(title = "Visualisation", fn = self._get_visualisation)
 
-		self.process_fn = lambda r, g, b: (g - r).threshold(30).erode()
+		if fn is None:
+			self.process_fn = lambda r, g, b: (g - r).threshold(30).erode()
+		else:
+			self.process_fn = fn
+
 		self.blob_size = 100
 		self._get_centroids = _get_centroids(1)
 
@@ -104,6 +108,8 @@ class MultiBlobTracker (Machine):
 		else:
 			self.process_fn = fn
 
+		self._get_centroids = _get_centroids(count)
+
 		# setup variables
 		for i in range(count):
 			stream = Stream(title = "Height %s" % (i + 1), type = int)
@@ -165,7 +171,6 @@ class MultiBlobTracker (Machine):
 
 		if pos is not None:
 			for x, y in pos:
-				x, y = pos
 				img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width = 6)
 
 		return img

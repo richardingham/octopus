@@ -142,16 +142,7 @@ class _StepWithChild (Step):
 
 	def __init__ (self, expr = None, step = None):
 		Step.__init__(self, expr)
-
-		if isinstance(step, Step):
-			self._step = step
-		elif isinstance(step, list):
-			self._step = Sequence(step)
-		else:
-			raise Error("Argument must be an instance of Step")
-
-		step.event += self.event
-		step.log += self.log
+		self._step = util.init_child(self, step)
 
 	def _cancel (self, abort = False):
 		d = self.dependents.cancel(abort)
@@ -196,19 +187,10 @@ class _StepWithChildren (Step):
 		if steps is None:
 			steps = []
 
+		# Raise a TypeError if steps is not iterable
 		for step in steps:
-			if step is None:
-				continue
-			elif isinstance(step, list):
-				step = Sequence(step)
-			elif not isinstance(step, Step):
-				print step
-				raise Error("Argument must be an instance of Step")
-
-			step.event += self.event
-			step.log += self.log
-
-			self._steps.append(step)
+			if step is not None:
+				self._steps.append(util.init_child(self, step))
 
 	def _cancel (self, abort = False):
 		d = [self.dependents.cancel(abort)]
@@ -356,6 +338,8 @@ class Sequence (_StepWithChildren):
 		def advance (result = None):
 			if self.state is State.PAUSED:
 				self._onResume = advance
+			elif self.state is State.CANCELLED:
+				return None
 			else:
 				try:
 					step = iterator.next()

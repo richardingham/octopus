@@ -95,11 +95,11 @@ class SecondDifferential (Differential):
 class Max (FramedManipulation):
 	def get (self, start, interval, step):
 		new_x = data.timerange(start, interval, step)
-		m = max(self._expr.get(-self._frame, self._frame, step))
+		m = np.max(self._expr.interp(-self._frame, self._frame, step))
 		return np.ones_like(new_x) * m
 
 	def get_value (self):
-		return max(self.get(-self._frame, self._frame, 0.1))
+		return np.max(self._expr.interp(-self._frame, self._frame, 0.1))
 
 	def serialize (self):
 		return " Max (" + self._expr.serialize() + ", " + str(frame) + ")"
@@ -108,11 +108,11 @@ class Max (FramedManipulation):
 class Min (FramedManipulation):
 	def get (self, start, interval, step):
 		new_x = data.timerange(start, interval, step)
-		m = min(self._expr.get(-self._frame, self._frame, step))
+		m = np.min(self._expr.interp(-self._frame, self._frame, step))
 		return np.ones_like(new_x) * m
 
 	def get_value (self):
-		return min(self.get(-self._frame, self._frame, 0.1))
+		return np.min(self._expr.interp(-self._frame, self._frame, 0.1))
 
 	def serialize (self):
 		return " Min (" + self._expr.serialize() + ", " + str(frame) + ")"
@@ -173,10 +173,10 @@ class Square (Function):
 
 class Sqrt (Function):
 	def get (self, start, interval, step):
-		return np.sqrt(self._expr.get(start, interval, step))
+		return np.sqrt(self._expr.interp(start, interval, step))
 
 	def get_value (self):
-		return math.sqrt(self._expr.value)
+		return np.sqrt(self._expr.value)
 
 	def serialize (self):
 		return " Sqrt (" + self._expr.serialize() + ")"
@@ -184,7 +184,7 @@ class Sqrt (Function):
 
 class Abs (Function):
 	def get (self, start, interval, step):
-		return np.absolute(self._expr.get(start, interval, step))
+		return np.absolute(self._expr.interp(start, interval, step))
 
 	def get_value (self):
 		return abs(self._expr.value)
@@ -195,10 +195,10 @@ class Abs (Function):
 
 class Sin (Function):
 	def get (self, start, interval, step):
-		return np.sin(self._expr.get(start, interval, step))
+		return np.sin(self._expr.interp(start, interval, step))
 
 	def get_value (self):
-		return math.sin(self._expr.value)
+		return np.sin(self._expr.value)
 
 	def serialize (self):
 		return " Sin (" + self._expr.serialize() + ")"
@@ -206,10 +206,10 @@ class Sin (Function):
 
 class Cos (Function):
 	def get (self, start, interval, step):
-		return np.cos(self._expr.get(start, interval, step))
+		return np.cos(self._expr.interp(start, interval, step))
 
 	def get_value (self):
-		return math.cos(self._expr.value)
+		return np.cos(self._expr.value)
 
 	def serialize (self):
 		return " Cos (" + self._expr.serialize() + ")"
@@ -217,10 +217,10 @@ class Cos (Function):
 
 class Tan (Function):
 	def get (self, start, interval, step):
-		return np.tan(self._expr.get(start, interval, step))
+		return np.tan(self._expr.interp(start, interval, step))
 
 	def get_value (self):
-		return math.tan(self._expr.value)
+		return np.tan(self._expr.value)
 
 	def serialize (self):
 		return " Tan (" + self._expr.serialize() + ")"
