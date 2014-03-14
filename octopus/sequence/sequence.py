@@ -143,15 +143,15 @@ class _StepWithChild (Step):
 	def __init__ (self, expr = None, step = None):
 		Step.__init__(self, expr)
 
-		if isinstance(step, Step):
-			self._step = step
-		elif isinstance(step, list):
-			self._step = Sequence(step)
-		else:
+		if isinstance(step, list):
+			step = Sequence(step)
+		elif not isinstance(step, Step):
 			raise Error("Argument must be an instance of Step")
 
 		step.event += self.event
 		step.log += self.log
+
+		self._step = step
 
 	def _cancel (self, abort = False):
 		d = self.dependents.cancel(abort)
