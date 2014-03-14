@@ -1,6 +1,6 @@
 # Twisted Imports
 from twisted.internet import reactor, defer, task
-from twisted.python import failure
+from twisted.python import log, failure
 
 # Sibling Imports
 from error import NotRunning, AlreadyRunning, NotPaused, Stopped
@@ -9,6 +9,23 @@ from error import NotRunning, AlreadyRunning, NotPaused, Stopped
 from ..constants import State
 from ..util import Event
 
+def init_child (parent, child):
+	from sequence import Sequence
+
+	if child is None:
+		child = Sequence([])
+	elif isinstance(child, BaseStep):
+		pass
+	else:
+		try:
+			child = Sequence(child)
+		except TypeError:
+			raise Error("Argument must be an instance of Step or a list of Steps")
+
+	child.event += parent.event
+	child.log += parent.log
+
+	return child
 
 class Runnable (object):
 	"""
@@ -219,6 +236,8 @@ class Looping (Runnable, Pausable, Cancellable):
 
 		self._iteration_stop()
 		self.state = State.ERROR
+
+		log.err(error)
 
 	def _cancel (self, abort = False):
 		self._iteration_stop()
