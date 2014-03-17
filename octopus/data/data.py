@@ -169,6 +169,8 @@ def _default_alias (object):
 
 class Variable (object):
 
+	immutable = False
+
 	def get_value (self):
 		return self._value
 	value = property(get_value)

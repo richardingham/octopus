@@ -258,6 +258,10 @@ class Machine (Component):
 
 # Continuous variables
 class Stream (data.Variable):
+	@property
+	def immutable (self):
+		True
+
 	def __init__ (self, title, type, unit = None):
 		data.Variable.__init__(self, type)
 
@@ -272,6 +276,10 @@ class Stream (data.Variable):
 
 # Discrete (ish) variables
 class Property (Stream):
+	@property
+	def immutable (self):
+		return self._setter is None
+
 	def __init__ (self, title, type, options = None, min = None, max = None, unit = None, setter = None):
 		Stream.__init__(self, title, type, unit)
 

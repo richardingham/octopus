@@ -19,6 +19,30 @@ def _prop (p):
 		"value": p.value
 	}
 
+	if not p.immutable:
+		result["edit"] = True
+		result["disabled"] = False
+
+		if p.type in (int, float, long):
+			type = "number"
+		elif p.type is boolean:
+			type = "switch"
+		elif p.type is str:
+			type = "string"
+
+		if hasattr(p, "min") and p.min is not None:
+			result["min"] = p.min
+		if hasattr(p, "max") and p.max is not None:
+			result["max"] = p.max
+		if hasattr(p, "options") and p.options is not None:
+			result["options"] = p.options
+			type = "select"
+
+		result["control_type"] = type
+
+	else:
+		result["edit"] = False
+
 	return result
 
 def _img (p):
@@ -171,6 +195,16 @@ class InterfaceSectionSet (OrderedDict):
 		for c in self.controls.itervalues():
 			c.event -= self.event
 
+
+def fromDict (dict):
+	section = InterfaceSection()
+	try:
+		for trace in dict["traces"]:
+			
+	except (KeyError, TypeError):
+		pass
+		
+	
 
 class Trace (object):
 	pass
