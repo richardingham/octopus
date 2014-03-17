@@ -26,7 +26,16 @@ class Bind (util.Looping, util.Dependent):
 	Set max and min to limit the value of variable.
 	"""
 
-	interval = 0.5
+	@property
+	def interval (self):
+		return self._interval
+
+	# NB altering interval doesn't work when running.
+	# Maybe make an EditableInterval mixin that restarts the LoopingCall
+	# if it is running.
+	@interval.setter
+	def interval (self, value):
+		self._interval = value
 
 	max = None
 	min = None
@@ -41,7 +50,7 @@ class Bind (util.Looping, util.Dependent):
 
 	def __init__ (self, variable, expr = None, process = None):
 		util.Dependent.__init__(self)
-		util.Looping.__init__(self)
+		util.Looping.__init__(self, interval = 0.5)
 
 		self.variable = variable
 		self.expr = expr
@@ -84,7 +93,13 @@ class PID (util.Looping, util.Dependent):
 	Set max and min to limit the response value.
 	"""
 
-	interval = 0.5
+	@property
+	def interval (self):
+		return self._interval
+
+	@interval.setter
+	def interval (self, value):
+		self._interval = value
 
 	proportional = 25
 	integral = 0.25
@@ -95,7 +110,7 @@ class PID (util.Looping, util.Dependent):
 
 	def __init__ (self, response, error):
 		util.Dependent.__init__(self)
-		util.Looping.__init__(self)
+		util.Looping.__init__(self, interval = 0.5)
 
 		self.error = error
 		self.response = response
@@ -157,7 +172,13 @@ class StateMonitor (util.Looping, util.Dependent):
 	
 	"""
 
-	interval = 0.5
+	@property
+	def interval (self):
+		return self._interval
+
+	@interval.setter
+	def interval (self, value):
+		self._interval = value
 
 	@property
 	def trigger_step (self):
@@ -177,7 +198,7 @@ class StateMonitor (util.Looping, util.Dependent):
 
 	def __init__ (self, tests = None, trigger_step = None, reset_step = None, auto_reset = True, cancel_on_trigger = True, cancel_on_reset = True):
 		util.Dependent.__init__(self)
-		util.Looping.__init__(self)
+		util.Looping.__init__(self, interval = 0.5)
 
 		self.tests = set()
 
