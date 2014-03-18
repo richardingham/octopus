@@ -272,6 +272,6 @@ class StateMonitor (util.Looping, util.Dependent):
 			except error.AlreadyRunning:
 				return
 
-	def _cancel (self):
-		util.Looping._cancel(self)
+	def _cancel (self, abort = False):
+		util.Looping._cancel(self, abort)
 		self.reset_trigger()
