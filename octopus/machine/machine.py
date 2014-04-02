@@ -267,6 +267,15 @@ class Stream (data.Variable):
 	def set (self, value):
 		raise data.errors.Immutable
 
+	def __repr__ (self):
+		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}{var_unit}>".format(
+			class_name = self.__class__.__name__, 
+			reference = hex(unsignedID(self)),
+			var_alias = self.alias,
+            var_type = self.type.__name__,
+			var_value = self.value,
+			var_unit = self.unit
+		)
 	# _push is used internally to add data coming in from the machine.
 
 

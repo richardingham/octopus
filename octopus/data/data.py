@@ -342,11 +342,12 @@ class Variable (object):
 		return bool(self.get_value())
 
 	def __repr__ (self):
-		return "<%s at %s  type: %s value: %s>" % (
-			self.__class__.__name__, 
-			hex(unsignedID(self)),
-            self.type,
-			self.value
+		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}>".format(
+			class_name = self.__class__.__name__, 
+			reference = hex(unsignedID(self)),
+			var_alias = self.alias,
+            var_type = self.type.__name__,
+			var_value = self.value
 		)
 
 
