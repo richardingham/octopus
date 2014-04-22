@@ -55,8 +55,8 @@ def _prepare (start, interval):
 
 
 class Archive (object):
-	# Set threshold_factor to None for none-numeric variables
-	threshold_factor = 0.01
+	# Set threshold_factor to None for non-numeric variables
+	threshold_factor = 0.05
 	min_delta = 10
 
 	def __init__ (self):
@@ -72,6 +72,8 @@ class Archive (object):
 
 		self._y_min = 0
 		self._y_max = 0
+		self._min_since_last = None
+		self._max_since_last = None
 
 	def push (self, x, y):
 		# Ignore data points at times earlier than the most recent reset.
@@ -92,10 +94,35 @@ class Archive (object):
 				self.min_delta
 			)
 
+			# Update Min / Max values
+			if self._min_since_last is None \
+			or y < self._min_since_last[1]:
+				self._min_since_last = (x, y)
+
+			if self._max_since_last is None \
+			or y > self._max_since_last[1]:
+				self._max_since_last = (x, y)
+
 		# Store the values if the delta exceeds the threshold
 		if self._prev_y is None \
 		or self.threshold_factor is None \
 		or abs(self._prev_y - y) > threshold:
+
+			# Add up to one local maximum (or minimum) 
+			# to retain concave curve shapes.
+			if self.threshold_factor is not None:
+				if self._max_since_last[1] > self._prev_y \
+				and self._max_since_last[1] > y:
+					self._x.append(self._max_since_last[0])
+					self._y.append(self._max_since_last[1])
+				elif self._min_since_last[1] < self._prev_y \
+				and self._min_since_last[1] < y:
+					self._x.append(self._min_since_last[0])
+					self._y.append(self._min_since_last[1])
+
+				self._min_since_last = (x, y)
+				self._max_since_last = (x, y)
+
 			self._x.append(x)
 			self._y.append(y)
 			self._prev_x = x
