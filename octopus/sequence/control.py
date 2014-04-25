@@ -101,20 +101,54 @@ class PID (util.Looping, util.Dependent):
 	def interval (self, value):
 		self._interval = value
 
-	proportional = 25
-	integral = 0.25
-	differential = 500
+	proportional = 0.5
+	integral = 0.05
+	differential = 0
 
 	max = None
 	min = None
 
-	def __init__ (self, response, error):
+	max_integral = 500
+	min_integral = -500
+
+	def __init__ (self, response, error, proportional = None, integral = None, differential = None, max = None, min = None, interval = 0.5):
 		util.Dependent.__init__(self)
-		util.Looping.__init__(self, interval = 0.5)
+		util.Looping.__init__(self, interval)
 
 		self.error = error
 		self.response = response
+
+		if proportional is not None:
+			self.proportional = proportional
+		if integral is not None:
+			self.integral = integral
+		if differential is not None:
+			self.differential = differential
+
+		self.max = max
+		self.min = min
+
 		self._prev_error = None
+		self._integral = 0 # Accumulated integral
+
+	def reset_integral (self):
+		self._integral = 0
+
+	def _integral_bound (self, integral):
+		if self.max_integral is not None:
+			integral = min(integral, self.max_integral)
+		if self.min_integral is not None:
+			integral = max(integral, self.min_integral)
+
+		return integral
+
+	def _output_bound (self, new):
+		if self.max is not None:
+			new = min(new, self.max)
+		if self.min is not None:
+			new = max(new, self.min)
+
+		return new
 
 	def _iterate (self):
 		current = float(self.response)
@@ -126,15 +160,19 @@ class PID (util.Looping, util.Dependent):
 		if e_prev is None:
 			return
 
-		# trapezium rule
-		integral_term = \
+		# Trapezium rule
+		integral_term = self._integral + \
 			(min(e, e_prev) * interval) + \
 			(0.5 * (e + e_prev) * interval)
 
-		# difference rule
-		differential_term = (e - e_prev) / interval
+		integral_term = self._integral_bound(integral_term)
+		self._integral = integral_term
 
-		# PID control
+		# Difference rule
+		differential_term = (e - e_prev) / interval
+		self._differential = differential_term
+
+		# Compute PID
 		change = \
 			(self.proportional * e) + \
 			(self.integral * integral_term) + \
@@ -143,10 +181,7 @@ class PID (util.Looping, util.Dependent):
 		new = current + change
 
 		# Enforce bounds
-		if self.max is not None:
-			new = min(new, self.max)
-		if self.min is not None:
-			new = max(new, self.min)
+		new = self._output_bound(new)
 
 		self.response.set(new)
 
