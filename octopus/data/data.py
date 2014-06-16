@@ -5,38 +5,11 @@ import operator
 # Twisted Imports
 from twisted.python.util import unsignedID
 
-# NumPy
-import numpy as np
-
 # Package Imports
 from ..util import now, timerange
 
 # Sibling Imports
 import errors
-
-def _get_first_index (list, time):
-	try:
-		# Return the index of the first item in {list} which
-		# is greater than or equal to {time}.
-		# http://stackoverflow.com/q/2236906/
-		return next(x[0] for x in enumerate(list) if x[1] >= time)
-	except StopIteration:
-		return None
-
-def _get_last_index (list, time):
-	l = len(list)
-
-	try:
-		# Return the index of the last item in {list} which
-		# is greater than or equal to {time}.
-		return l - 1 - next(
-			x[0] for x in enumerate(reversed(list)) if x[1] <= time
-		)
-	except StopIteration:
-		if l is 0:
-			return None
-		else:
-			return 0
 
 def _upper_bound (list, time):
 	# Return the index of the first item in {list} which
@@ -181,12 +154,6 @@ class Archive (object):
 
 		return vals
 
-	def _get_indices (self, start, interval):
-		i_start = _get_first_index(self._x, start)
-		i_end = _get_first_index(self._x, start + interval)
-
-		return i_start, i_end
-
 
 _default_alias_counters = {}
 def _default_alias (object):
@@ -200,188 +167,6 @@ def _default_alias (object):
 	return "{:s}_{:d}".format(class_name, _default_alias_counters[class_name])
 
 
-class Variable (object):
-
-	def get_value (self):
-		return self._value
-	value = property(get_value)
-
-	def get_type (self):
-		return self._type
-	type = property(get_type)
-
-	def serialize (self):
-		if self.alias is None:
-			return "[Variable]"
-		else:
-			return str(self.alias)
-
-	def __init__ (self, type):
-		self.alias = _default_alias(self)
-
-		self._time = None
-		self._value = None
-		self._type = type
-		self._length = 30 # in seconds
-
-		self._x = []
-		self._y = []
-		self._archive = Archive()
-
-		self._log_file = None
-
-	def truncate (self):
-		"""
-		Empty the variable of all stored data.
-		"""
-
-		self._x = [self._time] if self._time is not None else []
-		self._y = [self._value] if self._value is not None else []
-		self._archive.truncate()
-
-	def set (self, value):
-		self._push(value)
-
-	def get (self, start, interval = None, step = 1):
-		"""
-		Returns the value of the variable over a particular time period.
-		
-		Returns a list of (time, value) pairs between 
-		[time = start and time = start + interval] (inclusive).
-		
-		start: earliest time to return data.
-		interval: time-span requested.
-		"""
-
-		start, interval = _prepare(start, interval)
-
-		try:
-			if start > self._x[0]:
-				return zip(
-					timerange(start, interval, step).tolist(),
-					self.interp(start, interval, step).tolist()
-				)
-
-			else:
-				return self._archive.get(start, interval)
-
-		except IndexError:
-			return []
-
-	def interp (self, start, interval = None, step = 1):
-		"""
-		Retrieve data for calculations.
-		
-		To perform calculations, there must be consistent time steps between
-		each data point (defined by the step parameter).
-
-		To acheive this the numpy.interp function is used on the variable's
-		data. For optimal calculations the length of time that high-resolution
-		data are kept (by default: 60 s) is increased if larger intervals are
-		requested. Note that this will increase the memory consumption.
-		
-		Numpy.interp only works with variables that can be converted to a float.
-		If interp fails, zero is returned over the timeperiod.
-		"""
-
-		start, interval = _prepare(start, interval)
-
-		# Increase amount of high-resolution data kept, as long as it is
-		# the most recent data being requested.
-		if self._length is not None \
-		and self._length < interval \
-		and abs(start + interval - now()) < 1:
-			self._length = interval
-
-		new_x = timerange(start, interval, step)
-
-		try:
-			if start < self._x[0]:
-				try:
-					x_vals, y_vals = zip(*self._archive.get(start, self._x[0] - start))
-				except ValueError:
-					x_vals = y_vals = []	
-
-				x_vals = list(x_vals) + self._x
-				y_vals = list(x_vals) + self._y
-
-				return np.interp(new_x, x_vals, y_vals)
-			else:
-				return np.interp(new_x, self._x, self._y)
-
-		except ValueError:
-			return np.zeros_like(new_x)
-
-	def _push (self, value, time = None):
-		if type(value) != self._type:
-			value = self._type(value)
-
-		if time is None:
-			time = now()
-
-		self._value = value
-		self._time  = time
-		self._x.append(time)
-		self._y.append(value)
-		self._archive.push(time, value)
-		self._log(time, value)
-
-		# Trim off any old data
-		if self._length is not None and time - self._x[0] > self._length * 2:
-			min_time = time - (self._length * 2)
-
-			remove = 0
-			for x in self._x:
-				if x > min_time:
-					break
-
-				remove += 1
-
-			if remove > 0:
-				self._y = self._y[remove:]
-				self._x = self._x[remove:]
-
-
-	def _log (self, time, value):
-		if self._log_file is not None:
-			self._log_file.write(time, value)
-
-	def setLogFile (self, logFile):
-		if self._log_file is not None:
-			self._log_file.close()
-
-		self._log_file = logFile
-
-		if self._value is not None:
-			self._log_file.write(now(), self._value)
-
-	def stopLogging (self):
-		if self._log_file is not None:
-			self._log_file.close()
-
-		self._log_file = None		
-	###
-
-	def __str__ (self):
-		return str(self.get_value())
-
-	def __int__ (self):
-		return int(self.get_value())
-
-	def __float__ (self):
-		return float(self.get_value())
-
-	def __nonzero__ (self):
-		return bool(self.get_value())
-
-	def __repr__ (self):
-		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}>".format(
-			class_name = self.__class__.__name__, 
-			reference = hex(unsignedID(self)),
-			var_alias = self.alias,
-            var_type = self.type.__name__,
-			var_value = self.value
-		)
 
 class BaseVariable (object):
 	alias = ""
@@ -452,6 +237,25 @@ class Variable2 (BaseVariable):
 		return self.get(time, 0)
 
 	def get (self, start, interval = None):	
+		"""
+		Returns the value of the variable over a particular time period.
+		
+		Returns a list of (time, value) pairs between 
+		[time = start and time = start + interval] (inclusive).
+		
+		start: earliest time to return data.
+		interval: time-span requested.
+		
+		If interval = 0, a single data point (not a tuple)
+		is returned, rather than a list. 
+		
+		If interval = None, then data are returned from start
+		up to the current time.
+		
+		If start < 0, then this number of seconds is subtracted
+		from the current time.
+		"""
+
 		if start < self._x[0]:
 			return self._archive.get(start, interval)
 		
@@ -502,7 +306,25 @@ class Variable2 (BaseVariable):
 		self._archive.push(time, value)
 		self._log(time, value)
 
-	
+	# Todo: Put these in event watchers in the experiment.
+	def _log (self, time, value):
+		if self._log_file is not None:
+			self._log_file.write(time, value)
+
+	def setLogFile (self, logFile):
+		if self._log_file is not None:
+			self._log_file.close()
+
+		self._log_file = logFile
+
+		if self._value is not None:
+			self._log_file.write(now(), self._value)
+
+	def stopLogging (self):
+		if self._log_file is not None:
+			self._log_file.close()
+
+		self._log_file = None		
 
 class Constant (BaseVariable):
 	def __init__ (self, value):
