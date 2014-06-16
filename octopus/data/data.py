@@ -379,19 +379,38 @@ def _def_binary_op (symbol, operator):
 
 		self._lhs = lhs if isinstance(lhs, Variable) else Constant(lhs)
 		self._rhs = rhs if isinstance(rhs, Variable) else Constant(rhs)
-		self._type = None
+		
+		if lsh.value is not None and rhs.value is not None:
+			try:
+				self._value = operator(lhs.value, rhs.value)
+			except TypeError:
+				if lhs.type is str or rhs.type is str:
+					self._value = operator(str(lhs.value), str(rhs.value))
+				else:
+					raise
 
-	def get_value (self):
+			self._type = type(self._value)
+		else:
+			self._value = None
+			self._type = None
+
+		lhs.on("change", self._changed)
+		rhs.on("change", self._changed)
+
+	def changed (self, time, value):
 		try:
-			return operator(self._lhs.value, self._rhs.value)
+			self._value = operator(self._lhs.value, self._rhs.value)
 		except TypeError:
 			if self._lhs.type is str or self._rhs.type is str:
-				return operator(str(self._lhs.value), str(self._rhs.value))
-			raise
+				self._value = operator(str(self._lhs.value), str(self._rhs.value))
+			else:
+				raise
+
+		self.trigger("changed", time, self._value)
 
 	def get_type (self):
-		if self._type is None:
-			self._type = type(self.get_value())
+		if self._type is None and self._value is not None:
+			self._type = type(self._value)
 
 		return self._type
 
@@ -405,9 +424,7 @@ def _def_binary_op (symbol, operator):
 		(Expression,), 
 		{ 
 			"__init__": init,
-			"get_value": get_value,
 			"get_type": get_type,
-			"value": property(get_value),
 			"type": property(get_type),
 			"serialize": serialize
 		}
@@ -427,14 +444,23 @@ def _def_unary_op (symbol, operator):
 		self.alias = _default_alias(self)
 
 		self._operand = operand
-		self._type = None
+		
+		if operand.value is not None:
+			self._value = operator(operand.value)
+			self._type = type(self._value)
+		else:
+			self._value = None
+			self._type = None
 
-	def get_value (self):
-		return operator(self._operand.value)
+		operand.on("change", self._changed)
+
+	def changed (self, time, value):
+		self._value = operator(self._operand.value)
+		self.trigger("changed", time, self._value)
 
 	def get_type (self):
-		if self._type is None:
-			self._type = type(self.get_value())
+		if self._type is None and self._value is not None:
+			self._type = type(self._value)
 
 		return self._type
 
@@ -446,11 +472,8 @@ def _def_unary_op (symbol, operator):
 		(Expression,), 
 		{ 
 			"__init__": init,
-			"get_value": get_value,
 			"get_type": get_type,
-			"value": property(get_value),
-			"type": property(get_type),
-			"interp": interp
+			"type": property(get_type)
 		}
 	)
 
@@ -461,3 +484,4 @@ def _def_unary_op (symbol, operator):
 
 [_def_unary_op(symbol, op) for symbol, op in _unary_ops]
 [_def_binary_op(symbol, op) for symbol, op in _binary_ops]
+
