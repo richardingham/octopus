@@ -6,7 +6,7 @@ import operator
 from twisted.python.util import unsignedID
 
 # Package Imports
-from ..util import now, timerange
+from ..util import now, timerange, EventEmitter
 
 # Sibling Imports
 import errors
@@ -168,7 +168,7 @@ def _default_alias (object):
 
 
 
-class BaseVariable (object):
+class BaseVariable (object, EventEmitter):
 	alias = ""
 
 	@property
@@ -200,7 +200,7 @@ class BaseVariable (object):
 			var_value = self.value
 		)
 
-class Variable2 (BaseVariable):
+class Variable (BaseVariable):
 	length = 30 # in seconds
 	
 	def __init__ (self, type, value = None):
@@ -225,6 +225,7 @@ class Variable2 (BaseVariable):
 		"""
 		
 		# Trigger clear event
+		self.trigger("clear", time, value)
 
 		self._x = [self._time] if self._time is not None else []
 		self._y = [self._value] if self._value is not None else []
@@ -236,7 +237,7 @@ class Variable2 (BaseVariable):
 	def at (self, time):
 		return self.get(time, 0)
 
-	def get (self, start, interval = None):	
+	def get (self, start = None, interval = None):	
 		"""
 		Returns the value of the variable over a particular time period.
 		
@@ -258,12 +259,12 @@ class Variable2 (BaseVariable):
 
 		if start < self._x[0]:
 			return self._archive.get(start, interval)
-		
+
 		start, interval = _prepare(start, interval)
-		
+
 		i_start = _lower_bound(self._x, start)
 		i_end   = _lower_bound(self._x, start + interval)
-		
+
 		# If asked for a single point, do a linear interpolation
 		if interval == 0:
 			return _interp(
@@ -273,11 +274,11 @@ class Variable2 (BaseVariable):
 				self._x[i_end],
 				self._y[i_end]
 			)
-		
+
 		# Return a slice of (x, y) tuples between the two times.
 		else:
 			return zip(self._x[i_start:i_end], self._y[i_start:i_end])
-	
+
 	def _push (self, value, time = None):
 		if type(value) != self._type:
 			value = self._type(value)
@@ -294,8 +295,9 @@ class Variable2 (BaseVariable):
 		else:
 			self._x.append(time)
 			self._y.append(value)
-			
+
 			# Trigger change event (time, value)
+			self.trigger("change", time, value)
 
 			# Trim old data
 			mid = len(self._x) / 2
@@ -353,11 +355,7 @@ class Constant (BaseVariable):
 
 
 class Expression (BaseVariable):
-	def set (self, value):
-		raise NotImplementedError
-
-	def _push (self, value):
-		raise NotImplementedError
+	pass
 
 
 # Variable should emulate a numerical variable
@@ -397,30 +395,6 @@ def _def_binary_op (symbol, operator):
 
 		return self._type
 
-	def get (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
-
-		x_vals = timerange(start, interval, step)
-		y_vals = self.interp(start, interval, step)
-
-		return zip(x_vals.tolist(), y_vals.tolist())
-
-	def interp (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
-
-		l = self._lhs.interp(start, interval, step)
-		r = self._rhs.interp(start, interval, step)
-
-		try:
-			return operator(l, r)
-
-		# Try a cast to string if the operator fails.
-		except TypeError:
-			if self._lhs.type is str or self._rhs.type is str:
-				return operator(str(l), str(r))
-
-			raise
-
 	def serialize (self):
 		return "(" + \
 			self._lhs.serialize() + symbol \
@@ -435,8 +409,6 @@ def _def_binary_op (symbol, operator):
 			"get_type": get_type,
 			"value": property(get_value),
 			"type": property(get_type),
-			"get": get,
-			"interp": interp,
 			"serialize": serialize
 		}
 	)
@@ -466,19 +438,6 @@ def _def_unary_op (symbol, operator):
 
 		return self._type
 
-	def get (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
-
-		x_vals = timerange(start, interval, step)
-		y_vals = self.interp(start, interval, step)
-
-		return zip(x_vals.tolist(), y_vals.tolist())
-
-	def interp (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
-
-		return operator(self._operand.get(start, interval, step))	
-
 	def serialize (self):
 		return symbol + self._operand.serialize()
 
@@ -491,7 +450,6 @@ def _def_unary_op (symbol, operator):
 			"get_type": get_type,
 			"value": property(get_value),
 			"type": property(get_type),
-			"get": get,
 			"interp": interp
 		}
 	)

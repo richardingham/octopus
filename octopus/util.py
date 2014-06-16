@@ -10,7 +10,7 @@ from collections import deque
 import numpy as np
 
 
-class Event:
+class Event (object):
 	def __init__(self):
 		self.handlers = set()
 
@@ -33,7 +33,60 @@ class Event:
 	__isub__ = unhandle
 	__call__ = fire
 	__len__  = getHandlerCount
+
+class EventEmitter (object):
+	def on (self, name, function):
+		try:
+			self._events[name]
+		except AttributeError:
+			self._events = {}
+			self._events[name] = []
+		except KeyError:
+			self._events[name] = []
+
+		if function not in self._events[name]:
+			self._events[name].append(function)
 	
+	def off (self, name = None, function = None):
+		try:
+			self._events
+		except AttributeError:
+			return
+		
+		# If no name is passed, remove all handlers
+		if name is None:
+			self._events.clear()
+		
+		# If no function is passed, remove all functions
+		elif function is None:
+			try:
+				self._events[name] = []
+			except KeyError:
+				pass
+		
+		# Remove handler [function] from [name]
+		else:
+			self._events[name].remove(function)
+	
+	def trigger (self, name, *args, **kwargs):
+		try:
+			events = this._events[name]
+		except AttributeError
+			return
+		except KeyError:
+			pass
+		else:
+			for function in events:
+				function(*args, **kwargs)
+		
+		try:
+			events = this._events["all"]
+		except KeyError:
+			pass
+		else:
+			for function in events:
+				function(name, *args, **kwargs)
+		
 
 def timerange (start, interval, step):
 	if start < 0:
