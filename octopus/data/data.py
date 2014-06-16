@@ -38,6 +38,23 @@ def _get_last_index (list, time):
 		else:
 			return 0
 
+def _upper_bound (list, time):
+	# Return the index of the first item in {list} which
+	# is greater than or equal to {time}.
+	# http://stackoverflow.com/q/2236906/
+	return next(x[0] for x in enumerate(list) if x[1] >= time, None)
+
+
+def _lower_bound (list, time):
+	l = len(list)
+
+	# Return the index of the last item in {list} which
+	# is less than or equal to {time}.
+	return l - 1 - next(
+		x[0] for x in enumerate(reversed(list)) if x[1] <= time,
+		None if l == 0 else 0
+	)
+
 def _interp (x, x0, y0, x1, y1):
 	try:
 		return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
@@ -377,6 +394,125 @@ class Variable (object):
 			var_value = self.value
 		)
 
+class BaseVariable (object):
+	alias = ""
+
+	@property
+	def value (self):
+		return self._value
+
+	@property
+	def type (self):
+		return self._type
+
+	def __str__ (self):
+		return str(self.get_value())
+
+	def __int__ (self):
+		return int(self.get_value())
+
+	def __float__ (self):
+		return float(self.get_value())
+
+	def __nonzero__ (self):
+		return bool(self.get_value())
+
+	def __repr__ (self):
+		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}>".format(
+			class_name = self.__class__.__name__, 
+			reference = hex(unsignedID(self)),
+			var_alias = self.alias,
+            var_type = self.type.__name__,
+			var_value = self.value
+		)
+
+class Variable2 (BaseVariable):
+	length = 30 # in seconds
+	
+	def __init__ (self, type, value = None):
+		self.alias = _default_alias(self)
+
+		self._time = None
+		self._value = None
+		self._type = type
+
+		self._x = []
+		self._y = []
+		self._archive = Archive()
+
+		self._log_file = None
+		
+		if value is not None:
+			self._push(value)
+
+	def truncate (self):
+		"""
+		Empty the variable of all stored data.
+		"""
+		
+		# Trigger clear event
+
+		self._x = [self._time] if self._time is not None else []
+		self._y = [self._value] if self._value is not None else []
+		self._archive.truncate()
+
+	def set (self, value):
+		self._push(value)
+
+	def at (self, time):
+		return self.get(time, 0)
+
+	def get (self, start, interval = None):	
+		if start < self._x[0]:
+			return self._archive.get(start, interval)
+		
+		start, interval = _prepare(start, interval)
+		
+		i_start = _lower_bound(self._x, start)
+		i_end   = _lower_bound(self._x, start + interval)
+		
+		# If asked for a single point, do a linear interpolation
+		if interval == 0:
+			x_1 = self._x[i_start]
+			y_1 = self._y[i_start]
+			x_2 = self._x[i_end]
+			y_2 = self._y[i_end]
+			
+			return y_1 + (start - x_1) * (y_2 - y_1) / (x_2 - x_1)
+		
+		# Return a slice of (x, y) tuples between the two times.
+		else:
+			return zip(self._x[i_start:i_end], self._y[i_start:i_end])
+	
+	def _push (self, value, time = None):
+		if type(value) != self._type:
+			value = self._type(value)
+
+		if time is None:
+			time = now()
+
+		self._value = value
+		self._time  = time
+
+		# Only store changes
+		if self._y[-1] == value:
+			self._x[-1] = time
+		else:
+			self._x.append(time)
+			self._y.append(value)
+			
+			# Trigger change event (time, value)
+
+			# Trim old data
+			mid = len(self._x) / 2
+			if time - self._x[mid] > self.length:
+				self._y = self._y[mid:]
+				self._x = self._x[mid:] 
+
+		self._archive.push(time, value)
+		self._log(time, value)
+
+	
 
 class Constant (Variable):
 	def __init__ (self, value):
