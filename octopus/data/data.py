@@ -162,31 +162,20 @@ class Archive (object):
 				return [(start, 0), (start + interval, 0)]
 
 		# Collect data from archive
-		i_start, i_end = self._get_indices(start, interval)
+		i_start = _lower_bound(self._x, start)
+		i_end   = _lower_bound(self._x, start + interval)
 		vals = zip(self._x[i_start:i_end], self._y[i_start:i_end])
 
-		# Fill in the start and end points.
+		# Fill in the start and end points if necessary.
 		try:
 			if start < self._zero:
 				vals.insert(0, (self._zero, self._y[0]))
-			elif start < self._x[i_start]:
-				vals.insert(0, (start, _interp(
-					start,
-					self._x[i_start - 1], self._y[i_start - 1],
-					self._x[i_start], self._y[i_start]
-				)))
 		except IndexError:
 			pass
 
 		try:
 			if start + interval > self._prev_x:
 				vals.append((start + interval, self._prev_y))
-			elif start + interval > self._x[i_end]:
-				vals.append((start + interval, _interp(
-					start,
-					self._x[i_end], self._y[i_end],
-					self._x[i_end + 1], self._y[i_end + 1]
-				)))
 		except IndexError:
 			pass
 
@@ -473,12 +462,13 @@ class Variable2 (BaseVariable):
 		
 		# If asked for a single point, do a linear interpolation
 		if interval == 0:
-			x_1 = self._x[i_start]
-			y_1 = self._y[i_start]
-			x_2 = self._x[i_end]
-			y_2 = self._y[i_end]
-			
-			return y_1 + (start - x_1) * (y_2 - y_1) / (x_2 - x_1)
+			return _interp(
+				start, 
+				self._x[i_start], 
+				self._y[i_start], 
+				self._x[i_end],
+				self._y[i_end]
+			)
 		
 		# Return a slice of (x, y) tuples between the two times.
 		else:
@@ -514,7 +504,7 @@ class Variable2 (BaseVariable):
 
 	
 
-class Constant (Variable):
+class Constant (BaseVariable):
 	def __init__ (self, value):
 		self._value = value
 		self._type = type(value)
@@ -525,25 +515,22 @@ class Constant (Variable):
 	def _push (self, value):
 		raise NotImplementedError
 
-	def get (self, start, interval = None, step = 1):
+	def get (self, start, interval = None):
 		start, interval = _prepare(start, interval)
 
-		return [(start, self._value), (start + interval, self._value)]
+		if interval == 0:
+			return self._value
 
-	def interp (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
-		new_x = timerange(start, interval, step)
-
-		try:
-			return np.ones_like(new_x) * self._value
-		except TypeError:
-			return np.zeros_like(new_x)
+		return [
+			(start, self._value), 
+			(start + interval, self._value)
+		]
 
 	def serialize (self):
 		return str(self._value)
 
 
-class Expression (Variable):
+class Expression (BaseVariable):
 	def set (self, value):
 		raise NotImplementedError
 
