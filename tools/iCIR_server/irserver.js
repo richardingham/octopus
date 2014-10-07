@@ -109,7 +109,7 @@ function readFile (fileName, callback) {
 				// Produce an array of two arrays of integers.
 				return s.split("-").map(function (n) {
 					return +n;
-				}; 
+				}); 
 			}).reduce(function (p, c) {
 				// Combine the two arrays
 				return p.concat(c);
@@ -119,16 +119,16 @@ function readFile (fileName, callback) {
 			})
 		)));
 
-		var data = {
-			time: time,
-			streams: []
-		};
-
 		var lines = data.split("\n").slice(1).map(function (line) {
 			return line.trim().split(",").map(function (v) {
 				return v.slice(1,-1).trim(); 
 			}); 
 		});
+
+		var data = {
+			time: time,
+			streams: []
+		};
 
 		lines.forEach(function (line) {
 			if (line[0] === "") return;
