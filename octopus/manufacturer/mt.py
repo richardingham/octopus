@@ -113,6 +113,8 @@ class ICIR (Machine):
 	def start (self):
 		# setup monitor on a tick to update variables
 
+		self._last_time = None
+
 		def interpret_data (result):
 			data = json.loads(result)
 
@@ -120,6 +122,11 @@ class ICIR (Machine):
 				return
 
 			time = data["time"] / 1000
+
+			if time == self._last_time:
+				return
+			else:
+				self._last_time = time
 
 			for i in range(len(data["streams"])):
 				datum = data["streams"][i]
