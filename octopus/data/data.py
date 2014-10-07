@@ -443,12 +443,22 @@ def _def_binary_op (symbol, operator):
 			return operator(self._lhs.value, self._rhs.value)
 		except TypeError:
 			if self._lhs.type is str or self._rhs.type is str:
-				return operator(str(self._lhs.value), str(self._rhs.value))
-			raise
+				try:
+					return operator(str(self._lhs.value), str(self._rhs.value))
+				except TypeError:
+					return None
+			
+			return None
 
 	def get_type (self):
 		if self._type is None:
-			self._type = type(self.get_value())
+			try:
+				value = self.get_value()
+
+				if value is not None:
+					self._type = type(value)
+			except TypeError:
+				return None # one of the values is None.
 
 		return self._type
 
@@ -513,11 +523,20 @@ def _def_unary_op (symbol, operator):
 		self._type = None
 
 	def get_value (self):
-		return operator(self._operand.value)
+		try:
+			return operator(self._operand.value)
+		except TypeError:	
+			return None
 
 	def get_type (self):
 		if self._type is None:
-			self._type = type(self.get_value())
+			try:
+				value = self.get_value()
+
+				if value is not None:
+					self._type = type(value)
+			except TypeError:
+				return None
 
 		return self._type
 
