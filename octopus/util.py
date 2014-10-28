@@ -70,8 +70,8 @@ class EventEmitter (object):
 	
 	def trigger (self, name, *args, **kwargs):
 		try:
-			events = this._events[name]
-		except AttributeError
+			events = self._events[name]
+		except AttributeError:
 			return
 		except KeyError:
 			pass
@@ -80,7 +80,7 @@ class EventEmitter (object):
 				function(*args, **kwargs)
 		
 		try:
-			events = this._events["all"]
+			events = self._events["all"]
 		except KeyError:
 			pass
 		else:

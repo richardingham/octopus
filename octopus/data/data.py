@@ -2,9 +2,6 @@
 from math import ceil
 import operator
 
-# Twisted Imports
-from twisted.python.util import unsignedID
-
 # Package Imports
 from ..util import now, timerange, EventEmitter
 
@@ -15,7 +12,7 @@ def _upper_bound (list, time):
 	# Return the index of the first item in {list} which
 	# is greater than or equal to {time}.
 	# http://stackoverflow.com/q/2236906/
-	return next(x[0] for x in enumerate(list) if x[1] >= time, None)
+	return next((x[0] for x in enumerate(list) if x[1] >= time), None)
 
 
 def _lower_bound (list, time):
@@ -24,7 +21,7 @@ def _lower_bound (list, time):
 	# Return the index of the last item in {list} which
 	# is less than or equal to {time}.
 	return l - 1 - next(
-		x[0] for x in enumerate(reversed(list)) if x[1] <= time,
+		(x[0] for x in enumerate(reversed(list)) if x[1] <= time),
 		None if l == 0 else 0
 	)
 
@@ -35,14 +32,52 @@ def _interp (x, x0, y0, x1, y1):
 		return y1
 
 def _prepare (start, interval):
-	if start < 0:
-		start = now() + start
+	if start is not None:
+		if start < 0:
+			start = now() + start
 
-	if interval is None:
-		interval = now() - start
+		if interval is None:
+			interval = now() - start
 
 	return start, interval
 
+def _get (x_vals, y_vals, x_max, x_min, start, interval):
+
+	# Return all data
+	if start is None and interval is None:
+		return zip(x_vals, y_vals)
+
+	if interval is None:
+		interval = 0
+
+	# Request range is outside data range
+	if start > x_max:
+		return [(start, y_vals[-1]), (start + interval, y_vals[-1])]
+	if start + interval < x_min:
+		try:
+			return [(start, y_vals[0]), (start + interval, y_vals[0])]
+		except IndexError:
+			return [(start, 0), (start + interval, 0)]
+
+	# Collect data from archive
+	i_start = _lower_bound(x_vals, start)
+	i_end   = _upper_bound(x_vals, start + interval)
+	vals = zip(x_vals[i_start:i_end], y_vals[i_start:i_end])
+
+	# Fill in the start and end points if necessary.
+	try:
+		if start < x_min:
+			vals.insert(0, (x_min, y_vals[0]))
+	except IndexError:
+		pass
+
+	try:
+		if start + interval > x_max:
+			vals.append((start + interval, y_vals[-1]))
+	except IndexError:
+		pass
+
+	return vals
 
 class Archive (object):
 	# Set threshold_factor to None for non-numeric variables
@@ -118,41 +153,19 @@ class Archive (object):
 			self._prev_x = x
 			self._prev_y = y
 
-	def get (self, start, interval = None):
+	def get (self, start = None, interval = None):
 		start, interval = _prepare(start, interval)
 
 		# Nothing in archive
 		if self._prev_x is None:
 			return []
 
-		# Request range is outside archived data range
-		if start > self._prev_x:
-			return [(start, self._prev_y), (start + interval, self._prev_y)]
-		if start + interval < self._zero:
-			try:
-				return [(start, self._y[0]), (start + interval, self._y[0])]
-			except IndexError:
-				return [(start, 0), (start + interval, 0)]
+		return _get(self._x, self._y, self._prev_x, self._zero, start, interval)
 
-		# Collect data from archive
-		i_start = _lower_bound(self._x, start)
-		i_end   = _lower_bound(self._x, start + interval)
-		vals = zip(self._x[i_start:i_end], self._y[i_start:i_end])
+	def at (self, time):
+		a, b = self.get(time, 0)
 
-		# Fill in the start and end points if necessary.
-		try:
-			if start < self._zero:
-				vals.insert(0, (self._zero, self._y[0]))
-		except IndexError:
-			pass
-
-		try:
-			if start + interval > self._prev_x:
-				vals.append((start + interval, self._prev_y))
-		except IndexError:
-			pass
-
-		return vals
+		return _interp(start, a[0], a[1], b[0], b[1])
 
 
 _default_alias_counters = {}
@@ -168,7 +181,7 @@ def _default_alias (object):
 
 
 
-class BaseVariable (object, EventEmitter):
+class BaseVariable (EventEmitter):
 	alias = ""
 
 	@property
@@ -192,9 +205,9 @@ class BaseVariable (object, EventEmitter):
 		return bool(self.get_value())
 
 	def __repr__ (self):
-		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}>".format(
+		return "<{class_name} at Ox{reference:x}: {var_alias} ({var_type}) = {var_value}>".format(
 			class_name = self.__class__.__name__, 
-			reference = hex(unsignedID(self)),
+			reference = id(self),
 			var_alias = self.alias,
             var_type = self.type.__name__,
 			var_value = self.value
@@ -223,39 +236,43 @@ class Variable (BaseVariable):
 		"""
 		Empty the variable of all stored data.
 		"""
-		
-		# Trigger clear event
-		self.trigger("clear", time, value)
 
-		self._x = [self._time] if self._time is not None else []
-		self._y = [self._value] if self._value is not None else []
+		if self._value is None:
+			self._x = []
+			self._y = []
+		else:
+			self._time = now()
+
+			self._x = [self._time]
+			self._y = [self._value]
+
 		self._archive.truncate()
+
+		# Trigger clear event
+		self.trigger("clear", self._time, self._value)
 
 	def set (self, value):
 		self._push(value)
 
-	def at (self, time):
-		return self.get(time, 0)
-
 	def get (self, start = None, interval = None):	
 		"""
 		Returns the value of the variable over a particular time period.
-		
+
 		Returns a list of (time, value) pairs between 
 		[time = start and time = start + interval] (inclusive).
-		
+
 		start: earliest time to return data.
 		interval: time-span requested.
-		
-		If interval = 0, a single data point (not a tuple)
-		is returned, rather than a list. 
-		
+
 		If interval = None, then data are returned from start
 		up to the current time.
-		
+
 		If start < 0, then this number of seconds is subtracted
 		from the current time.
 		"""
+
+		if start is None and interval is None:
+			return self._archive.get()
 
 		if start < self._x[0]:
 			return self._archive.get(start, interval)
@@ -265,19 +282,12 @@ class Variable (BaseVariable):
 		i_start = _lower_bound(self._x, start)
 		i_end   = _lower_bound(self._x, start + interval)
 
-		# If asked for a single point, do a linear interpolation
-		if interval == 0:
-			return _interp(
-				start, 
-				self._x[i_start], 
-				self._y[i_start], 
-				self._x[i_end],
-				self._y[i_end]
-			)
+		return zip(self._x[i_start:i_end], self._y[i_start:i_end])
 
-		# Return a slice of (x, y) tuples between the two times.
-		else:
-			return zip(self._x[i_start:i_end], self._y[i_start:i_end])
+	def at (self, time):
+		a, b = self.get(time, 0)
+
+		return _interp(start, a[0], a[1], b[0], b[1])
 
 	def _push (self, value, time = None):
 		if type(value) != self._type:
@@ -285,12 +295,13 @@ class Variable (BaseVariable):
 
 		if time is None:
 			time = now()
-
-		self._value = value
-		self._time  = time
+		elif time < self._time:
+			raise Exception("Cannot insert values earlier than latest value")
 
 		# Only store changes
-		if self._y[-1] == value:
+		if self._value == value \
+		and len(self._x) > 2 \
+		and self._y[-2] == value:
 			self._x[-1] = time
 		else:
 			self._x.append(time)
@@ -304,6 +315,9 @@ class Variable (BaseVariable):
 			if time - self._x[mid] > self.length:
 				self._y = self._y[mid:]
 				self._x = self._x[mid:] 
+
+		self._value = value
+		self._time  = time
 
 		self._archive.push(time, value)
 		self._log(time, value)
@@ -333,12 +347,6 @@ class Constant (BaseVariable):
 		self._value = value
 		self._type = type(value)
 
-	def set (self, value):
-		raise NotImplementedError
-
-	def _push (self, value):
-		raise NotImplementedError
-
 	def get (self, start, interval = None):
 		start, interval = _prepare(start, interval)
 
@@ -349,6 +357,9 @@ class Constant (BaseVariable):
 			(start, self._value), 
 			(start + interval, self._value)
 		]
+
+	def at (self, time):
+		return self._value
 
 	def serialize (self):
 		return str(self._value)
@@ -377,10 +388,15 @@ def _def_binary_op (symbol, operator):
 	def init (self, lhs, rhs):
 		self.alias = _default_alias(self)
 
-		self._lhs = lhs if isinstance(lhs, Variable) else Constant(lhs)
-		self._rhs = rhs if isinstance(rhs, Variable) else Constant(rhs)
-		
-		if lsh.value is not None and rhs.value is not None:
+		self._archive_x = None
+		self._archive_y = None
+
+		lhs = lhs if isinstance(lhs, Variable) else Constant(lhs)
+		rhs = rhs if isinstance(rhs, Variable) else Constant(rhs)
+		self._lhs = lhs
+		self._rhs = rhs
+
+		if lhs.value is not None and rhs.value is not None:
 			try:
 				self._value = operator(lhs.value, rhs.value)
 			except TypeError:
@@ -406,14 +422,78 @@ def _def_binary_op (symbol, operator):
 			else:
 				raise
 
-		self.trigger("changed", time, self._value)
+		if self._archive_x is not None:
+			self._archive_x.append(time)
+			self._archive_y.append(self._value)
+
+		self.trigger("change", time, self._value)
 
 	def get_type (self):
 		if self._type is None and self._value is not None:
 			self._type = type(self._value)
 
 		return self._type
+	
+	def get (self, start = None, interval = None):
+		if self._archive_x is None:
+			self.get_archive()
 
+		return _get(self._archive_x, self._archive_y, self._archive_x[-1], self._archive_x[0], start, interval)
+	
+	def at (self, time):
+		a, b = self.get(time, 0)
+
+		return _interp(start, a[0], a[1], b[0], b[1])
+
+	def get_archive (self, store = True):
+		if self._archive_x is not None:
+			return zip(self._archive_x, self._archive_y)
+
+		x = []
+		y = []
+
+		try:
+			lhsa = this._lhs.get_archive(store = False)
+		except AttributeError:
+			lhsa = this._lhs.get()
+
+		try:
+			rhsa = this._rhs.get_archive(store = False)
+		except AttributeError:
+			rhsa = this._rhs.get()
+
+		if this._lhs.type is str or this._rhs.type is str:
+			def op (l, r):
+				return operator(l, r)
+		else:
+			def op (l, r):
+				return operator(str(l), str(r))
+
+		r_max = len(rhsa)
+		l_max = len(rhsa)
+		r_i = l_i = 0
+
+		while r_i < r_max and l_i < l_max:
+			l_t, c_l = lhs[l_i]
+
+			while rhs[r_i][0] < l_t:
+				x.append(rhs[r_i][0])
+				y.append(op(c_l, rhs[r_i][0]))
+				r_i += 1
+
+			r_t, c_r = rhs[r_i]
+
+			while lhs[r_i][0] < r_t:
+				x.append(rhs[l_i][0])
+				y.append(op(lhs[l_i][0], c_r))
+				l_i += 1
+
+		if store:
+			self._archive_x = x
+			self._archive_y = y
+
+		return zip(x, y)
+		
 	def serialize (self):
 		return "(" + \
 			self._lhs.serialize() + symbol \
@@ -424,9 +504,12 @@ def _def_binary_op (symbol, operator):
 		(Expression,), 
 		{ 
 			"__init__": init,
-			"get_type": get_type,
 			"type": property(get_type),
-			"serialize": serialize
+			"serialize": serialize,
+			"_changed": changed,
+			"get_archive": get_archive,
+			"get": get,
+			"at": at
 		}
 	)
 
@@ -456,13 +539,46 @@ def _def_unary_op (symbol, operator):
 
 	def changed (self, time, value):
 		self._value = operator(self._operand.value)
-		self.trigger("changed", time, self._value)
+		self.trigger("change", time, self._value)
 
 	def get_type (self):
 		if self._type is None and self._value is not None:
 			self._type = type(self._value)
 
 		return self._type
+	
+	def get (self, start = None, interval = None):
+		if self._archive_x is None:
+			self.get_archive()
+
+		return _get(self._archive_x, self._archive_y, self._archive_x[-1], self._archive_x[0], start, interval)
+	
+	def at (self, time):
+		a, b = self.get(time, 0)
+
+		return _interp(start, a[0], a[1], b[0], b[1])
+
+	def get_archive (self, store = True):
+		if self._archive_x is not None:
+			return zip(self._archive_x, self._archive_y)
+
+		x = []
+		y = []
+
+		try:
+			opa = this._operand.get_archive(store = False)
+		except AttributeError:
+			opa = this._operand.get()
+
+		for o_x, o_y in opa:
+			x.append(o_x)
+			y.append(operator(o_y))
+
+		if store:
+			self._archive_x = x
+			self._archive_y = y
+
+		return zip(x, y)
 
 	def serialize (self):
 		return symbol + self._operand.serialize()
@@ -472,8 +588,12 @@ def _def_unary_op (symbol, operator):
 		(Expression,), 
 		{ 
 			"__init__": init,
-			"get_type": get_type,
-			"type": property(get_type)
+			"type": property(get_type),
+			"serialize": serialize,
+			"_changed": changed,
+			"get_archive": get_archive,
+			"get": get,
+			"at": at
 		}
 	)
 
