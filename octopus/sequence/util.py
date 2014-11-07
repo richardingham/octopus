@@ -124,6 +124,9 @@ class Cancellable (object):
 	def _resume (self):
 		pass
 
+	def _cancel (self, abort = False):
+		pass
+
 
 class BaseStep (Runnable, Pausable, Cancellable):
 	pass
