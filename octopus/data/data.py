@@ -12,7 +12,7 @@ def _upper_bound (list, time):
 	# Return the index of the first item in {list} which
 	# is greater than or equal to {time}.
 	# http://stackoverflow.com/q/2236906/
-	return next((x[0] for x in enumerate(list) if x[1] >= time), None)
+	return next((i for i, t in enumerate(list) if t >= time), None)
 
 
 def _lower_bound (list, time):
@@ -20,10 +20,12 @@ def _lower_bound (list, time):
 
 	# Return the index of the last item in {list} which
 	# is less than or equal to {time}.
-	return l - 1 - next(
-		(x[0] for x in enumerate(reversed(list)) if x[1] <= time),
-		None if l == 0 else 0
-	)
+	try:
+		return l - 1 - next(
+			(i for i, t in enumerate(reversed(list)) if t <= time)
+		)
+	except StopIteration:
+		return None
 
 def _interp (x, x0, y0, x1, y1):
 	try:
@@ -32,6 +34,9 @@ def _interp (x, x0, y0, x1, y1):
 		return y1
 
 def _prepare (start, interval):
+	if interval is not None and interval < 0:
+		interval = 0
+
 	if start is not None:
 		if start < 0:
 			start = now() + start
@@ -52,22 +57,35 @@ def _get (x_vals, y_vals, x_max, x_min, start, interval):
 
 	# Request range is outside data range
 	if start > x_max:
-		return [(start, y_vals[-1]), (start + interval, y_vals[-1])]
+		if interval is 0:
+			return [(start, y_vals[-1])]
+		else:
+			return [(start, y_vals[-1]), (start + interval, y_vals[-1])]
 	if start + interval < x_min:
 		try:
-			return [(start, y_vals[0]), (start + interval, y_vals[0])]
+			if interval is 0:
+				return [(start, y_vals[0])]
+			else:
+				return [(start, y_vals[0]), (start + interval, y_vals[0])]
 		except IndexError:
-			return [(start, 0), (start + interval, 0)]
+			if interval is 0:
+				return [(start, 0)]
+			else:
+				return [(start, 0), (start + interval, 0)]
 
 	# Collect data from archive
 	i_start = _lower_bound(x_vals, start)
 	i_end   = _upper_bound(x_vals, start + interval)
+
+	if i_end is not None:
+		i_end += 1 # Return the interval length of data
+
 	vals = zip(x_vals[i_start:i_end], y_vals[i_start:i_end])
 
 	# Fill in the start and end points if necessary.
 	try:
 		if start < x_min:
-			vals.insert(0, (x_min, y_vals[0]))
+			vals.insert(0, (start, y_vals[0]))
 	except IndexError:
 		pass
 
@@ -78,6 +96,15 @@ def _get (x_vals, y_vals, x_max, x_min, start, interval):
 		pass
 
 	return vals
+
+def _at (val, time):
+	if len(val) is 1:
+		return val[0][1]
+	elif len(val) is 0:
+		return 0
+	else:
+		a, b = val[0:2]
+		return _interp(time, a[0], a[1], b[0], b[1])
 
 class Archive (object):
 	# Set threshold_factor to None for non-numeric variables
@@ -160,13 +187,10 @@ class Archive (object):
 		if self._prev_x is None:
 			return []
 
-		return _get(self._x, self._y, self._prev_x, self._zero, start, interval)
+		return _get(self._x, self._y, self._prev_x, self._x[0], start, interval)
 
 	def at (self, time):
-		a, b = self.get(time, 0)
-
-		return _interp(start, a[0], a[1], b[0], b[1])
-
+		return _at(self.get(time, 0), time)
 
 _default_alias_counters = {}
 def _default_alias (object):
@@ -279,15 +303,10 @@ class Variable (BaseVariable):
 
 		start, interval = _prepare(start, interval)
 
-		i_start = _lower_bound(self._x, start)
-		i_end   = _lower_bound(self._x, start + interval)
-
-		return zip(self._x[i_start:i_end], self._y[i_start:i_end])
+		return _get(self._x, self._y, self._time, self._x[0], start, interval)
 
 	def at (self, time):
-		a, b = self.get(time, 0)
-
-		return _interp(start, a[0], a[1], b[0], b[1])
+		return _at(self.get(time, 0), time)
 
 	def _push (self, value, time = None):
 		if type(value) != self._type:
@@ -303,12 +322,12 @@ class Variable (BaseVariable):
 		and len(self._x) > 2 \
 		and self._y[-2] == value:
 			self._x[-1] = time
+			changed = False
 		else:
 			self._x.append(time)
 			self._y.append(value)
 
-			# Trigger change event (time, value)
-			self.trigger("change", time, value)
+			changed = True
 
 			# Trim old data
 			mid = len(self._x) / 2
@@ -321,6 +340,10 @@ class Variable (BaseVariable):
 
 		self._archive.push(time, value)
 		self._log(time, value)
+		
+		# Trigger change event
+		if changed:
+			self.trigger("change", time, value)
 
 	# Todo: Put these in event watchers in the experiment.
 	def _log (self, time, value):
@@ -351,7 +374,7 @@ class Constant (BaseVariable):
 		start, interval = _prepare(start, interval)
 
 		if interval == 0:
-			return self._value
+			return [(start, self._value)]
 
 		return [
 			(start, self._value), 
@@ -380,7 +403,7 @@ _binary_ops = (
 	(" / ", operator.__truediv__), (" // ", operator.__floordiv__), 
 	(" * ", operator.__mul__), (" % ", operator.__mod__),
 	("**", operator.__pow__),
-	(" and ", operator.__and__), (" or ", operator.__or__)
+	(" & ", operator.__and__), (" | ", operator.__or__)
 )
 
 # http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python/6581949#6581949
@@ -413,7 +436,7 @@ def _def_binary_op (symbol, operator):
 		lhs.on("change", self._changed)
 		rhs.on("change", self._changed)
 
-	def changed (self, time, value):
+	def _changed (self, time, value):
 		try:
 			self._value = operator(self._lhs.value, self._rhs.value)
 		except TypeError:
@@ -439,11 +462,9 @@ def _def_binary_op (symbol, operator):
 			self.get_archive()
 
 		return _get(self._archive_x, self._archive_y, self._archive_x[-1], self._archive_x[0], start, interval)
-	
-	def at (self, time):
-		a, b = self.get(time, 0)
 
-		return _interp(start, a[0], a[1], b[0], b[1])
+	def at (self, time):
+		return _at(self.get(time, 0), time)
 
 	def get_archive (self, store = True):
 		if self._archive_x is not None:
@@ -453,16 +474,16 @@ def _def_binary_op (symbol, operator):
 		y = []
 
 		try:
-			lhsa = this._lhs.get_archive(store = False)
+			lhsa = self._lhs.get_archive(store = False)
 		except AttributeError:
-			lhsa = this._lhs.get()
+			lhsa = self._lhs.get()
 
 		try:
-			rhsa = this._rhs.get_archive(store = False)
+			rhsa = self._rhs.get_archive(store = False)
 		except AttributeError:
-			rhsa = this._rhs.get()
+			rhsa = self._rhs.get()
 
-		if this._lhs.type is str or this._rhs.type is str:
+		if self._lhs.type is str or self._rhs.type is str:
 			def op (l, r):
 				return operator(l, r)
 		else:
@@ -506,7 +527,7 @@ def _def_binary_op (symbol, operator):
 			"__init__": init,
 			"type": property(get_type),
 			"serialize": serialize,
-			"_changed": changed,
+			"_changed": _changed,
 			"get_archive": get_archive,
 			"get": get,
 			"at": at
@@ -537,7 +558,7 @@ def _def_unary_op (symbol, operator):
 
 		operand.on("change", self._changed)
 
-	def changed (self, time, value):
+	def _changed (self, time, value):
 		self._value = operator(self._operand.value)
 		self.trigger("change", time, self._value)
 
@@ -554,9 +575,7 @@ def _def_unary_op (symbol, operator):
 		return _get(self._archive_x, self._archive_y, self._archive_x[-1], self._archive_x[0], start, interval)
 	
 	def at (self, time):
-		a, b = self.get(time, 0)
-
-		return _interp(start, a[0], a[1], b[0], b[1])
+		return _at(self.get(time, 0), time)
 
 	def get_archive (self, store = True):
 		if self._archive_x is not None:
@@ -566,9 +585,9 @@ def _def_unary_op (symbol, operator):
 		y = []
 
 		try:
-			opa = this._operand.get_archive(store = False)
+			opa = self._operand.get_archive(store = False)
 		except AttributeError:
-			opa = this._operand.get()
+			opa = self._operand.get()
 
 		for o_x, o_y in opa:
 			x.append(o_x)
@@ -590,7 +609,7 @@ def _def_unary_op (symbol, operator):
 			"__init__": init,
 			"type": property(get_type),
 			"serialize": serialize,
-			"_changed": changed,
+			"_changed": _changed,
 			"get_archive": get_archive,
 			"get": get,
 			"at": at
