@@ -245,7 +245,8 @@ class Machine (Component):
 
 	def _stopTicks (self):
 		for t in self._ticks:
-			t.stop()
+			if t.running:
+				t.stop()
 
 	def __str__ (self):
 		return "<%s at %s (%s)>" % (
