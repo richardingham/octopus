@@ -8,6 +8,7 @@ from ..util import now, timerange, EventEmitter
 # Sibling Imports
 import errors
 
+
 def _upper_bound (list, time):
 	# Return the index of the first item in {list} which
 	# is greater than or equal to {time}.
@@ -27,11 +28,13 @@ def _lower_bound (list, time):
 	except StopIteration:
 		return None
 
+
 def _interp (x, x0, y0, x1, y1):
 	try:
 		return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
 	except ZeroDivisionError:
 		return y1
+
 
 def _prepare (start, interval):
 	if interval is not None and interval < 0:
@@ -45,6 +48,7 @@ def _prepare (start, interval):
 			interval = now() - start
 
 	return start, interval
+
 
 def _get (x_vals, y_vals, x_max, x_min, start, interval):
 
@@ -97,6 +101,7 @@ def _get (x_vals, y_vals, x_max, x_min, start, interval):
 
 	return vals
 
+
 def _at (val, time):
 	if len(val) is 1:
 		return val[0][1]
@@ -105,6 +110,7 @@ def _at (val, time):
 	else:
 		a, b = val[0:2]
 		return _interp(time, a[0], a[1], b[0], b[1])
+
 
 class Archive (object):
 	# Set threshold_factor to None for non-numeric variables
@@ -192,6 +198,7 @@ class Archive (object):
 	def at (self, time):
 		return _at(self.get(time, 0), time)
 
+
 _default_alias_counters = {}
 def _default_alias (object):
 	class_name = object.__class__.__name__
@@ -202,7 +209,6 @@ def _default_alias (object):
 		_default_alias_counters[class_name] += 1
 	
 	return "{:s}_{:d}".format(class_name, _default_alias_counters[class_name])
-
 
 
 class BaseVariable (EventEmitter):
@@ -273,7 +279,7 @@ class Variable (BaseVariable):
 		self._archive.truncate()
 
 		# Trigger clear event
-		self.trigger("clear", self._time, self._value)
+		self.emit("clear", time = self._time, value = self._value)
 
 	def set (self, value):
 		self._push(value)
@@ -343,7 +349,7 @@ class Variable (BaseVariable):
 		
 		# Trigger change event
 		if changed:
-			self.trigger("change", time, value)
+			self.emit("change", time = time, value = value)
 
 	# Todo: Put these in event watchers in the experiment.
 	def _log (self, time, value):
@@ -436,7 +442,7 @@ def _def_binary_op (symbol, operator):
 		lhs.on("change", self._changed)
 		rhs.on("change", self._changed)
 
-	def _changed (self, time, value):
+	def _changed (self, data):
 		try:
 			self._value = operator(self._lhs.value, self._rhs.value)
 		except TypeError:
@@ -446,10 +452,10 @@ def _def_binary_op (symbol, operator):
 				raise
 
 		if self._archive_x is not None:
-			self._archive_x.append(time)
+			self._archive_x.append(data['time'])
 			self._archive_y.append(self._value)
 
-		self.trigger("change", time, self._value)
+		self.emit("change", time = data['time'], value = self._value)
 
 	def get_type (self):
 		if self._type is None and self._value is not None:
@@ -558,9 +564,9 @@ def _def_unary_op (symbol, operator):
 
 		operand.on("change", self._changed)
 
-	def _changed (self, time, value):
+	def _changed (self, data):
 		self._value = operator(self._operand.value)
-		self.trigger("change", time, self._value)
+		self.emit("change", time = data['time'], value = self._value)
 
 	def get_type (self):
 		if self._type is None and self._value is not None:

@@ -5,6 +5,7 @@ from twisted.python import failure
 # System Imports
 from time import time as now
 from collections import deque
+import functools
 
 # NumPy
 import numpy as np
@@ -34,18 +35,41 @@ class Event (object):
 	__call__ = fire
 	__len__  = getHandlerCount
 
-class EventEmitter (object):
-	def on (self, name, function):
-		try:
-			self._events[name]
-		except AttributeError:
-			self._events = {}
-			self._events[name] = []
-		except KeyError:
-			self._events[name] = []
 
-		if function not in self._events[name]:
-			self._events[name].append(function)
+class EventEmitter (object):
+	def on (self, name, function = None):
+		def _on (function):
+			try:
+				self._events[name]
+			except (TypeError, AttributeError):
+				self._events = {}
+				self._events[name] = []
+			except KeyError:
+				self._events[name] = []
+
+			if function not in self._events[name]:
+				self._events[name].append(function)
+
+			return function
+
+		if function is None:
+			return _on
+		else:
+			return _on(function)
+
+	def once (self, name, function = None):
+		def _once (function):
+			@functools.wraps(function)
+			def g (*args, **kwargs):
+				function(*args, **kwargs)
+				self.off(name, g)
+
+			return g
+
+		if function is None:
+			return lambda function: self.on(name, _once(function))
+		else:
+			self.on(name, _once(function))
 	
 	def off (self, name = None, function = None):
 		try:
@@ -67,26 +91,40 @@ class EventEmitter (object):
 		# Remove handler [function] from [name]
 		else:
 			self._events[name].remove(function)
-	
-	def trigger (self, name, *args, **kwargs):
+
+	def listeners (self, event):
 		try:
-			events = self._events[name]
+			return self._events[event]
+		except (AttributeError, KeyError):
+			return []
+	
+	def emit (self, _event, **data):
+		handled = False
+
+		try:
+			events = self._events[_event]
 		except AttributeError:
-			return
+			return False # No events defined yet
 		except KeyError:
 			pass
 		else:
+			handled |= bool(len(events))
+
 			for function in events:
-				function(*args, **kwargs)
-		
+				function(data)
+
 		try:
 			events = self._events["all"]
 		except KeyError:
 			pass
 		else:
+			handled |= bool(len(events))
+
 			for function in events:
-				function(name, *args, **kwargs)
-		
+				function(_event, data)
+
+		return handled
+
 
 def timerange (start, interval, step):
 	if start < 0:
