@@ -47,7 +47,7 @@ class Step (util.BaseStep, EventEmitter):
 	@state.setter
 	def state (self, value):
 		self._state = value
-		self.event("state-changed", item = self, state = value)
+		self.emit("state-changed", item = self, state = value)
 
 	def __init__ (self, expr = None):
 		self.id = _counter.next()
