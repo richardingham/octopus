@@ -196,7 +196,25 @@ class Archive (object):
 		return _get(self._x, self._y, self._prev_x, self._x[0], start, interval)
 
 	def at (self, time):
-		return _at(self.get(time, 0), time)
+		val = self.get(time, 0)
+
+		if len(val) is 0:
+			return ""
+		else:
+			return val[0][1]
+
+
+class StringArchive (Archive):
+
+	def __init__ (self, variable):
+		Archive.__init__(self)
+		self._variable = variable
+
+	def push (self, x, y):
+		pass
+
+	def at (self, time):
+		return "StringArchive.at not implemented" # _at(self.get(time, 0), time)
 
 
 _default_alias_counters = {}
@@ -216,11 +234,20 @@ class BaseVariable (EventEmitter):
 
 	@property
 	def value (self):
-		return self._value
+		try:
+			return self._value
+		except AttributeError:
+			return None
 
 	@property
 	def type (self):
-		return self._type
+		try:
+			return self._type
+		except AttributeError:
+			return type(None)
+
+	def get_value (self):
+		return self._value
 
 	def __str__ (self):
 		return str(self.get_value())
@@ -243,6 +270,7 @@ class BaseVariable (EventEmitter):
 			var_value = self.value
 		)
 
+
 class Variable (BaseVariable):
 	length = 30 # in seconds
 	
@@ -255,10 +283,14 @@ class Variable (BaseVariable):
 
 		self._x = []
 		self._y = []
-		self._archive = Archive()
+
+		if type is str:
+			self._archive = StringArchive(self)
+		else:
+			self._archive = Archive()
 
 		self._log_file = None
-		
+
 		if value is not None:
 			self._push(value)
 
@@ -371,6 +403,7 @@ class Variable (BaseVariable):
 
 		self._log_file = None		
 
+
 class Constant (BaseVariable):
 	def __init__ (self, value):
 		self._value = value
@@ -397,7 +430,6 @@ class Constant (BaseVariable):
 class Expression (BaseVariable):
 	pass
 
-
 # Variable should emulate a numerical variable
 _unary_ops = (
 	(" not ", operator.__not__), (" abs ", operator.__abs__),
@@ -409,28 +441,41 @@ _binary_ops = (
 	(" / ", operator.__truediv__), (" // ", operator.__floordiv__), 
 	(" * ", operator.__mul__), (" % ", operator.__mod__),
 	("**", operator.__pow__),
-	(" & ", operator.__and__), (" | ", operator.__or__)
+	(" & ", operator.__and__), (" | ", operator.__or__),
+	(" and ", lambda a, b: a and b), (" or ", lambda a, b: a or b),
 )
 
 # http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python/6581949#6581949
-def _def_binary_op (symbol, operator):
+def _def_binary_op (symbol, operatorFn):
+	if symbol in (" and ", " or "):
+		clsName = symbol[1:-1].capitalize() + "Expression"
+		attrName = symbol[1:-1]
+		rattrName = None
+	else:
+		if operatorFn in (operator.__and__, operator.__or__):
+			clsName = "Bitwise" + operatorFn.__name__[2:-2].capitalize() + "Expression"
+		else:
+			clsName = operatorFn.__name__[2:-2].capitalize() + "Expression"
+		attrName = operatorFn.__name__
+		rattrName = "__r" + operatorFn.__name__[2:]
+	
 	def init (self, lhs, rhs):
 		self.alias = _default_alias(self)
 
 		self._archive_x = None
 		self._archive_y = None
 
-		lhs = lhs if isinstance(lhs, Variable) else Constant(lhs)
-		rhs = rhs if isinstance(rhs, Variable) else Constant(rhs)
+		lhs = lhs if isinstance(lhs, BaseVariable) else Constant(lhs)
+		rhs = rhs if isinstance(rhs, BaseVariable) else Constant(rhs)
 		self._lhs = lhs
 		self._rhs = rhs
 
 		if lhs.value is not None and rhs.value is not None:
 			try:
-				self._value = operator(lhs.value, rhs.value)
+				self._value = operatorFn(lhs.value, rhs.value)
 			except TypeError:
 				if lhs.type is str or rhs.type is str:
-					self._value = operator(str(lhs.value), str(rhs.value))
+					self._value = operatorFn(str(lhs.value), str(rhs.value))
 				else:
 					raise
 
@@ -444,10 +489,10 @@ def _def_binary_op (symbol, operator):
 
 	def _changed (self, data):
 		try:
-			self._value = operator(self._lhs.value, self._rhs.value)
+			self._value = operatorFn(self._lhs.value, self._rhs.value)
 		except TypeError:
 			if self._lhs.type is str or self._rhs.type is str:
-				self._value = operator(str(self._lhs.value), str(self._rhs.value))
+				self._value = operatorFn(str(self._lhs.value), str(self._rhs.value))
 			else:
 				raise
 
@@ -491,10 +536,10 @@ def _def_binary_op (symbol, operator):
 
 		if self._lhs.type is str or self._rhs.type is str:
 			def op (l, r):
-				return operator(l, r)
+				return operatorFn(l, r)
 		else:
 			def op (l, r):
-				return operator(str(l), str(r))
+				return operatorFn(str(l), str(r))
 
 		r_max = len(rhsa)
 		l_max = len(rhsa)
@@ -527,7 +572,7 @@ def _def_binary_op (symbol, operator):
 			+ self._rhs.serialize() + ")"
 
 	cls = type(
-		operator.__name__[2:-2].capitalize() + "Expression", 
+		clsName, 
 		(Expression,), 
 		{ 
 			"__init__": init,
@@ -546,17 +591,19 @@ def _def_binary_op (symbol, operator):
 	def op_rfn (self, other):
 		return cls(other, self)
 
-	setattr(Variable, operator.__name__, op_fn)
-	setattr(Variable, "__r" + operator.__name__[2:], op_rfn)
+	setattr(BaseVariable, attrName, op_fn)
 
-def _def_unary_op (symbol, operator):
+	if rattrName is not None:
+		setattr(BaseVariable, rattrName, op_rfn)
+
+def _def_unary_op (symbol, operatorFn):
 	def init (self, operand):
 		self.alias = _default_alias(self)
 
 		self._operand = operand
-		
+
 		if operand.value is not None:
-			self._value = operator(operand.value)
+			self._value = operatorFn(operand.value)
 			self._type = type(self._value)
 		else:
 			self._value = None
@@ -565,7 +612,7 @@ def _def_unary_op (symbol, operator):
 		operand.on("change", self._changed)
 
 	def _changed (self, data):
-		self._value = operator(self._operand.value)
+		self._value = operatorFn(self._operand.value)
 		self.emit("change", time = data['time'], value = self._value)
 
 	def get_type (self):
@@ -597,7 +644,7 @@ def _def_unary_op (symbol, operator):
 
 		for o_x, o_y in opa:
 			x.append(o_x)
-			y.append(operator(o_y))
+			y.append(operatorFn(o_y))
 
 		if store:
 			self._archive_x = x
@@ -625,7 +672,7 @@ def _def_unary_op (symbol, operator):
 	def op_fn (self, other):
 		return cls(self, op)
 
-	setattr(Variable, op.__name__, op_fn)
+	setattr(BaseVariable, op.__name__, op_fn)
 
 [_def_unary_op(symbol, op) for symbol, op in _unary_ops]
 [_def_binary_op(symbol, op) for symbol, op in _binary_ops]

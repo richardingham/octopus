@@ -23,8 +23,7 @@ def init_child (parent, child):
 		except TypeError:
 			raise Error("Argument must be an instance of Step or a list of Steps")
 
-	child.event += parent.event
-	child.log += parent.log
+	child.on("all", parent._bubbleEvent)
 
 	return child
 
@@ -175,7 +174,7 @@ class Looping (Runnable, Pausable, Cancellable):
 			elif self.state is State.CANCELLED:
 				self._iteration_stop()
 				return
-			elif (max_calls > 0 and self._calls >= int(self._max_calls)):
+			elif (self._max_calls > 0 and self._calls >= int(self._max_calls)):
 				raise StopIteration
 			elif self.state is State.RUNNING and self._test():
 				d = self._call()
@@ -191,6 +190,7 @@ class Looping (Runnable, Pausable, Cancellable):
 			self._iteration_complete()
 
 		except Exception as e:
+			self._iteration_stop()
 			self._iteration_error(e)
 
 	def _schedule (self):
@@ -212,7 +212,7 @@ class Looping (Runnable, Pausable, Cancellable):
 		Starts the loop running
 		"""
 
-		pass
+		self._iterate()
 
 	def _iteration_stop (self):
 		"""
@@ -232,7 +232,7 @@ class Looping (Runnable, Pausable, Cancellable):
 		or when StopIteration is raised by _test() or _iterate().
 		"""
 
-		self.state = State.COMPLETE
+		pass
 
 	def _iteration_error (self, error):
 		"""
@@ -242,10 +242,7 @@ class Looping (Runnable, Pausable, Cancellable):
 
 		# NB also called if an error is raised by _iteration_stop()!
 
-		self._iteration_stop()
-		self.state = State.ERROR
-
-		log.err(error)
+		pass
 
 	def _cancel (self, abort = False):
 		self._iteration_stop()
@@ -396,6 +393,12 @@ class Tick (Caller, Looping, Dependent):
 		if self._c and self._c.running:
 			self._c.stop()
 
+	def _iteration_complete (self):
+		self.state = State.COMPLETE
+
+	def _iteration_error (self, error):
+		self.state = State.ERROR
+		log.err(error)
 
 class Trigger (Caller, Looping, Dependent):
 	"""
@@ -442,18 +445,18 @@ class Trigger (Caller, Looping, Dependent):
 	def _schedule (self):
 		self._expr.once("change", self._iterate)
 
-	def _iteration_start (self):
-		"""
-		Starts the loop running
-		"""
-
-		self._iterate()
-
 	def _iteration_stop (self):
 		try:
 			self._expr.off("change", self._iterate)
 		except KeyError:
 			pass
+
+	def _iteration_complete (self):
+		self.state = State.COMPLETE
+
+	def _iteration_error (self, error):
+		self.state = State.ERROR
+		log.err(error)
 
 
 class Dependents (Dependent):

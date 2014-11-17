@@ -47,8 +47,13 @@ class EventEmitter (object):
 			except KeyError:
 				self._events[name] = []
 
-			if function not in self._events[name]:
-				self._events[name].append(function)
+			# Use is instead of in to avoid equality comparison
+			# (this would create extra expression objects).
+			for f in self._events[name]:
+				if function is f:
+					return function
+
+			self._events[name].append(function)
 
 			return function
 
@@ -70,24 +75,24 @@ class EventEmitter (object):
 			return lambda function: self.on(name, _once(function))
 		else:
 			self.on(name, _once(function))
-	
+
 	def off (self, name = None, function = None):
 		try:
 			self._events
 		except AttributeError:
 			return
-		
+
 		# If no name is passed, remove all handlers
 		if name is None:
 			self._events.clear()
-		
+
 		# If no function is passed, remove all functions
 		elif function is None:
 			try:
 				self._events[name] = []
 			except KeyError:
 				pass
-		
+
 		# Remove handler [function] from [name]
 		else:
 			self._events[name].remove(function)

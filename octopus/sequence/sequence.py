@@ -18,7 +18,7 @@ import util
 # Package Imports
 from ..util import now, EventEmitter
 from ..constants import State
-from ..data import Variable, Constant
+from ..data.data import BaseVariable, Variable, Constant
 
 __all__ = [
 	"Step", "Sequence", "Parallel", "IfStep", "SetStep", "CancelStep",
@@ -54,7 +54,7 @@ class Step (util.BaseStep, EventEmitter):
 		self.complete = defer.Deferred()
 		self.dependents = util.Dependents()
 
-		if expr is not None and not isinstance(expr, Variable):
+		if expr is not None and not isinstance(expr, BaseVariable):
 			expr = Constant(expr)
 
 		self._expr = expr
@@ -237,9 +237,9 @@ class _StepWithChildren (Step):
 
 class _StepWithLoop (util.Looping, _StepWithChild):
 
-	def __init__ (self, expr, step, max_calls = None, interval = 0.1, now = True):
+	def __init__ (self, expr, step, max_calls = None):
 		_StepWithChild.__init__(self, expr, step)
-		util.Looping.__init__(self, max_calls, interval, now)
+		util.Looping.__init__(self, max_calls)
 
 	def _run (self):
 		_StepWithChild._run(self)
@@ -250,6 +250,9 @@ class _StepWithLoop (util.Looping, _StepWithChild):
 	def _test (self):
 		return self._expr
 
+	def _schedule (self):
+		reactor.callLater(0, self._iterate)
+
 	def _call (self):
 		try:
 			self._step.reset()
@@ -257,20 +260,16 @@ class _StepWithLoop (util.Looping, _StepWithChild):
 		except AlreadyRunning:
 			return None
 
-	def _iteration_complete (self):
-		util.Looping._iteration_complete(self)
-		self._complete()
-
-	def _iteration_error (self, error):
-		util.Looping._iteration_error(self, error)
-		self._error(error)
-
 	def _iteration_stop (self):
-		util.Looping._iteration_stop(self)
-
 		# If the child never started, make sure its callback runs.
 		if self._step.state is State.READY:
 			self._step._complete()
+
+	def _iteration_complete (self):
+		self._complete()
+
+	def _iteration_error (self, error):
+		self._error(error)
 
 	def _cancel (self, abort = False):
 		util.Looping._cancel(self, abort)
@@ -462,7 +461,7 @@ class LogStep (Step):
 	def _run (self):
 		Step._run(self)
 
-		self.log(message = self._expr.value)
+		self.emit("log", message = self._expr.value)
 		return self._complete(self._expr.value)
 
 
@@ -471,7 +470,7 @@ class WhileStep (_StepWithLoop):
 	type = "while"
 
 	def __init__ (self, expr, step, min_calls = 0):
-		_StepWithLoop.__init__(self, expr, step, interval = 0)
+		_StepWithLoop.__init__(self, expr, step)
 		self._min_calls = min_calls
 
 	def _run (self):
@@ -479,7 +478,7 @@ class WhileStep (_StepWithLoop):
 		return _StepWithLoop._run(self)
 
 	def _test (self):
-		if self._calls > self._current_min_calls and not bool(self._expr):
+		if self._calls >= self._current_min_calls and not bool(self._expr):
 			raise StopIteration
 		else:
 			return True
@@ -607,12 +606,12 @@ class WaitUntilStep (Step):
 		self._start = now()
 		self.emit("started", item = self, start = self._start)
 		self._expr.on("change", self._test)
-		test()
+		self._test()
 
 		return self.complete
 
 	def _test (self, data = None):
-		if self.state is State.RUNNING and self._expr:
+		if self.state is State.RUNNING and bool(self._expr) is True:
 			self._expr.off("change", self._test)
 			self._complete()
 
@@ -642,7 +641,7 @@ class CallStep (util.Caller, Step):
 
 	def __init__ (self, fn, *args, **kwargs):
 		Step.__init__(self)
-		util.Caller.__init__(fn, args, kwargs)
+		util.Caller.__init__(self, fn, args, kwargs)
 
 	def _run (self):
 		Step._run(self)
