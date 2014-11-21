@@ -285,7 +285,7 @@ class Variable (BaseVariable):
 		self._y = []
 
 		if type in (int, float, long, complex):
-			self._archive = Archive(self)
+			self._archive = Archive()
 		else:
 			self._archive = StringArchive(self)
 
