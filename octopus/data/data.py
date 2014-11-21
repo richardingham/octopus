@@ -2,41 +2,32 @@
 from math import ceil
 import operator
 
-# Twisted Imports
-from twisted.python.util import unsignedID
-
-# NumPy
-import numpy as np
-
 # Package Imports
-from ..util import now, timerange
+from ..util import now, timerange, EventEmitter
 
 # Sibling Imports
 import errors
 
-def _get_first_index (list, time):
+
+def _upper_bound (list, time):
+	# Return the index of the first item in {list} which
+	# is greater than or equal to {time}.
+	# http://stackoverflow.com/q/2236906/
+	return next((i for i, t in enumerate(list) if t >= time), None)
+
+
+def _lower_bound (list, time):
+	l = len(list)
+
+	# Return the index of the last item in {list} which
+	# is less than or equal to {time}.
 	try:
-		# Return the index of the first item in {list} which
-		# is greater than or equal to {time}.
-		# http://stackoverflow.com/q/2236906/
-		return next(x[0] for x in enumerate(list) if x[1] >= time)
+		return l - 1 - next(
+			(i for i, t in enumerate(reversed(list)) if t <= time)
+		)
 	except StopIteration:
 		return None
 
-def _get_last_index (list, time):
-	l = len(list)
-
-	try:
-		# Return the index of the last item in {list} which
-		# is greater than or equal to {time}.
-		return l - 1 - next(
-			x[0] for x in enumerate(reversed(list)) if x[1] <= time
-		)
-	except StopIteration:
-		if l is 0:
-			return None
-		else:
-			return 0
 
 def _interp (x, x0, y0, x1, y1):
 	try:
@@ -44,14 +35,81 @@ def _interp (x, x0, y0, x1, y1):
 	except ZeroDivisionError:
 		return y1
 
-def _prepare (start, interval):
-	if start < 0:
-		start = now() + start
 
-	if interval is None:
-		interval = now() - start
+def _prepare (start, interval):
+	if interval is not None and interval < 0:
+		interval = 0
+
+	if start is not None:
+		if start < 0:
+			start = now() + start
+
+		if interval is None:
+			interval = now() - start
 
 	return start, interval
+
+
+def _get (x_vals, y_vals, x_max, x_min, start, interval):
+
+	# Return all data
+	if start is None and interval is None:
+		return zip(x_vals, y_vals)
+
+	if interval is None:
+		interval = 0
+
+	# Request range is outside data range
+	if start > x_max:
+		if interval is 0:
+			return [(start, y_vals[-1])]
+		else:
+			return [(start, y_vals[-1]), (start + interval, y_vals[-1])]
+	if start + interval < x_min:
+		try:
+			if interval is 0:
+				return [(start, y_vals[0])]
+			else:
+				return [(start, y_vals[0]), (start + interval, y_vals[0])]
+		except IndexError:
+			if interval is 0:
+				return [(start, 0)]
+			else:
+				return [(start, 0), (start + interval, 0)]
+
+	# Collect data from archive
+	i_start = _lower_bound(x_vals, start)
+	i_end   = _upper_bound(x_vals, start + interval)
+
+	if i_end is not None:
+		i_end += 1 # Return the interval length of data
+
+	vals = zip(x_vals[i_start:i_end], y_vals[i_start:i_end])
+
+	# Fill in the start and end points if necessary.
+	try:
+		if start < x_min:
+			vals.insert(0, (start, y_vals[0]))
+	except IndexError:
+		pass
+
+	try:
+		if start + interval > x_max:
+			vals.append((start + interval, y_vals[-1]))
+	except IndexError:
+		pass
+
+	return vals
+
+
+def _at (val, time):
+	if len(val) is 1:
+		return val[0][1]
+	elif len(val) is 0:
+		return 0
+	else:
+		a, b = val[0:2]
+		return _interp(time, a[0], a[1], b[0], b[1])
 
 
 class Archive (object):
@@ -128,58 +186,35 @@ class Archive (object):
 			self._prev_x = x
 			self._prev_y = y
 
-	def get (self, start, interval = None):
+	def get (self, start = None, interval = None):
 		start, interval = _prepare(start, interval)
 
 		# Nothing in archive
 		if self._prev_x is None:
 			return []
 
-		# Request range is outside archived data range
-		if start > self._prev_x:
-			return [(start, self._prev_y), (start + interval, self._prev_y)]
-		if start + interval < self._zero:
-			try:
-				return [(start, self._y[0]), (start + interval, self._y[0])]
-			except IndexError:
-				return [(start, 0), (start + interval, 0)]
+		return _get(self._x, self._y, self._prev_x, self._x[0], start, interval)
 
-		# Collect data from archive
-		i_start, i_end = self._get_indices(start, interval)
-		vals = zip(self._x[i_start:i_end], self._y[i_start:i_end])
+	def at (self, time):
+		val = self.get(time, 0)
 
-		# Fill in the start and end points.
-		try:
-			if start < self._zero:
-				vals.insert(0, (self._zero, self._y[0]))
-			elif start < self._x[i_start]:
-				vals.insert(0, (start, _interp(
-					start,
-					self._x[i_start - 1], self._y[i_start - 1],
-					self._x[i_start], self._y[i_start]
-				)))
-		except IndexError:
-			pass
+		if len(val) is 0:
+			return ""
+		else:
+			return val[0][1]
 
-		try:
-			if start + interval > self._prev_x:
-				vals.append((start + interval, self._prev_y))
-			elif start + interval > self._x[i_end]:
-				vals.append((start + interval, _interp(
-					start,
-					self._x[i_end], self._y[i_end],
-					self._x[i_end + 1], self._y[i_end + 1]
-				)))
-		except IndexError:
-			pass
 
-		return vals
+class StringArchive (Archive):
 
-	def _get_indices (self, start, interval):
-		i_start = _get_first_index(self._x, start)
-		i_end = _get_first_index(self._x, start + interval)
+	def __init__ (self, variable):
+		Archive.__init__(self)
+		self._variable = variable
 
-		return i_start, i_end
+	def push (self, x, y):
+		pass
+
+	def at (self, time):
+		return "StringArchive.at not implemented" # _at(self.get(time, 0), time)
 
 
 _default_alias_counters = {}
@@ -194,117 +229,122 @@ def _default_alias (object):
 	return "{:s}_{:d}".format(class_name, _default_alias_counters[class_name])
 
 
-class Variable (object):
+class BaseVariable (EventEmitter):
+	alias = ""
+
+	@property
+	def value (self):
+		try:
+			return self._value
+		except AttributeError:
+			return None
+
+	@property
+	def type (self):
+		try:
+			return self._type
+		except AttributeError:
+			return type(None)
 
 	def get_value (self):
 		return self._value
-	value = property(get_value)
 
-	def get_type (self):
-		return self._type
-	type = property(get_type)
+	def __str__ (self):
+		return str(self.get_value())
 
-	def serialize (self):
-		if self.alias is None:
-			return "[Variable]"
-		else:
-			return str(self.alias)
+	def __int__ (self):
+		return int(self.get_value())
 
-	def __init__ (self, type):
+	def __float__ (self):
+		return float(self.get_value())
+
+	def __nonzero__ (self):
+		return bool(self.get_value())
+
+	def __repr__ (self):
+		return "<{class_name} at Ox{reference:x}: {var_alias} ({var_type}) = {var_value}>".format(
+			class_name = self.__class__.__name__, 
+			reference = id(self),
+			var_alias = self.alias,
+            var_type = self.type.__name__,
+			var_value = self.value
+		)
+
+
+class Variable (BaseVariable):
+	length = 30 # in seconds
+	
+	def __init__ (self, type, value = None):
 		self.alias = _default_alias(self)
 
 		self._time = None
 		self._value = None
 		self._type = type
-		self._length = 30 # in seconds
 
 		self._x = []
 		self._y = []
-		self._archive = Archive()
+
+		if type in (int, float, long, complex):
+			self._archive = Archive(self)
+		else:
+			self._archive = StringArchive()
 
 		self._log_file = None
+
+		if value is not None:
+			self._push(value)
 
 	def truncate (self):
 		"""
 		Empty the variable of all stored data.
 		"""
 
-		self._x = [self._time] if self._time is not None else []
-		self._y = [self._value] if self._value is not None else []
+		if self._value is None:
+			self._x = []
+			self._y = []
+		else:
+			self._time = now()
+
+			self._x = [self._time]
+			self._y = [self._value]
+
 		self._archive.truncate()
+
+		# Trigger clear event
+		self.emit("clear", time = self._time, value = self._value)
 
 	def set (self, value):
 		self._push(value)
 
-	def get (self, start, interval = None, step = 1):
+	def get (self, start = None, interval = None):	
 		"""
 		Returns the value of the variable over a particular time period.
-		
+
 		Returns a list of (time, value) pairs between 
 		[time = start and time = start + interval] (inclusive).
-		
+
 		start: earliest time to return data.
 		interval: time-span requested.
+
+		If interval = None, then data are returned from start
+		up to the current time.
+
+		If start < 0, then this number of seconds is subtracted
+		from the current time.
 		"""
+
+		if start is None and interval is None:
+			return self._archive.get()
+
+		if start < self._x[0]:
+			return self._archive.get(start, interval)
 
 		start, interval = _prepare(start, interval)
 
-		try:
-			if start > self._x[0]:
-				return zip(
-					timerange(start, interval, step).tolist(),
-					self.interp(start, interval, step).tolist()
-				)
+		return _get(self._x, self._y, self._time, self._x[0], start, interval)
 
-			else:
-				return self._archive.get(start, interval)
-
-		except IndexError:
-			return []
-
-	def interp (self, start, interval = None, step = 1):
-		"""
-		Retrieve data for calculations.
-		
-		To perform calculations, there must be consistent time steps between
-		each data point (defined by the step parameter).
-
-		To acheive this the numpy.interp function is used on the variable's
-		data. For optimal calculations the length of time that high-resolution
-		data are kept (by default: 60 s) is increased if larger intervals are
-		requested. Note that this will increase the memory consumption.
-		
-		Numpy.interp only works with variables that can be converted to a float.
-		If interp fails, zero is returned over the timeperiod.
-		"""
-
-		start, interval = _prepare(start, interval)
-
-		# Increase amount of high-resolution data kept, as long as it is
-		# the most recent data being requested.
-		if self._length is not None \
-		and self._length < interval \
-		and abs(start + interval - now()) < 1:
-			self._length = interval
-
-		new_x = timerange(start, interval, step)
-
-		try:
-			if start < self._x[0]:
-				try:
-					x_vals, y_vals = zip(*self._archive.get(start, self._x[0] - start))
-				except ValueError:
-					x_vals = y_vals = []	
-
-				x_vals = list(x_vals) + self._x
-				y_vals = list(x_vals) + self._y
-
-				return np.interp(new_x, x_vals, y_vals)
-			else:
-				return np.interp(new_x, self._x, self._y)
-
-		except ValueError:
-			return np.zeros_like(new_x)
+	def at (self, time):
+		return _at(self.get(time, 0), time)
 
 	def _push (self, value, time = None):
 		if type(value) != self._type:
@@ -312,30 +352,38 @@ class Variable (object):
 
 		if time is None:
 			time = now()
+		elif time < self._time:
+			raise Exception("Cannot insert values earlier than latest value")
+
+		# Only store changes
+		if self._value == value \
+		and len(self._x) > 2 \
+		and self._y[-2] == value:
+			self._x[-1] = time
+			changed = False
+		else:
+			self._x.append(time)
+			self._y.append(value)
+
+			changed = True
+
+			# Trim old data
+			mid = len(self._x) / 2
+			if time - self._x[mid] > self.length:
+				self._y = self._y[mid:]
+				self._x = self._x[mid:] 
 
 		self._value = value
 		self._time  = time
-		self._x.append(time)
-		self._y.append(value)
+
 		self._archive.push(time, value)
 		self._log(time, value)
+		
+		# Trigger change event
+		if changed:
+			self.emit("change", time = time, value = value)
 
-		# Trim off any old data
-		if self._length is not None and time - self._x[0] > self._length * 2:
-			min_time = time - (self._length * 2)
-
-			remove = 0
-			for x in self._x:
-				if x > min_time:
-					break
-
-				remove += 1
-
-			if remove > 0:
-				self._y = self._y[remove:]
-				self._x = self._x[remove:]
-
-
+	# Todo: Put these in event watchers in the experiment.
 	def _log (self, time, value):
 		if self._log_file is not None:
 			self._log_file.write(time, value)
@@ -354,66 +402,33 @@ class Variable (object):
 			self._log_file.close()
 
 		self._log_file = None		
-	###
-
-	def __str__ (self):
-		return str(self.get_value())
-
-	def __int__ (self):
-		return int(self.get_value())
-
-	def __float__ (self):
-		return float(self.get_value())
-
-	def __nonzero__ (self):
-		return bool(self.get_value())
-
-	def __repr__ (self):
-		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}>".format(
-			class_name = self.__class__.__name__, 
-			reference = hex(unsignedID(self)),
-			var_alias = self.alias,
-            var_type = self.type.__name__,
-			var_value = self.value
-		)
 
 
-class Constant (Variable):
+class Constant (BaseVariable):
 	def __init__ (self, value):
 		self._value = value
 		self._type = type(value)
 
-	def set (self, value):
-		raise NotImplementedError
-
-	def _push (self, value):
-		raise NotImplementedError
-
-	def get (self, start, interval = None, step = 1):
+	def get (self, start, interval = None):
 		start, interval = _prepare(start, interval)
 
-		return [(start, self._value), (start + interval, self._value)]
+		if interval == 0:
+			return [(start, self._value)]
 
-	def interp (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
-		new_x = timerange(start, interval, step)
+		return [
+			(start, self._value), 
+			(start + interval, self._value)
+		]
 
-		try:
-			return np.ones_like(new_x) * self._value
-		except TypeError:
-			return np.zeros_like(new_x)
+	def at (self, time):
+		return self._value
 
 	def serialize (self):
 		return str(self._value)
 
 
-class Expression (Variable):
-	def set (self, value):
-		raise NotImplementedError
-
-	def _push (self, value):
-		raise NotImplementedError
-
+class Expression (BaseVariable):
+	pass
 
 # Variable should emulate a numerical variable
 _unary_ops = (
@@ -426,83 +441,147 @@ _binary_ops = (
 	(" / ", operator.__truediv__), (" // ", operator.__floordiv__), 
 	(" * ", operator.__mul__), (" % ", operator.__mod__),
 	("**", operator.__pow__),
-	(" and ", operator.__and__), (" or ", operator.__or__)
+	(" & ", operator.__and__), (" | ", operator.__or__),
+	(" and ", lambda a, b: a and b), (" or ", lambda a, b: a or b),
 )
 
 # http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python/6581949#6581949
-def _def_binary_op (symbol, operator):
+def _def_binary_op (symbol, operatorFn):
+	if symbol in (" and ", " or "):
+		clsName = symbol[1:-1].capitalize() + "Expression"
+		attrName = symbol[1:-1]
+		rattrName = None
+	else:
+		if operatorFn in (operator.__and__, operator.__or__):
+			clsName = "Bitwise" + operatorFn.__name__[2:-2].capitalize() + "Expression"
+		else:
+			clsName = operatorFn.__name__[2:-2].capitalize() + "Expression"
+		attrName = operatorFn.__name__
+		rattrName = "__r" + operatorFn.__name__[2:]
+	
 	def init (self, lhs, rhs):
 		self.alias = _default_alias(self)
 
-		self._lhs = lhs if isinstance(lhs, Variable) else Constant(lhs)
-		self._rhs = rhs if isinstance(rhs, Variable) else Constant(rhs)
-		self._type = None
+		self._archive_x = None
+		self._archive_y = None
 
-	def get_value (self):
+		lhs = lhs if isinstance(lhs, BaseVariable) else Constant(lhs)
+		rhs = rhs if isinstance(rhs, BaseVariable) else Constant(rhs)
+		self._lhs = lhs
+		self._rhs = rhs
+
+		if lhs.value is not None and rhs.value is not None:
+			try:
+				self._value = operatorFn(lhs.value, rhs.value)
+			except TypeError:
+				if lhs.type is str or rhs.type is str:
+					self._value = operatorFn(str(lhs.value), str(rhs.value))
+				else:
+					raise
+
+			self._type = type(self._value)
+		else:
+			self._value = None
+			self._type = None
+
+		lhs.on("change", self._changed)
+		rhs.on("change", self._changed)
+
+	def _changed (self, data):
 		try:
-			return operator(self._lhs.value, self._rhs.value)
+			self._value = operatorFn(self._lhs.value, self._rhs.value)
 		except TypeError:
 			if self._lhs.type is str or self._rhs.type is str:
-				try:
-					return operator(str(self._lhs.value), str(self._rhs.value))
-				except TypeError:
-					return None
-			
-			return None
+				self._value = operatorFn(str(self._lhs.value), str(self._rhs.value))
+			else:
+				raise
+
+		if self._archive_x is not None:
+			self._archive_x.append(data['time'])
+			self._archive_y.append(self._value)
+
+		self.emit("change", time = data['time'], value = self._value)
 
 	def get_type (self):
-		if self._type is None:
-			try:
-				value = self.get_value()
-
-				if value is not None:
-					self._type = type(value)
-			except TypeError:
-				return None # one of the values is None.
+		if self._type is None and self._value is not None:
+			self._type = type(self._value)
 
 		return self._type
+	
+	def get (self, start = None, interval = None):
+		if self._archive_x is None:
+			self.get_archive()
 
-	def get (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
+		return _get(self._archive_x, self._archive_y, self._archive_x[-1], self._archive_x[0], start, interval)
 
-		x_vals = timerange(start, interval, step)
-		y_vals = self.interp(start, interval, step)
+	def at (self, time):
+		return _at(self.get(time, 0), time)
 
-		return zip(x_vals.tolist(), y_vals.tolist())
+	def get_archive (self, store = True):
+		if self._archive_x is not None:
+			return zip(self._archive_x, self._archive_y)
 
-	def interp (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
-
-		l = self._lhs.interp(start, interval, step)
-		r = self._rhs.interp(start, interval, step)
+		x = []
+		y = []
 
 		try:
-			return operator(l, r)
+			lhsa = self._lhs.get_archive(store = False)
+		except AttributeError:
+			lhsa = self._lhs.get()
 
-		# Try a cast to string if the operator fails.
-		except TypeError:
-			if self._lhs.type is str or self._rhs.type is str:
-				return operator(str(l), str(r))
+		try:
+			rhsa = self._rhs.get_archive(store = False)
+		except AttributeError:
+			rhsa = self._rhs.get()
 
-			raise
+		if self._lhs.type is str or self._rhs.type is str:
+			def op (l, r):
+				return operatorFn(l, r)
+		else:
+			def op (l, r):
+				return operatorFn(str(l), str(r))
 
+		r_max = len(rhsa)
+		l_max = len(rhsa)
+		r_i = l_i = 0
+
+		while r_i < r_max and l_i < l_max:
+			l_t, c_l = lhs[l_i]
+
+			while rhs[r_i][0] < l_t:
+				x.append(rhs[r_i][0])
+				y.append(op(c_l, rhs[r_i][0]))
+				r_i += 1
+
+			r_t, c_r = rhs[r_i]
+
+			while lhs[r_i][0] < r_t:
+				x.append(rhs[l_i][0])
+				y.append(op(lhs[l_i][0], c_r))
+				l_i += 1
+
+		if store:
+			self._archive_x = x
+			self._archive_y = y
+
+		return zip(x, y)
+		
 	def serialize (self):
 		return "(" + \
 			self._lhs.serialize() + symbol \
 			+ self._rhs.serialize() + ")"
 
 	cls = type(
-		operator.__name__[2:-2].capitalize() + "Expression", 
+		clsName, 
 		(Expression,), 
 		{ 
 			"__init__": init,
-			"get_value": get_value,
-			"get_type": get_type,
-			"value": property(get_value),
 			"type": property(get_type),
+			"serialize": serialize,
+			"_changed": _changed,
+			"get_archive": get_archive,
 			"get": get,
-			"interp": interp,
-			"serialize": serialize
+			"at": at
 		}
 	)
 
@@ -512,46 +591,66 @@ def _def_binary_op (symbol, operator):
 	def op_rfn (self, other):
 		return cls(other, self)
 
-	setattr(Variable, operator.__name__, op_fn)
-	setattr(Variable, "__r" + operator.__name__[2:], op_rfn)
+	setattr(BaseVariable, attrName, op_fn)
 
-def _def_unary_op (symbol, operator):
+	if rattrName is not None:
+		setattr(BaseVariable, rattrName, op_rfn)
+
+def _def_unary_op (symbol, operatorFn):
 	def init (self, operand):
 		self.alias = _default_alias(self)
 
 		self._operand = operand
-		self._type = None
 
-	def get_value (self):
-		try:
-			return operator(self._operand.value)
-		except TypeError:	
-			return None
+		if operand.value is not None:
+			self._value = operatorFn(operand.value)
+			self._type = type(self._value)
+		else:
+			self._value = None
+			self._type = None
+
+		operand.on("change", self._changed)
+
+	def _changed (self, data):
+		self._value = operatorFn(self._operand.value)
+		self.emit("change", time = data['time'], value = self._value)
 
 	def get_type (self):
-		if self._type is None:
-			try:
-				value = self.get_value()
-
-				if value is not None:
-					self._type = type(value)
-			except TypeError:
-				return None
+		if self._type is None and self._value is not None:
+			self._type = type(self._value)
 
 		return self._type
+	
+	def get (self, start = None, interval = None):
+		if self._archive_x is None:
+			self.get_archive()
 
-	def get (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
+		return _get(self._archive_x, self._archive_y, self._archive_x[-1], self._archive_x[0], start, interval)
+	
+	def at (self, time):
+		return _at(self.get(time, 0), time)
 
-		x_vals = timerange(start, interval, step)
-		y_vals = self.interp(start, interval, step)
+	def get_archive (self, store = True):
+		if self._archive_x is not None:
+			return zip(self._archive_x, self._archive_y)
 
-		return zip(x_vals.tolist(), y_vals.tolist())
+		x = []
+		y = []
 
-	def interp (self, start, interval = None, step = 1):
-		start, interval = _prepare(start, interval)
+		try:
+			opa = self._operand.get_archive(store = False)
+		except AttributeError:
+			opa = self._operand.get()
 
-		return operator(self._operand.get(start, interval, step))	
+		for o_x, o_y in opa:
+			x.append(o_x)
+			y.append(operatorFn(o_y))
+
+		if store:
+			self._archive_x = x
+			self._archive_y = y
+
+		return zip(x, y)
 
 	def serialize (self):
 		return symbol + self._operand.serialize()
@@ -561,19 +660,20 @@ def _def_unary_op (symbol, operator):
 		(Expression,), 
 		{ 
 			"__init__": init,
-			"get_value": get_value,
-			"get_type": get_type,
-			"value": property(get_value),
 			"type": property(get_type),
+			"serialize": serialize,
+			"_changed": _changed,
+			"get_archive": get_archive,
 			"get": get,
-			"interp": interp
+			"at": at
 		}
 	)
 
 	def op_fn (self, other):
 		return cls(self, op)
 
-	setattr(Variable, op.__name__, op_fn)
+	setattr(BaseVariable, op.__name__, op_fn)
 
 [_def_unary_op(symbol, op) for symbol, op in _unary_ops]
 [_def_binary_op(symbol, op) for symbol, op in _binary_ops]
+
