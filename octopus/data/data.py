@@ -284,10 +284,10 @@ class Variable (BaseVariable):
 		self._x = []
 		self._y = []
 
-		if type is str:
-			self._archive = StringArchive(self)
+		if type in (int, float, long, complex):
+			self._archive = Archive(self)
 		else:
-			self._archive = Archive()
+			self._archive = StringArchive()
 
 		self._log_file = None
 
