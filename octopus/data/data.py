@@ -287,7 +287,7 @@ class Variable (BaseVariable):
 		if type in (int, float, long, complex):
 			self._archive = Archive(self)
 		else:
-			self._archive = StringArchive()
+			self._archive = StringArchive(self)
 
 		self._log_file = None
 
