@@ -1,7 +1,6 @@
 # Twisted Imports
 from twisted.internet import defer, task
 from twisted.python import failure, log
-from twisted.python.util import unsignedID
 
 # System Imports
 import logging
@@ -251,7 +250,7 @@ class Machine (Component):
 	def __str__ (self):
 		return "<%s at %s (%s)>" % (
 			self.__class__.__name__,
-			hex(unsignedID(self)),
+			hex(id(self)),
             "connected" if self.connected else "disconnected"
 		)
 	__repr__ = __str__
@@ -271,7 +270,7 @@ class Stream (data.Variable):
 	def __repr__ (self):
 		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}{var_unit}>".format(
 			class_name = self.__class__.__name__, 
-			reference = hex(unsignedID(self)),
+			reference = hex(id(self)),
 			var_alias = self.alias,
             var_type = self.type.__name__,
 			var_value = self.value,
