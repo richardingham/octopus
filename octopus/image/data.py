@@ -2,9 +2,6 @@
 import StringIO
 import urllib
 
-# Twisted Imports
-from twisted.python.util import unsignedID
-
 # Package Imports
 from ..data.errors import Immutable
 
@@ -49,5 +46,5 @@ class Image (object):
 	def __repr__ (self):
 		return "<%s at %s>" % (
 			self.__class__.__name__, 
-			hex(unsignedID(self))
+			hex(id(self))
 		)
