@@ -186,12 +186,9 @@ class Machine (Component):
 
 		connection_name = ""
 
-		def busy (result):
-			self.ready.errback(result)
-
-			# if self.protocol is None:
-				# print "Busy"
-				# self.ready.errback(failure.Failure(MachineBusy()))
+		def startError (failure):
+			self.protocol.transport.loseConnection()
+			self.ready.errback(failure)
 
 		def connected (protocol):
 			log.msg("Connected to endpoint", level = logging.DEBUG)
@@ -200,7 +197,7 @@ class Machine (Component):
 			self.protocol.connection_name = connection_name
 
 			started = defer.maybeDeferred(self.start)
-			started.addCallbacks(self.ready.callback, self.ready.errback)
+			started.addCallbacks(self.ready.callback, startError)
 
 		def disconnected (reason):
 			self.stop()
@@ -212,7 +209,7 @@ class Machine (Component):
 			log.msg("Connecting to endpoint %s" % connection_name, level = logging.DEBUG)
 
 			d = defer.maybeDeferred(endpoint.connect, self.protocolFactory)
-			d.addCallbacks(connected, busy)
+			d.addCallbacks(connected, self.ready.errback)
 
 		# If transport is a Deferred, wait for it to be ready
 		defer.maybeDeferred(lambda x: x, endpoint).addCallback(endpointReady)
