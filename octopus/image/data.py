@@ -4,11 +4,11 @@ import urllib
 
 # Package Imports
 from ..data.errors import Immutable
+from ..data.data import BaseVariable
 
-class Image (object):
+class Image (BaseVariable):
 
-	@property
-	def value (self):
+	def get_value (self):
 		output = StringIO.StringIO()
 		img = self._image_fn()
 		img.scale(0.25).getPIL().save(output, format = "PNG")
