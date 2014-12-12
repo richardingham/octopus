@@ -142,9 +142,11 @@ class ICIR (Machine):
 						pass
 
 		def monitor_data ():
-			self.protocol.write("requestData").addCallback(interpret_data)
+			return self.protocol.write("requestData").addCallback(interpret_data)
 
 		self._tick(monitor_data, 1)
+
+		return monitor_data()
 
 	def stop (self):
 		self._stopTicks()
