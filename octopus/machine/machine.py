@@ -35,7 +35,7 @@ class Component (object):
 		varList = dict([
 			(base + x, getattr(self, x)) 
 			for x in vars(self) 
-			if (isinstance(getattr(self, x), data.Variable) \
+			if (isinstance(getattr(self, x), data.BaseVariable) \
 			or isinstance(getattr(self, x), Image))
 		])
 
