@@ -171,6 +171,13 @@ class Machine (Component):
 		except AttributeError:
 			return False
 
+	def disconnect (self):
+		self.stop()
+		try:
+			self.protocol.transport.loseConnection()
+		except AttributeError:
+			pass
+
 	def __init__(self, endpoint, alias = None, **kwargs):
 
 		if alias is None:
@@ -187,7 +194,7 @@ class Machine (Component):
 		connection_name = ""
 
 		def startError (failure):
-			self.protocol.transport.loseConnection()
+			self.disconnect()
 			self.ready.errback(failure)
 
 		def connected (protocol):

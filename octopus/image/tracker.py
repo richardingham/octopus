@@ -87,6 +87,14 @@ class SingleBlobTracker (Machine):
 	def stop (self):
 		self._stopTicks()
 
+	def disconnect (self):
+		self.stop()
+
+		try:
+			self.protocol.camera = None
+		except AttributeError:
+			pass
+
 
 class MultiBlobTracker (Machine):
 
@@ -183,4 +191,12 @@ class MultiBlobTracker (Machine):
 
 	def stop (self):
 		self._stopTicks()
+
+	def disconnect (self):
+		self.stop()
+
+		try:
+			self.protocol.camera = None
+		except AttributeError:
+			pass
 
