@@ -347,6 +347,9 @@ class Variable (BaseVariable):
 		return _at(self.get(time, 0), time)
 
 	def _push (self, value, time = None):
+		if value is None:
+			return
+
 		if type(value) != self._type:
 			value = self._type(value)
 
