@@ -8,6 +8,7 @@ from exceptions import AttributeError
 
 # Package Imports
 from .. import util, data
+from ..data.data import BaseVariable
 from ..image.data import Image
 
 # Sibling Imports
@@ -35,7 +36,7 @@ class Component (object):
 		varList = dict([
 			(base + x, getattr(self, x)) 
 			for x in vars(self) 
-			if (isinstance(getattr(self, x), data.BaseVariable) \
+			if (isinstance(getattr(self, x), BaseVariable) \
 			or isinstance(getattr(self, x), Image))
 		])
 
@@ -86,7 +87,7 @@ class Component (object):
 			if x[0] == "_":
 				pass
 
-			elif isinstance(getattr(self, x), data.Variable):
+			elif isinstance(getattr(self, x), BaseVariable):
 				getattr(self, x).alias = base + x
 
 			elif isinstance(getattr(self, x), Component):
