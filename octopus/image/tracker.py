@@ -91,7 +91,7 @@ class SingleBlobTracker (Machine):
 		self.stop()
 
 		try:
-			self.protocol.camera = None
+			self.protocol.disconnect()
 		except AttributeError:
 			pass
 
@@ -196,7 +196,7 @@ class MultiBlobTracker (Machine):
 		self.stop()
 
 		try:
-			self.protocol.camera = None
+			self.protocol.disconnect()
 		except AttributeError:
 			pass
 
