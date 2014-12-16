@@ -4,7 +4,8 @@ from twisted.internet import defer, threads
 # System Imports
 import cv2
 from cv2 import cv
-from SimpleCV import Camera, Image
+import SimpleCV
+
 
 class webcam (object):
 	def __init__ (self, device = -1):
@@ -22,7 +23,7 @@ class webcam (object):
 			self.camera = result
 			connected.callback(self)
 
-		d = threads.deferToThread(Camera, self.device_index)
+		d = threads.deferToThread(SimpleCV.Camera, self.device_index)
 		d.addCallbacks(ok, connected.errback)
 
 		return connected
@@ -82,7 +83,7 @@ class cv_webcam (object):
 			print "No image"
 			return None
 
-		return Image(source = cv.fromarray(img_array), cv2image = True)
+		return SimpleCV.Image(source = cv.fromarray(img_array), cv2image = True)
 
 	def disconnect (self):
 		self.camera.release()
