@@ -1,6 +1,6 @@
 # Twisted Imports
 from twisted.internet import reactor, defer, error
-from twisted.python import failure
+from twisted.python import failure, log
 
 # System Imports
 from time import time as now
@@ -107,7 +107,7 @@ class EventEmitter (object):
 		handled = False
 
 		try:
-			events = self._events[_event]
+			events = self._events[_event][:]
 		except AttributeError:
 			return False # No events defined yet
 		except KeyError:
@@ -116,17 +116,23 @@ class EventEmitter (object):
 			handled |= bool(len(events))
 
 			for function in events:
-				function(data)
+				try:
+					function(data)
+				except:
+					log.err()
 
 		try:
-			events = self._events["all"]
+			events = self._events["all"][:]
 		except KeyError:
 			pass
 		else:
 			handled |= bool(len(events))
 
 			for function in events:
-				function(_event, data)
+				try:
+					function(_event, data)
+				except:
+					log.err()
 
 		return handled
 
