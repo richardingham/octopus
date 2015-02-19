@@ -137,7 +137,7 @@ class ICIR (Machine):
 					self._streams[name]._push(value, time)
 				except KeyError:
 					try:
-						self._streams["stream_%s" % name]._push(time, value)
+						self._streams["stream_%s" % name]._push(value, time)
 					except KeyError:
 						pass
 
