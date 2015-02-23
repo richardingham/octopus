@@ -1,3 +1,6 @@
+# Twisted Imports
+from twisted.internet import defer
+
 # System Imports
 import StringIO
 import urllib
@@ -60,8 +63,9 @@ class Image (BaseImage):
 		self._image_fn = fn
 		self._value = None
 
+	@defer.inlineCallbacks
 	def refresh (self):
-		self._value = self._image_fn()
+		self._value = yield defer.maybeDeferred(self._image_fn)
 		self.emit("change", value = None, time = now())
 
 	def set (self, value):

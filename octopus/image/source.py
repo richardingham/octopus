@@ -13,20 +13,43 @@ class webcam (object):
 		self.name = "webcam(%s)" % device
 		self.camera = None
 
+	@defer.inlineCallbacks
 	def connect (self, _protocolFactory):
-		if self.camera is not None:
-			return defer.succeed(self)
+		if self.camera is None:
+			self.camera = yield threads.deferToThread(SimpleCV.Camera, self.device_index)
+		
+		defer.returnValue(self)
 
-		connected = defer.Deferred()
+	@defer.inlineCallbacks
+	def image (self):
+		"""
+		Get an image from the camera.
+		
+		Returns a SimpleCV Image.
+		"""
 
-		def ok (result):
-			self.camera = result
-			connected.callback(self)
+		i = yield threads.deferToThread(self.camera.getImage)
 
-		d = threads.deferToThread(SimpleCV.Camera, self.device_index)
-		d.addCallbacks(ok, connected.errback)
+		if i is None:
+			print "No image"
 
-		return connected
+		defer.returnValue(i)
+
+	def disconnect (self):
+		self.camera = None
+
+
+class webcam_nothread (object):
+	def __init__ (self, device = -1):
+		self.device_index = device
+		self.name = "webcam_nothread(%s)" % device
+		self.camera = None
+
+	def connect (self, _protocolFactory):
+		if self.camera is None:
+			self.camera = SimpleCV.Camera(self.device_index)
+		
+		return self
 
 	def image (self):
 		"""
@@ -52,21 +75,14 @@ class cv_webcam (object):
 		self.name = "cv_webcam(%s)" % device
 		self.camera = None
 
+	@defer.inlineCallbacks
 	def connect (self, _protocolFactory):
-		if self.camera is not None:
-			return defer.succeed(self)
+		if self.camera is None:
+			self.camera = yield threads.deferToThread(cv2.VideoCapture, self.device_index)
 
-		connected = defer.Deferred()
+		defer.returnValue(self)
 
-		def ok (result):
-			self.camera = result
-			connected.callback(self)
-
-		d = threads.deferToThread(cv2.VideoCapture, self.device_index)
-		d.addCallbacks(ok, connected.errback)
-
-		return connected
-
+	@defer.inlineCallbacks
 	def image (self):
 		"""
 		Get an image from the camera.
@@ -75,15 +91,18 @@ class cv_webcam (object):
 		"""
 
 		try:
-			flag, img_array = self.camera.read()
+			flag, img_array = yield threads.deferToThread(self.camera.read)
 		except SystemError:
-			return None
+			return
 
 		if flag is False:
 			print "No image"
-			return None
+			return
 
-		return SimpleCV.Image(source = cv.fromarray(img_array), cv2image = True)
+		defer.returnValue(SimpleCV.Image(
+			source = cv.fromarray(img_array),
+			cv2image = True)
+		)
 
 	def disconnect (self):
-		self.camera.release()
+		threads.deferToThread(self.camera.release)
