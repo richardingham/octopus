@@ -40,8 +40,8 @@ def decrement (var):
 def wait (time):
 	return s.WaitStep(time)
 
-def wait_until (test, interval = 0.1):
-	return s.WaitUntilStep(test, interval)
+def wait_until (test):
+	return s.WaitUntilStep(test)
 
 def loop_while (test, stmt, min_calls = 0):
 	return s.WhileStep(test, stmt, min_calls)
@@ -49,11 +49,11 @@ def loop_while (test, stmt, min_calls = 0):
 def loop_until (test, stmt, min_calls = 0):
 	return loop_while(test == False, stmt, min_calls)
 
-def on (test, stmt, max_calls = None, interval = 0.1):
-	return s.OnStep(test, stmt, max_calls, interval)
+def on (test, stmt, max_calls = None):
+	return s.OnStep(test, stmt, max_calls)
 
-def once (test, stmt, interval = 0.1):
-	return on(test, stmt, 1, interval)
+def once (test, stmt):
+	return on(test, stmt, 1)
 
 def tick (stmt, interval, now = True, max_calls = None):
 	return s.TickStep(stmt, interval, now, max_calls)

@@ -411,10 +411,6 @@ class Aladdin (Machine):
 		)
 
 	def start (self):
-	
-		self.protocol.command("SAF50").addErrback(log.err)
-		self.protocol.command("VER").addErrback(log.err)
-		self.protocol.command("DIA{:.3f}".format(self._syringe_diameter)[:8]).addErrback(log.err)
 
 		## To set:
 		# SAF50
@@ -477,7 +473,16 @@ class Aladdin (Machine):
 				self.protocol.command("DIR").addCallback(interpretDirection).addErrback(log.err)
 			])
 
-		self._tick(monitor, 1)
+		def setMonitor (result):
+			self._tick(monitor, 1)
+
+		return defer.gatherResults([
+			self.protocol.command("STP").addErrback(log.err),
+			self.protocol.command("SAF50"),
+			self.protocol.command("VER"),
+			self.protocol.command("DIA{:.3f}".format(self._syringe_diameter)[:8]),
+			monitor().addCallback(setMonitor)
+		])
 
 	def stop (self):
 		# Disable safe mode to prevent timeout error.
@@ -488,6 +493,7 @@ class Aladdin (Machine):
 		# Setup a single program phase with unlimited volume
 		# Default to stopped (0 rate) and infuse direction.
 		return defer.gatherResults([
+			self.protocol.command("STP").addErrback(log.err),
 			self.protocol.command("PHN01"),
 			self.protocol.command("FUNRAT"),
 			self.protocol.command("VOL0"),

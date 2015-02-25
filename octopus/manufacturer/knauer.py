@@ -91,7 +91,7 @@ class K120 (Machine):
 			if result not in ["V03.30", "V3.1"]:
 				raise Exception("Incompatible pump version: %s" % result)
 
-		self.protocol.write("V?").addCallback(interpret_version)
+		d = self.protocol.write("V?").addCallback(interpret_version)
 
 		# setup monitor on a tick to update variables
 
@@ -135,6 +135,8 @@ class K120 (Machine):
 			self.protocol.write("F?").addCallback(interpretFlowrate)
 
 		self._tick(monitor, 1)
+
+		return d
 
 	def stop (self):
 		self._stopTicks()
@@ -211,7 +213,7 @@ class S100 (Machine):
 			except IndexError:
 				raise Exception("Incompatible version: %s" % result)
 
-		self.protocol.write("IDENTIFY?").addCallback(interpret_version)
+		d = self.protocol.write("IDENTIFY?").addCallback(interpret_version)
 
 		# setup monitor on a tick to update variables
 
@@ -244,6 +246,8 @@ class S100 (Machine):
 			self.protocol.write("STATUS?").addCallback(interpretStatus)
 
 		self._tick(monitor, 1)
+
+		return d
 
 	def stop (self):
 		self._stopTicks()

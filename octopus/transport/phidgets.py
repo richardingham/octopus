@@ -22,6 +22,17 @@ class PhidgetAddress (object):
 		return "%s(%s)" % (self.__class__.__name, self.id)
 
 
+class PhidgetTransport (object):
+	def __init__ (self, protocol):
+		self.protocol = protocol
+
+	def loseConnection (self):
+		try:
+			self.protocol.closePhidget()
+		except (AttributeError, PhidgetException):
+			pass
+
+
 class Phidget (object):
 	def __init__ (self, id):
 		self.id = id
@@ -31,37 +42,23 @@ class Phidget (object):
 		d = defer.Deferred()
 		addr = PhidgetAddress(self.id)
 		protocol = protocolFactory.buildProtocol(addr)
+		protocol.transport = PhidgetTransport(protocol)
 
-		def attach_handler (event):
-			# Not clear whether this is necessary, or if the devices are filtered...
-			serial = event.device.getSerialNum()
-			name = event.device.getDeviceName()
-			print("Phidget Device '" + str(name) + "', Serial Number: " + str(serial) + " Connected")
-
-			try:
-				if serial == self.id:
-					d.callback(protocol)
-			except defer.AlreadyCalledError:
-				pass
-
-		def detach_handler (event):
-			print "Detached"
-			
 		@defer.inlineCallbacks
 		def check_attached ():
-				tries = 0
-				while tries < 20:
-						if protocol.isAttached():
-								serial = protocol.getSerialNum()
-								name = protocol.getDeviceName()
-								print("Phidget Device '" + str(name) + "', Serial Number: " + str(serial) + " Connected")
+			tries = 0
+			while tries < 20:
+				if protocol.isAttached():
+					serial = protocol.getSerialNum()
+					name = protocol.getDeviceName()
+					print("Phidget Device '" + str(name) + "', Serial Number: " + str(serial) + " Connected")
 
-								defer.returnValue(protocol)
-						else:
-								tries += 1
-								yield task.deferLater(reactor, 0.5, lambda: True)
+					defer.returnValue(protocol)
+				else:
+					tries += 1
+					yield task.deferLater(reactor, 0.5, lambda: True)
 
-				raise Exception("Attachment to phidget timed out")
+			raise Exception("Attachment to phidget timed out")
 
 		try:
 			protocol.openPhidget(self.id)
@@ -70,12 +67,6 @@ class Phidget (object):
 			time.sleep(0.00125)
 
 			check_attached().addCallbacks(d.callback, d.errback)
-
-			# if protocol.isAttached():
-				# d.callback(protocol)
-			# else:			
-				# protocol.setOnAttachHandler(attach_handler)
-				# protocol.setOnDetachHandler(detach_handler)
 		except PhidgetException as e:
 			d.errback(e)
 

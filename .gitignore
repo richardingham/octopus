@@ -40,3 +40,6 @@ _trial_temp/
 
 # Twisted plugins
 twisted/plugins/dropin.cache
+
+# Eclipse IDE
+.metadata/

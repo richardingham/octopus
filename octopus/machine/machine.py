@@ -1,7 +1,6 @@
 # Twisted Imports
 from twisted.internet import defer, task
 from twisted.python import failure, log
-from twisted.python.util import unsignedID
 
 # System Imports
 import logging
@@ -9,6 +8,7 @@ from exceptions import AttributeError
 
 # Package Imports
 from .. import util, data
+from ..data.data import BaseVariable
 from ..image.data import Image
 
 # Sibling Imports
@@ -36,7 +36,7 @@ class Component (object):
 		varList = dict([
 			(base + x, getattr(self, x)) 
 			for x in vars(self) 
-			if (isinstance(getattr(self, x), data.Variable) \
+			if (isinstance(getattr(self, x), BaseVariable) \
 			or isinstance(getattr(self, x), Image))
 		])
 
@@ -87,7 +87,7 @@ class Component (object):
 			if x[0] == "_":
 				pass
 
-			elif isinstance(getattr(self, x), data.Variable):
+			elif isinstance(getattr(self, x), BaseVariable):
 				getattr(self, x).alias = base + x
 
 			elif isinstance(getattr(self, x), Component):
@@ -172,6 +172,13 @@ class Machine (Component):
 		except AttributeError:
 			return False
 
+	def disconnect (self):
+		self.stop()
+		try:
+			self.protocol.transport.loseConnection()
+		except AttributeError:
+			pass
+
 	def __init__(self, endpoint, alias = None, **kwargs):
 
 		if alias is None:
@@ -187,12 +194,9 @@ class Machine (Component):
 
 		connection_name = ""
 
-		def busy (result):
-			self.ready.errback(result)
-
-			# if self.protocol is None:
-				# print "Busy"
-				# self.ready.errback(failure.Failure(MachineBusy()))
+		def startError (failure):
+			self.disconnect()
+			self.ready.errback(failure)
 
 		def connected (protocol):
 			log.msg("Connected to endpoint", level = logging.DEBUG)
@@ -201,7 +205,7 @@ class Machine (Component):
 			self.protocol.connection_name = connection_name
 
 			started = defer.maybeDeferred(self.start)
-			started.addCallbacks(self.ready.callback, self.ready.errback)
+			started.addCallbacks(self.ready.callback, startError)
 
 		def disconnected (reason):
 			self.stop()
@@ -213,7 +217,7 @@ class Machine (Component):
 			log.msg("Connecting to endpoint %s" % connection_name, level = logging.DEBUG)
 
 			d = defer.maybeDeferred(endpoint.connect, self.protocolFactory)
-			d.addCallbacks(connected, busy)
+			d.addCallbacks(connected, self.ready.errback)
 
 		# If transport is a Deferred, wait for it to be ready
 		defer.maybeDeferred(lambda x: x, endpoint).addCallback(endpointReady)
@@ -245,12 +249,13 @@ class Machine (Component):
 
 	def _stopTicks (self):
 		for t in self._ticks:
-			t.stop()
+			if t.running:
+				t.stop()
 
 	def __str__ (self):
 		return "<%s at %s (%s)>" % (
 			self.__class__.__name__,
-			hex(unsignedID(self)),
+			hex(id(self)),
             "connected" if self.connected else "disconnected"
 		)
 	__repr__ = __str__
@@ -267,6 +272,15 @@ class Stream (data.Variable):
 	def set (self, value):
 		raise data.errors.Immutable
 
+	def __repr__ (self):
+		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}{var_unit}>".format(
+			class_name = self.__class__.__name__, 
+			reference = hex(id(self)),
+			var_alias = self.alias,
+            var_type = self.type.__name__,
+			var_value = self.value,
+			var_unit = self.unit
+		)
 	# _push is used internally to add data coming in from the machine.
 
 

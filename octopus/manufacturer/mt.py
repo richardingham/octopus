@@ -113,6 +113,8 @@ class ICIR (Machine):
 	def start (self):
 		# setup monitor on a tick to update variables
 
+		self._last_time = None
+
 		def interpret_data (result):
 			data = json.loads(result)
 
@@ -120,6 +122,11 @@ class ICIR (Machine):
 				return
 
 			time = data["time"] / 1000
+
+			if time == self._last_time:
+				return
+			else:
+				self._last_time = time
 
 			for i in range(len(data["streams"])):
 				datum = data["streams"][i]
@@ -130,14 +137,16 @@ class ICIR (Machine):
 					self._streams[name]._push(value, time)
 				except KeyError:
 					try:
-						self._streams["stream_%s" % name]._push(time, value)
+						self._streams["stream_%s" % name]._push(value, time)
 					except KeyError:
 						pass
 
 		def monitor_data ():
-			self.protocol.write("requestData").addCallback(interpret_data)
+			return self.protocol.write("requestData").addCallback(interpret_data)
 
 		self._tick(monitor_data, 1)
+
+		return monitor_data()
 
 	def stop (self):
 		self._stopTicks()

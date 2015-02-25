@@ -10,7 +10,7 @@ import util
 import error
 
 
-class Bind (util.Looping, util.Dependent):
+class Bind (util.Dependent):
 	"""
 	Connects a variable to an expression.
 	
@@ -26,8 +26,6 @@ class Bind (util.Looping, util.Dependent):
 	Set max and min to limit the value of variable.
 	"""
 
-	interval = 0.5
-
 	max = None
 	min = None
 
@@ -41,13 +39,21 @@ class Bind (util.Looping, util.Dependent):
 
 	def __init__ (self, variable, expr = None, process = None):
 		util.Dependent.__init__(self)
-		util.Looping.__init__(self)
 
 		self.variable = variable
 		self.expr = expr
 		self.process = process
 
-	def _iterate (self):
+	def _run (self):
+		self.expr.on("change", self._update)
+
+	def _cancel (self):
+		self.expr.off("change", self._update)
+
+	def _update (self, data):
+		if self.state is not State.RUNNING:
+			return
+
 		# Use self.process if set
 		if callable(self.process):
 			try:
@@ -63,12 +69,10 @@ class Bind (util.Looping, util.Dependent):
 		if self.min is not None:
 			new_val = max(new_val, self.min)
 
-		# Temporary optimisation - eventually add update triggers to variables.
 		if self.variable.value != new_val:
 			# Return a value so that self._calls gets incremented,
 			# swallow any errors to avoid terminating the loop.
 			return self.variable.set(new_val).addErrback(log.err)
-
 
 
 class PID (util.Looping, util.Dependent):
@@ -84,22 +88,62 @@ class PID (util.Looping, util.Dependent):
 	Set max and min to limit the response value.
 	"""
 
-	interval = 0.5
+	@property
+	def interval (self):
+		return self._interval
 
-	proportional = 25
-	integral = 0.25
-	differential = 500
+	@interval.setter
+	def interval (self, value):
+		self._interval = value
+
+	proportional = 0.5
+	integral = 0.05
+	differential = 0
 
 	max = None
 	min = None
 
-	def __init__ (self, response, error):
+	max_integral = 500
+	min_integral = -500
+
+	def __init__ (self, response, error, proportional = None, integral = None, differential = None, max = None, min = None, interval = 0.5):
 		util.Dependent.__init__(self)
-		util.Looping.__init__(self)
+		util.Looping.__init__(self, interval)
 
 		self.error = error
 		self.response = response
+
+		if proportional is not None:
+			self.proportional = proportional
+		if integral is not None:
+			self.integral = integral
+		if differential is not None:
+			self.differential = differential
+
+		self.max = max
+		self.min = min
+
 		self._prev_error = None
+		self._integral = 0 # Accumulated integral
+
+	def reset_integral (self):
+		self._integral = 0
+
+	def _integral_bound (self, integral):
+		if self.max_integral is not None:
+			integral = min(integral, self.max_integral)
+		if self.min_integral is not None:
+			integral = max(integral, self.min_integral)
+
+		return integral
+
+	def _output_bound (self, new):
+		if self.max is not None:
+			new = min(new, self.max)
+		if self.min is not None:
+			new = max(new, self.min)
+
+		return new
 
 	def _iterate (self):
 		current = float(self.response)
@@ -111,15 +155,19 @@ class PID (util.Looping, util.Dependent):
 		if e_prev is None:
 			return
 
-		# trapezium rule
-		integral_term = \
+		# Trapezium rule
+		integral_term = self._integral + \
 			(min(e, e_prev) * interval) + \
 			(0.5 * (e + e_prev) * interval)
 
-		# difference rule
-		differential_term = (e - e_prev) / interval
+		integral_term = self._integral_bound(integral_term)
+		self._integral = integral_term
 
-		# PID control
+		# Difference rule
+		differential_term = (e - e_prev) / interval
+		self._differential = differential_term
+
+		# Compute PID
 		change = \
 			(self.proportional * e) + \
 			(self.integral * integral_term) + \
@@ -128,15 +176,12 @@ class PID (util.Looping, util.Dependent):
 		new = current + change
 
 		# Enforce bounds
-		if self.max is not None:
-			new = min(new, self.max)
-		if self.min is not None:
-			new = max(new, self.min)
+		new = self._output_bound(new)
 
 		self.response.set(new)
 
 
-class StateMonitor (util.Looping, util.Dependent):
+class StateMonitor (util.Dependent):
 	"""
 	Monitors a set of expressions.
 
@@ -157,8 +202,6 @@ class StateMonitor (util.Looping, util.Dependent):
 	
 	"""
 
-	interval = 0.5
-
 	@property
 	def trigger_step (self):
 		return self._trigger_step
@@ -177,9 +220,8 @@ class StateMonitor (util.Looping, util.Dependent):
 
 	def __init__ (self, tests = None, trigger_step = None, reset_step = None, auto_reset = True, cancel_on_trigger = True, cancel_on_reset = True):
 		util.Dependent.__init__(self)
-		util.Looping.__init__(self)
 
-		self.tests = set()
+		self._tests = set()
 
 		if tests is not None:
 			for t in tests:
@@ -199,23 +241,34 @@ class StateMonitor (util.Looping, util.Dependent):
 		False, the monitor is triggered.
 		"""
 
-		self.tests.add(test)
+		self._tests.add(test)
+
+		if self.state is State.RUNNING:
+			test.on("change", self._changed)
 
 	def remove (self, test):
 		"""
 		Remove an expression from the set of tests.
 		"""
 
-		self.tests.discard(test)
+		self._tests.discard(test)
 
-	def _iterate (self):
+		try:
+			test.off("change", self._changed)
+		except KeyError:
+			pass
+
+	def _changed (self, data = None):
+		if self.state is not State.RUNNING:
+			return
+
 		# If the monitor is already triggered, check if we need to reset.
 		if self._triggered:
-			if self.auto_reset and all(self.tests):
+			if self.auto_reset and all(self._tests):
 				self.reset_trigger()
 
 		# Check if the monitor should be triggered.
-		elif not all(self.tests):
+		elif not all(self._tests):
 			# Cancel reset_step
 			try:
 				if self.cancel_on_trigger:
@@ -231,9 +284,6 @@ class StateMonitor (util.Looping, util.Dependent):
 				return
 
 			self._triggered = True
-
-			# Increment _calls
-			return True
 
 	def reset_trigger (self, run_reset_step = True):
 		self._triggered = False
@@ -251,6 +301,48 @@ class StateMonitor (util.Looping, util.Dependent):
 			except error.AlreadyRunning:
 				return
 
-	def _cancel (self):
-		util.Looping._cancel(self)
+	def _run (self):
+		for test in self._tests:
+			test.on("change", _changed)
+
+		_changed()
+
+	def _cancel (self, abort = False):
 		self.reset_trigger()
+
+		for test in self._tests:
+			try:
+				test.off("change", _changed)
+			except KeyError:
+				pass
+
+	def _pause (self):
+		d = []
+
+		try:
+			d.append(self.trigger_step.pause())
+		except error.NotRunning:
+			pass
+
+		try:
+			d.append(self.reset_step.pause())
+		except error.NotRunning:
+			pass
+
+		return defer.gatherResults(d)
+
+	def _resume (self):
+		d = []
+
+		try:
+			d.append(self.trigger_step.resume())
+		except error.NotRunning:
+			pass
+
+		try:
+			d.append(self.reset_step.resume())
+		except error.NotRunning:
+			pass
+
+		return defer.gatherResults(d)
+

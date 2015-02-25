@@ -6,10 +6,11 @@ from twisted.internet.protocol import Factory
 from time import time as now
 
 # Sibling Imports
-from data import Image
+from data import Image, DerivedImage
 
 # Package Imports
 from ..machine import Machine, Property, Stream, ui
+
 
 def _get_centroids (count):
 	def get_centroids (processed_img, min_size):
@@ -28,7 +29,7 @@ def _get_centroids (count):
 class SingleBlobTracker (Machine):
 
 	protocolFactory = None
-	name = "Follow Green Blobs on a webcam"
+	name = "Follow Green Blob on a webcam"
 	update_frequency = 1
 
 	def setup (self, fn = None):
@@ -36,7 +37,7 @@ class SingleBlobTracker (Machine):
 		self.height = Stream(title = "Height", type = int)
 		self.status = Property(title = "Status", type = str)
 		self.image = Image(title = "Tracked", fn = self._get_image)
-		self.visualisation = Image(title = "Visualisation", fn = self._get_visualisation)
+		self.visualisation = DerivedImage(title = "Visualisation")
 
 		if fn is None:
 			self.process_fn = lambda r, g, b: (g - r).threshold(30).erode()
@@ -51,41 +52,43 @@ class SingleBlobTracker (Machine):
 		)
 
 	def start (self):
-		def monitor ():
-			img = self.protocol.image()
-			img = self.process_fn(*img.splitChannels())
-			pos = self._get_centroids(img, self.blob_size)
-
-			if pos is not None:
-				self.height._push(img.height - pos[0][1])
-				self.status._push("ok")
-			else:
-				self.status._push("error")
-
-		self._tick(monitor, self.update_frequency)
+		self._tick(self.image.refresh, self.update_frequency)
 
 	def show (self):
-		self._get_image().show()
+		self.image.value.show()
 
 	def _get_image (self):
 		img = self.protocol.image()
+
+		if img is None:
+			return
+
 		processed_img = self.process_fn(*img.splitChannels())
+		self.visualisation._push(processed_img)
+
 		pos = self._get_centroids(processed_img, self.blob_size)
 
 		if pos is not None:
 			x, y = pos[0]
 			img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width = 6)
 
-		return img
-
-	def _get_visualisation (self):
-		img = self.protocol.image()
-		img = self.process_fn(*img.splitChannels())
+			self.height._push(img.height - pos[0][1])
+			self.status._push("ok")
+		else:
+			self.status._push("error")
 
 		return img
 
 	def stop (self):
 		self._stopTicks()
+
+	def disconnect (self):
+		self.stop()
+
+		try:
+			self.protocol.disconnect()
+		except AttributeError:
+			pass
 
 
 class MultiBlobTracker (Machine):
@@ -117,7 +120,7 @@ class MultiBlobTracker (Machine):
 			self._heights.append(stream)
 
 		self.image = Image(title = "Tracked", fn = self._get_image)
-		self.visualisation = Image(title = "Visualisation", fn = self._get_visualisation)
+		self.visualisation = DerivedImage(title = "Visualisation")
 		self.status = Property(title = "Status", type = str)
 
 		self.ui = ui(
@@ -136,51 +139,53 @@ class MultiBlobTracker (Machine):
 		for p in pos:
 			self._x.append(p[0])
 
-		def monitor ():
-			img = self.protocol.image()
-			img = self.process_fn(*img.splitChannels())
-			pos = self._get_centroids(img, self.blob_size)
-
-			if pos is not None:
-				found = 0
-
-				for i in range(self._count):
-					_x = self._x[i]
-
-					for x, y in pos:
-						if abs(x - _x) < self.x_tolerance:
-							self._heights[i]._push(img.height - y)
-							found += 1
-
-				if found < self._count:
-					self.status._push("blobs-missing")
-				else:
-					self.status._push("ok")
-			else:
-				self.status._push("error")
-
-		self._tick(monitor, self.update_frequency)
+		self._tick(self.image.refresh, self.update_frequency)
 
 	def show (self):
-		self._get_image().show()
+		self.image.value.show()
 
 	def _get_image (self):
 		img = self.protocol.image()
+
+		if img is None:
+			return None
+
 		processed_img = self.process_fn(*img.splitChannels())
+		self.visualisation._push(processed_img)
+
 		pos = self._get_centroids(processed_img, self.blob_size)
 
 		if pos is not None:
 			for x, y in pos:
 				img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width = 6)
 
-		return img
+			found = 0
 
-	def _get_visualisation (self):
-		img = self.protocol.image()
-		img = self.process_fn(*img.splitChannels())
+			for i in range(self._count):
+				_x = self._x[i]
+
+				for x, y in pos:
+					if abs(x - _x) < self.x_tolerance:
+						self._heights[i]._push(img.height - y)
+						found += 1
+
+			if found < self._count:
+				self.status._push("blobs-missing")
+			else:
+				self.status._push("ok")
+		else:
+			self.status._push("error")
 
 		return img
 
 	def stop (self):
 		self._stopTicks()
+
+	def disconnect (self):
+		self.stop()
+
+		try:
+			self.protocol.disconnect()
+		except AttributeError:
+			pass
 
