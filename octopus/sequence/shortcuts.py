@@ -15,7 +15,7 @@ from ..data import Variable
 
 def sequence (*steps):
 	return s.Sequence(steps)
-	
+
 def parallel (*steps):
 	return s.Parallel(steps)
 
@@ -72,3 +72,9 @@ def cancel (step):
 
 def log (message):
 	return s.LogStep(message)
+
+def with_dependents (step, dependents):
+	for dependent in dependents:
+		step.dependents.add(dependent)
+
+	return step
