@@ -8,17 +8,21 @@ def run (runnable, logging = True):
 		return runnable.run()
 
 	else:
+		if logging:
+			import sys
+			from twisted.python import log
+
+			log.startLogging(sys.stdout)
+			runnable.on("log", log.msg)
+
 		def _complete (result):
 			reactor.stop()
+
+			if logging:
+				runnable.off("log", log.msg)
 
 		def _run ():
 			runnable.run().addBoth(_complete)
 
-		if logging:
-			import sys
-			from twisted.python import log
-			log.startLogging(sys.stdout)
-			runnable.log += log
-
         reactor.callWhenRunning(_run)
-        reactor.run() 
+        reactor.run()
