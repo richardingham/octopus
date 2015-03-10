@@ -87,18 +87,26 @@ class PHD2000Infuser (Machine):
 		self.pumpNumber = str(0)
 		self.syringeDiameter = syringe_diameter
 		self._dispensed_accumulator = 0
+		self._pump_paused = False
 
 		@defer.inlineCallbacks
 		def set_rate (rate):
 			if rate < 0.0001:
 				rate = 0
+				self._pump_paused = True
 				yield self.protocol.write(self.pumpNumber + "STP")
 
 			else:
 				dispensed, status = yield self.protocol.write(self.pumpNumber + "DEL")
 
+				# Can only RUN if a rate has been set.
+				# By sending RUN before RAT, we avoid resetting the dispensed counter.
+				if status != "infusing" and self._pump_paused:
+					yield self.protocol.write(self.pumpNumber + "RUN")
+					self._pump_paused = False
+
 				# Set the rate
-				result, _ = yield self.protocol.write(
+				result, status = yield self.protocol.write(
 					self.pumpNumber +
 					"RAT {:.4f}".format(rate)[:10] + " UM",
 				)
@@ -106,9 +114,11 @@ class PHD2000Infuser (Machine):
 				if result == "out-of-range-error":
 					raise Error("Requested target volume out of range")
 
+				# Run if not running already
 				if status != "infusing":
 					yield self.protocol.write(self.pumpNumber + "RUN")
 					self._dispensed_accumulator += float(dispensed)
+
 
 			self.rate._push(rate)
 			defer.returnValue("OK")
@@ -117,6 +127,8 @@ class PHD2000Infuser (Machine):
 		def set_target (target):
 			# Stop the pump
 			yield self.protocol.write(self.pumpNumber + "STP")
+
+			yield self.protocol.write(self.pumpNumber + "MOD VOL")
 
 			# Set the property
 			result, status = yield self.protocol.write(
@@ -198,9 +210,12 @@ class PHD2000Infuser (Machine):
 		# Set pump into pump mode
 		yield self.protocol.write(self.pumpNumber + "MOD PMP")
 
+		# Zero rate
+		yield self.protocol.write(self.pumpNumber + "RAT 0.0000 UM")
+
 		# Clear delivered volume
 		yield self.protocol.write(self.pumpNumber + "CLD")
-		self.delivered._push(0)
+		self.dispensed._push(0)
 
 		# Set Diameter
 		yield self.protocol.write(
