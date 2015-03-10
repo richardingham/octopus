@@ -31,7 +31,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 			self[attr] = value
 
 	timeout = 1
-	character_delay = 0.0001
+	character_delay = 0
 	max_command_length = 1000
 
 	def __init__ (self):
@@ -85,11 +85,14 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		self._current = command
 		self._queue_d = defer.Deferred()
 
-		self.sendLine(command.line + self.delimiter)
+		if self.character_delay > 0:
+			self.sendLine(command.line + self.delimiter)
+		else:
+			self.transport.write(command.line + self.delimiter)
 
 		if command.expectReply:
 			self._timeout = reactor.callLater(
-				len(command.line) * self.character_delay + self.timeout,
+				(len(command.line) * self.character_delay) + self.timeout,
 				self._timeoutCurrent
 			)
 
