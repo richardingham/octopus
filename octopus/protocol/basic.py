@@ -120,8 +120,6 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		return LineOnlyReceiver.dataReceived(self, "")
 
 	def lineReceived (self, line):
-		if len(line) is 0:
-			return
 
 		try:
 			self._timeout.cancel()
