@@ -49,6 +49,15 @@ class MultiValve (Machine):
 		"fastest": "GO"
 	}
 
+	@defer.inlineCallbacks
+	def _getPosition (self):
+		result = yield self.protocol.write("CP")
+		try:
+			defer.returnValue(int(result.split("=")[1]))
+		except ValueError:
+			return
+
+	@defer.inlineCallbacks
 	def move (self, position, direction = "f"):
 		if direction not in self._move_commands:
 			raise "Invalid direction"
@@ -58,29 +67,30 @@ class MultiValve (Machine):
 		# Make sure position is between 1 and NP
 		position = ((int(position) - 1) % self.num_positions) + 1
 
-		d = defer.Deferred()
+		if position == self.position.value:
+			current_position = yield self._getPosition()
+			if position == current_position:
+				defer.returnValue('OK')
 
-		def interpret (result):
-			new_position = int(result.split("=")[1])
+		yield self.protocol.write("%s%d" % (command, position), expectReply = False)
+		new_position = yield self._getPosition()
+		
+		if new_position is None:
+			# If there was an error in the move command, this will have been received
+			# by the CP command due to the expectReply = False.
+			# Read the current position again
+			new_position = yield self._getPosition()
+
+		if new_position != position:
+			raise Exception("Move Failed")
+		else:
 			self.position._push(new_position)
-
-			if new_position != position:
-				d.errback(Exception("Move Failed"))
-			else:
-				d.callback("OK")
-
-		self.protocol.write("%s%d" % (command, position), expectReply = False)
-		self.protocol.write("CP").addCallback(interpret)
-
-		return d
+			defer.returnValue("OK")
 
 	def advance (self, positions):
 		return self.move(int(self.position) + positions)
 
 	def start (self):
-		# Stop people using the panel
-		d = self.protocol.write("SD1")
-
 		# Discover the number of positions
 		def interpretPositions (result):
 			self.num_positions = int(result.split("=")[1])
@@ -90,12 +100,11 @@ class MultiValve (Machine):
 			self.position._push(int(result.split("=")[1]))
 
 		return defer.gatherResults([
-			d,
 			self.protocol.write("NP").addCallback(interpretPositions),
 			self.protocol.write("CP").addCallback(interpretPosition)
 		])
 
 	def reset (self):
 		return defer.gatherResults([
-			self.position.set(0)
+			self.position.set(1)
 		])
