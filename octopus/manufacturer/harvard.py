@@ -162,15 +162,20 @@ class PHD2000Infuser (Machine):
 		def interpret_rate (result):
 			line, status = result
 
-			if status is not None:
-				self.status._push(status)
+			if status is None:
+				return
 
-			try:
-				unit = _rate_unit_factors[line[7:12]]
-			except KeyError:
-				raise Error('Invalid unit string: ' + line[7:12])
+			self.status._push(status)
 
-			self.rate._push(unit * float(line[0:6]))
+			if status == "infusing":
+				try:
+					unit = _rate_unit_factors[line[7:12]]
+				except KeyError:
+					raise Error('Invalid unit string: ' + line[7:12])
+
+				self.rate._push(unit * float(line[0:6]))
+			else:
+				self.rate._push(0)
 
 		def interpret_delivered (result):
 			# Units in mL
