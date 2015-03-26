@@ -33,6 +33,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 	timeout = 1
 	character_delay = 0
 	max_command_length = 1000
+	debug = False
 
 	def __init__ (self):
 		self.connection_name = "disconnected"
@@ -85,6 +86,9 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		self._current = command
 		self._queue_d = defer.Deferred()
 
+		if self.debug:
+			log.msg('Send: ' + repr(command.line + self.delimiter))
+
 		if self.character_delay > 0:
 			self.sendLine(command.line + self.delimiter)
 		else:
@@ -120,6 +124,8 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		return LineOnlyReceiver.dataReceived(self, "")
 
 	def lineReceived (self, line):
+		if self.debug:
+			log.msg('Recv: ' + repr(line))
 
 		try:
 			self._timeout.cancel()
@@ -130,6 +136,9 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 		except (AttributeError, AlreadyCalled, AlreadyCancelled):
 			# Either a late response or an unexpected Message
+			if self.debug:
+				log.msg('  (Unexpected)')
+
 			return self.unexpectedMessage(line)
 
 		finally:
@@ -211,7 +220,13 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 	def dataReceived (self, data):
 		current = self._current
 
+		if self.debug:
+			log.msg('Data: ' + repr(data))
+
 		if current is None:
+			if self.debug:
+				log.msg('  (Unexpected)')
+
 			self.unexpectedMessage(data)
 			return
 
@@ -222,10 +237,16 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 			try:
 				idx = self._buffer.index(current.startDelimiter)
 				if idx > 0:
+					if self.debug:
+						log.msg('  Discard before start delim:' + repr(self._buffer[:idx]))
+
 					self._buffer = self._buffer[idx:]
 
 			except ValueError:
 				# Haven't received a start delimiter yet
+				if self.debug:
+					log.msg('  Discard before start delim:' + repr(self._buffer))
+
 				self._buffer = ''
 				return
 
@@ -254,6 +275,9 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 				# Discard the first character in the buffer and start again
 				if current.endDelimiter is not None \
 				and self._buffer[end:end + current.endDelimiterLength] != current.endDelimiter:
+					if self.debug:
+						log.msg('  Wrong end delimiter. Discarding first char of: ' + repr(self._buffer))
+
 					self._buffer = self._buffer[1:]
 
 					# In this case the length would need to be calculated again
@@ -265,6 +289,10 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 					self._buffer = self._buffer[end + current.endDelimiterLength:]
 					self.lineReceived(line)
 
+			elif self.debug:
+				log.msg('  Waiting for length ' + repr(current.length))
+
+
 		# If no length was specified, look for the end delimiter
 		elif current.endDelimiter is not None \
 		and current.lengthFn is None:
@@ -274,6 +302,9 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 
 			except ValueError:
 				# Haven't received an end delimiter yet
+				if self.debug:
+					log.msg('  Waiting for end delimiter: ' + repr(current.endDelimiter))
+
 				return
 
 			line = self._buffer[current.startDelimiterLength:idx]
@@ -284,7 +315,3 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 		# something weird to do with the brainboxes?
 		if self._buffer[:9] == '\xff\xfd\x03\xff\xfd\x00\xff\xfd,':
 			self._buffer = self._buffer[9:]
-
-
-		start = current.startDelimiterLength
-		end = current.startDelimiterLength
