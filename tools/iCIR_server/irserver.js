@@ -103,27 +103,32 @@ function readFile (fileName, callback) {
 		// Pull the time out of the filename. Expects the filename
 		// to be in the format "YYYY-MM-DD_HH-MM-SS_TrendData.txt"
 		// Uses the local timezone.
-		var time = +(new (Date.bind.apply(
+		var time = +(new (Function.bind.apply(
 			Date, 
-			path.basename(fileName).split("_").splice(0, 2).map(function (s) {
-				return s.split("-"); 
+			path.basename(fileName).split("_").slice(0, 2).map(function (s) {
+				// Produce an array of two arrays of integers.
+				return s.split("-").map(function (n) {
+					return +n;
+				}); 
 			}).reduce(function (p, c) {
-				return p.concat(c); 
-			}, [Date]).map(function (i) {
-				return +i;
+				// Combine the two arrays
+				return p.concat(c);
+			}, [null]).map(function (n, i) {
+				// Compensate for the fact that months are indexed 0-11
+				return n - +(i === 2);
 			})
 		)));
+
+		var lines = data.split("\n").slice(1).map(function (line) {
+			return line.trim().split(",").map(function (v) {
+				return v.slice(1,-1).trim(); 
+			}); 
+		});
 
 		var data = {
 			time: time,
 			streams: []
 		};
-
-		var lines = data.split("\n").map(function (line) {
-			return line.trim().split(",").map(function (v) {
-				return v.slice(1,-1).trim(); 
-			}); 
-		});
 
 		lines.forEach(function (line) {
 			if (line[0] === "") return;
