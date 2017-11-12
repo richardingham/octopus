@@ -9,8 +9,13 @@ import os, tty, sys, termios
 
 # Package Imports
 from octopus.transport import basic
-from octopus.manufacturer import vapourtec, knauer, gilson
+from octopus.manufacturer import knauer, gilson
 from octopus.sequence import shortcuts
+
+try:
+	from octopus.manufacturer import vapourtec
+except:
+	vapourtec = None
 
 def run ():
 	log.startLogging(file('child.log', 'w'))
@@ -25,6 +30,9 @@ def run ():
 			"gilson": gilson,
 			"s": shortcuts
 		}
+		if vapourtec is not None:
+			locals["vapourtec"] = vapourtec
+
 		p = ServerProtocol(ConsoleManhole, namespace = locals)
 		stdio.StandardIO(p)
 		reactor.run()
