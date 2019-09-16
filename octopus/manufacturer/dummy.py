@@ -12,8 +12,8 @@ __all__ = ["Dummy"]
 
 class QueuedLineReceiver (_qlr):
 
-	delimiter = "\n\r"
-	out_delimiter = "\n"
+	delimiter = b"\n\r"
+	out_delimiter = b"\n"
 
 	def sendLine (self, line):
 	   """

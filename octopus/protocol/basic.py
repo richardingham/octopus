@@ -13,7 +13,7 @@ from ..util import AsyncQueue, AsyncQueueRetry
 
 
 class _Command (object):
-	def __init__ (self, index, line, expectReply, wait):
+	def __init__ (self, index: int, line: str, expectReply: bool, wait):
 		self.index = index
 		self.line = line
 		self.expectReply = bool(expectReply)
@@ -66,11 +66,11 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 		return command.d
 
-	def _advance (self, command):
+	def _advance (self, command: _Command):
 		self._current = command
 		self._queue_d = defer.Deferred()
 
-		self.sendLine(command.line)
+		self.sendLine(command.line.encode('ascii'))
 
 		if command.expectReply:
 			self._timeout = reactor.callLater(self.timeoutDuration, self._timeoutCurrent)
@@ -83,16 +83,16 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 		return self._queue_d
 
-	def dataReceived (self, data):
+	def dataReceived (self, data: bytes):
 		self._buffer += data
 
 		# something weird to do with the brainboxes?
-		if self._buffer[:9] == '\xff\xfd\x03\xff\xfd\x00\xff\xfd,':
+		if self._buffer[:9] == b'\xff\xfd\x03\xff\xfd\x00\xff\xfd,':
 			self._buffer = self._buffer[9:]
 
-		return LineOnlyReceiver.dataReceived(self, "")
+		return LineOnlyReceiver.dataReceived(self, b"")
 
-	def lineReceived (self, line):
+	def lineReceived (self, line: bytes):
 		if len(line) is 0:
 			return
 
@@ -100,7 +100,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 			self._timeout.cancel()
 
 			command = self._current
-			reactor.callLater(command.wait, command.d.callback, line)
+			reactor.callLater(command.wait, command.d.callback, line.decode('ascii'))
 			reactor.callLater(command.wait, self._queue_d.callback, None)
 
 		except (AttributeError, AlreadyCalled, AlreadyCancelled):

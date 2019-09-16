@@ -15,7 +15,7 @@ __all__ = ["MultiValve"]
 
 class LineReceiver (QueuedLineReceiver):
 	timeoutDuration = 4.5
-	delimiter = "\r"
+	delimiter = b"\r"
 
 class MultiValve (Machine):
 

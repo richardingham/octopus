@@ -22,7 +22,7 @@ from ..protocol.basic import QueuedLineReceiver
 
 class HeidolphLineReceiver (QueuedLineReceiver):
 
-	delimiter = "\n\r"
+	delimiter = b"\n\r"
 
 	def sendLine (self, line):
 	   """
@@ -31,7 +31,7 @@ class HeidolphLineReceiver (QueuedLineReceiver):
 	   @param line: The line to send, not including the delimiter.
 	   @type line: C{str}
 	   """
-	   return self.transport.write(line + "\n")
+	   return self.transport.write(line + b"\n")
 
 
 class _heater (Component):

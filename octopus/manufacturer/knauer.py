@@ -13,7 +13,7 @@ __all__ = ["K120", "S100"]
 
 
 class K120LineReceiver (QueuedLineReceiver):
-	delimiter = "\r"
+	delimiter = b"\r"
 
 	# Knauer pump K120 returns "S" then two bytes (no delimiter)
 	# in response to a "S?" query. Induce a lineReceived in this case:
