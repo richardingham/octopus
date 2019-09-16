@@ -5,7 +5,6 @@ from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import log, failure
 
 # System Imports
-import exceptions
 from collections import deque
 import logging
 
@@ -54,7 +53,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 	def _log (self, msg, level = None):
 		log.msg(
-			"QueuedLineReceiver [{!s}}]: {!s}}".format(
+			"QueuedLineReceiver [{!s}]: {!s}".format(
 				self.connection_name,
 				msg
 			),
@@ -122,6 +121,6 @@ class QueuedLineReceiver (LineOnlyReceiver):
 			self._current.d.errback(TimeoutError(self._current.line))
 			self._queue_d.errback(TimeoutError(self._current.line))
 
-		except exceptions.AttributeError:
+		except AttributeError:
 			# There is actually no current command
 			pass
