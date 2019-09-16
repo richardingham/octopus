@@ -8,6 +8,9 @@ from ..machine import Machine, Stream, Property, ui
 from ..util import now
 from ..protocol.basic import QueuedLineReceiver
 
+# Compatibility Imports
+import six
+
 __all__ = ["HCube"]
 
 class LineReceiver (QueuedLineReceiver):
@@ -188,7 +191,7 @@ class HCube (Machine):
 		}
 
 		def monitor_state ():
-			for cmd, cb in commands.iteritems():
+			for cmd, cb in six.iteritems(commands):
 				self.protocol.write(cmd).addCallbacks(cb, log.err)
 
 		self._tick(monitor_state, 1)

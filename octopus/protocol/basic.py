@@ -9,6 +9,9 @@ import exceptions
 from collections import deque
 import logging
 
+# Compatibility Imports
+import six
+
 # Package Imports
 from ..util import AsyncQueue, AsyncQueueRetry
 
@@ -54,15 +57,15 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 	def _log (self, msg, level = None):
 		log.msg(
-			"QueuedLineReceiver [%s]: %s" % (
-				self.connection_name, 
+			"QueuedLineReceiver [{!s}}]: {!s}}".format(
+				self.connection_name,
 				msg
-			), 
+			),
 			logLevel = level
 		)
 
 	def write (self, line, expectReply = True, wait = 0):
-		command = _Command(self.index.next(), line, expectReply, wait)
+		command = _Command(six.next(self.index), line, expectReply, wait)
 		self.queue.append(command)
 
 		return command.d
@@ -77,7 +80,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 			self._timeout = reactor.callLater(self.timeoutDuration, self._timeoutCurrent)
 
 		else:
-			# Avoid flooding the network or the device. 
+			# Avoid flooding the network or the device.
 			# 30ms is approximately a round-trip time.
 			reactor.callLater(command.wait, command.d.callback, None)
 			reactor.callLater(max(command.wait, 0.03), self._queue_d.callback, None)
@@ -118,11 +121,10 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 	def _timeoutCurrent (self):
 		try:
-			self._log("Timed Out: %s" % self._current.line, logging.ERROR)
+			self._log("Timed Out: {!s}".format(self._current.line), logging.ERROR)
 			self._current.d.errback(TimeoutError(self._current.line))
 			self._queue_d.errback(TimeoutError(self._current.line))
 
 		except exceptions.AttributeError:
 			# There is actually no current command
 			pass
-

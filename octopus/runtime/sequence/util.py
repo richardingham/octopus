@@ -3,15 +3,18 @@ from twisted.internet import reactor, defer, task
 from twisted.python import log, failure
 
 # Sibling Imports
-from error import NotRunning, AlreadyRunning, NotPaused, Stopped
+from .error import NotRunning, AlreadyRunning, NotPaused, Stopped
 
 # Package Imports
-from ..constants import State
-from ..util import EventEmitter
+from ...constants import State
+from ...util import EventEmitter
+
+# Compatibility Imports
+import six
 
 
 def init_child (parent, child):
-	from sequence import Sequence
+	from .sequence import Sequence
 
 	if child is None:
 		child = Sequence([])
@@ -219,8 +222,8 @@ class Looping (Runnable, Pausable, Cancellable):
 
 	def _iteration_stop (self):
 		"""
-		Stops the loop. 
-		
+		Stops the loop.
+
 		Triggered if _test() or _iterate raise StopIteration,
 		or if state is PAUSED or CANCELLED.
 		"""
@@ -272,7 +275,7 @@ class Caller (EventEmitter):
 		if isinstance(self._fn, BaseStep):
 			self._step = self._fn
 
-		elif callable(self._fn):
+		elif six.callable(self._fn):
 			# Act based on the result of fn().
 			result = self._fn(*self._args, **self._kwargs)
 
@@ -358,7 +361,7 @@ class Tick (Caller, Looping, Dependent):
 	If the function is or returns a BaseStep then the BaseStep must complete
 	before the next iteration can begin, no matter how long it takes.
 
-	Log entries for the BaseStep are passed on to the step to which the 
+	Log entries for the BaseStep are passed on to the step to which the
 	dependent is attached.
 
 	If Tick is run with a parent parameter then all events are passed on
@@ -403,6 +406,7 @@ class Tick (Caller, Looping, Dependent):
 		self.state = State.ERROR
 		log.err(error)
 
+
 class Trigger (Caller, Looping, Dependent):
 	"""
 	This is a dependent that runs a function as soon as a test evaluates to True.
@@ -413,7 +417,7 @@ class Trigger (Caller, Looping, Dependent):
 	If the function is or returns a Runnable then the Runnable must complete
 	before the next iteration can begin, no matter how long it takes.
 
-	Log entries for the Runnable are passed on to the step to which the 
+	Log entries for the Runnable are passed on to the step to which the
 	dependent is attached.
 
 	If Trigger is run with a parent parameter then all events are passed on
@@ -463,7 +467,7 @@ class Trigger (Caller, Looping, Dependent):
 
 
 class Dependents (Dependent):
-	
+
 	def __init__ (self):
 		Dependent.__init__(self)
 		self._dependents = set()

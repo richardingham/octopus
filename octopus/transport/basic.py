@@ -16,7 +16,7 @@ from twisted.python.util import FancyEqMixin
 class tcp (object):
 	def __init__ (self, host, port):
 		self.point = TCP4ClientEndpoint(reactor, host, port)
-		self.name  = "tcp(%s, %s)" % (host, port) 
+		self.name  = "tcp({!s}, {!s})".format(host, port)
 
 	def connect (self, factory):
 		return self.point.connect(factory)
@@ -37,7 +37,7 @@ class SerialAddress (FancyEqMixin, object):
 		self.port = port
 
 	def __repr__(self):
-		return 'SerialAddress(%r)' % (self.port,)
+		return 'SerialAddress({!r})'.format(self.port)
 
 	def __hash__(self):
 		if self.port is None:
@@ -57,7 +57,7 @@ class serial (object):
 	SIXBITS = serialport.SIXBITS
 	SEVENBITS = serialport.SEVENBITS
 	EIGHTBITS = serialport.EIGHTBITS
-	
+
 	_factory = serialport.SerialPort
 	_serial = None
 
@@ -65,7 +65,7 @@ class serial (object):
 		self._args = args
 		self.port = port
 		self.baudrate = baudrate
-		self.name = "serial(%s)" % (port) 
+		self.name = "serial({!s})".format(port)
 
 	def connect (self, factory):
 		addr = SerialAddress(self.port)

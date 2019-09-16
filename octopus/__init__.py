@@ -20,5 +20,5 @@ def run (runnable, logging = True):
 			log.startLogging(sys.stdout)
 			runnable.log += log
 
-        reactor.callWhenRunning(_run)
-        reactor.run() 
+		reactor.callWhenRunning(_run)
+		reactor.run() 

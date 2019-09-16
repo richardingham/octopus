@@ -1,0 +1,5 @@
+twisted
+numpy
+scipy
+pyserial
+crc16

@@ -1,12 +1,15 @@
 # Twisted Imports
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, protocol, defer
 from twisted.web.client import Agent
 from twisted.web.http_headers import Headers
 from twisted.internet.ssl import ClientContextFactory
 from twisted.python import log
 
 # System Imports
-from urllib import urlencode
+try:
+	from urllib.parse import urlencode
+except ImportError:
+	from urllib import urlencode
 
 # Sibling Imports
 import util as notifier_util
@@ -14,6 +17,18 @@ import util as notifier_util
 class WebClientContextFactory(ClientContextFactory):
 	def getContext(self, hostname, port):
 		return ClientContextFactory.getContext(self)
+
+class _Receiver (protocol.Protocol):
+	def __init__ (self, d):
+		self.buf = ''
+		self.d = d
+
+	def dataReceived (self, data):
+		self.buf += data
+
+	def connectionLost (self, reason):
+		# TODO: test if reason is twisted.web.client.ResponseDone, if not, do an errback
+		self.d.callback(self.buf)
 
 class ClockworkSMS (object):
 	def __init__ (self, api_key):
@@ -45,9 +60,9 @@ class ClockworkSMS (object):
 			None
 		)
 
-		def handle_response(response):
+		def handle_response (response):
 			d = defer.Deferred()
-			response.deliverBody(notifier_util.SimpleReceiver(d))
+			response.deliverBody(_Receiver(d))
 
 			return d
 

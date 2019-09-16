@@ -4,7 +4,6 @@ from twisted.python import failure, log
 
 # System Imports
 import logging
-from exceptions import AttributeError
 
 # Package Imports
 from .. import util, data
@@ -12,7 +11,7 @@ from ..data.data import BaseVariable
 from ..image.data import Image
 
 # Sibling Imports
-from interface import InterfaceSection
+from .interface import InterfaceSection
 
 __all__ = ["Machine", "Component", "ComponentList", "Stream", "Property"]
 

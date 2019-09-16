@@ -7,7 +7,7 @@ from time import time as now
 from collections import deque
 import functools
 
-# NumPy
+# Numpy
 import numpy as np
 
 
@@ -102,7 +102,7 @@ class EventEmitter (object):
 			return self._events[event]
 		except (AttributeError, KeyError):
 			return []
-	
+
 	def emit (self, _event, **data):
 		handled = False
 
@@ -142,7 +142,6 @@ def timerange (start, interval, step):
 			start = now() + start
 
 	return np.arange(start, start + interval, step, float)
-
 
 
 class AsyncQueue (object):
@@ -217,8 +216,10 @@ class AsyncQueue (object):
 	def __len__ (self):
 		return len(self._tasks)
 
+
 class AsyncQueueRetry (Exception):
 	pass
+
 
 class _AsyncQueueTask (object):
 	def __init__ (self, data, deferred = None):

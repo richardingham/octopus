@@ -6,6 +6,8 @@ import cv2
 from cv2 import cv
 import SimpleCV
 
+# Compatibility Imports
+from __future__ import print_function
 
 class webcam (object):
 	def __init__ (self, device = -1):
@@ -31,7 +33,7 @@ class webcam (object):
 		i = yield threads.deferToThread(self.camera.getImage)
 
 		if i is None:
-			print "No image"
+			print ("No image")
 
 		defer.returnValue(i)
 
@@ -61,7 +63,7 @@ class webcam_nothread (object):
 		i = self.camera.getImage()
 
 		if i is None:
-			print "No image"
+			print ("No image")
 
 		return i
 
@@ -96,7 +98,7 @@ class cv_webcam (object):
 			return
 
 		if flag is False:
-			print "No image"
+			print ("No image")
 			return
 
 		defer.returnValue(SimpleCV.Image(

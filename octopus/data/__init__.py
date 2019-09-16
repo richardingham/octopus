@@ -1,4 +1,4 @@
-from data import Variable, Constant
-import errors
-import control
-import manipulation
+from .data import Variable, Constant
+from . import errors
+from . import control
+from . import manipulation

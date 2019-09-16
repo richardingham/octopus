@@ -8,11 +8,14 @@ from twisted.protocols.basic import LineReceiver
 from collections import namedtuple
 
 # Package Imports
-from ..machine import Machine, Component, Property, Stream, ui
+from ..machine import Machine, Component, Property, Stream
 from ..util import now
 from ..protocol import basic, gsioc
 
-from gilson_components import layout
+# Compatibility Imports
+from __future__ import print_function
+
+from .gilson_components import layout
 
 #__all__ = ["UVVis151"]
 
@@ -47,7 +50,7 @@ class GSIOC (Machine):
 
 
 def _iter_ci_FIFO (s):
-	for i in xrange(0, len(s), 7):
+	for i in range(0, len(s), 7):
 		yield s[i:i + 6]
 
 def _set_output (machine, i):
@@ -101,26 +104,26 @@ class ControlModule506C (Machine):
 		self.output5 = Property(title = "Contact Output E", type = str, options = ("open", "closed"), setter = _set_output(self, 5))
 		self.output6 = Property(title = "Contact Output F", type = str, options = ("open", "closed"), setter = _set_output(self, 6))
 
-		self.ui = ui(
-			traces = [{
-				"title": "Analogue Inputs",
-				"unit":  self.analogue1.unit,
-				"traces": [self.analogue1, self.analogue2, self.analogue3, self.analogue4],
-				"colours": ["#FF1300", "#FFB100", "#1435AD", "#00C322"]
-			}],
-			properties = [
-				self.input1,
-				self.input2,
-				self.input3,
-				self.input4,
-				self.output1,
-				self.output2,
-				self.output3,
-				self.output4,
-				self.output5,
-				self.output6
-			]
-		)
+		# self.ui = ui(
+		# 	traces = [{
+		# 		"title": "Analogue Inputs",
+		# 		"unit":  self.analogue1.unit,
+		# 		"traces": [self.analogue1, self.analogue2, self.analogue3, self.analogue4],
+		# 		"colours": ["#FF1300", "#FFB100", "#1435AD", "#00C322"]
+		# 	}],
+		# 	properties = [
+		# 		self.input1,
+		# 		self.input2,
+		# 		self.input3,
+		# 		self.input4,
+		# 		self.output1,
+		# 		self.output2,
+		# 		self.output3,
+		# 		self.output4,
+		# 		self.output5,
+		# 		self.output6
+		# 	]
+		# )
 
 	def start (self):
 
@@ -164,7 +167,7 @@ class ControlModule506C (Machine):
 				try:
 					state = self.input_map[result[0]]
 					time = self._last_contact_update + (int(result[1:6], 16) * 0.01)
-				except IndexError, KeyError:
+				except (IndexError, KeyError):
 					raise Exception("Malformed contact event FIFO: " + str(result))
 
 				self.input1._push("closed" if state & self.A else "open", time)
@@ -302,29 +305,29 @@ class SampleInjector233 (Machine):
 		self.switching = Property(title = "Switching Valve", type = str, options = ("load", "inject"), setter = set_valve("switching"))
 		#self.status = Property(title = "Status", type = str)
 
-		self.ui = ui(
-			properties = [
-				self.position,
-				self.injection,
-				self.switching,
-				#self.status
-			]
-		)
+		# self.ui = ui(
+		# 	properties = [
+		# 		self.position,
+		# 		self.injection,
+		# 		self.switching,
+		# 		#self.status
+		# 	]
+		# )
 
 	def start (self):
-		def get_param (id):
-			def request (result):
-				return self.protocol.immediate_command("P")
+		# def get_param (id):
+		# 	def request (result):
+		# 		return self.protocol.immediate_command("P")
 
-			return self.protocol.buffered_command("P" + str(id)).addCallback(request)
+		# 	return self.protocol.buffered_command("P" + str(id)).addCallback(request)
 
-		def interpretState (result):
-			if result[1] == "1":
-				self.status._push("error")
-			elif result[0] == "1":
-				self.status._push("busy")
-			elif result[0] == "0":
-				self.status._push("idle")
+		# def interpretState (result):
+		# 	if result[1] == "1":
+		# 		self.status._push("error")
+		# 	elif result[0] == "1":
+		# 		self.status._push("busy")
+		# 	elif result[0] == "0":
+		# 		self.status._push("idle")
 
 		valve_states = ("load", "inject", "running", "error", "missing")
 		def interpretValveState (result):
@@ -364,7 +367,7 @@ class Pump305 (Machine):
 		pass
 
 	def reset (self):
-		return defer.success()
+		return defer.succeed()
 
 
 
@@ -525,7 +528,7 @@ class _syringe_piston (Component):
 		else:
 			rate = "{:05.3f}".format(rate)[:5]
 
-		print "set rate: S" + self._id + rate
+		print ("set rate: S" + self._id + rate)
 
 		return self._machine.protocol.buffered_command(
 			"S" + self._id + rate
@@ -568,7 +571,7 @@ class _syringe_piston (Component):
 		def initialisation_failed (failure):
 			failure.trap(InitializationFailed)
 
-			print "Syringe Initialisation failed. Trying again"
+			print ("Syringe Initialisation failed. Trying again")
 			return task.deferLater(reactor, 1, self.initialize)
 
 		# Send commands to initialise the syringe
@@ -667,16 +670,16 @@ class SyringePump402 (Machine):
 			setter = _set_valve_position(1)
 		)
 
-		self.ui = ui(
-			properties = [
-				self.piston1.status,
-				self.piston1.volume,
-				self.valve1,
-				self.piston2.status,
-				self.piston2.volume,
-				self.valve2
-			]
-		)
+		# self.ui = ui(
+		# 	properties = [
+		# 		self.piston1.status,
+		# 		self.piston1.volume,
+		# 		self.valve1,
+		# 		self.piston2.status,
+		# 		self.piston2.volume,
+		# 		self.valve2
+		# 	]
+		# )
 
 	def start (self):
 		if self.initialise_on_start:
@@ -747,19 +750,19 @@ class UVVis151 (Machine):
 		self.detection2 = gsioc.FIFOStream(channel = 1, title = "Detection at Sensitivity 2", type = float)
 		self.transmittance = gsioc.FIFOStream(channel = 2, title = "Transmittance", type = float, unit = "%", factor = 0.1)
 
-		self.ui = ui(
-			traces = [{
-				"title": "Detection",
-				"unit":  self.detection1.unit,
-				"traces": [self.detection1, self.detection2],
-				"colours": ["#000", "#07F"]
-			}, {
-				"title": "Transmittance",
-				"unit":  self.transmittance.unit,
-				"traces": [self.transmittance],
-				"colours": ["#0c4"]
-			}],
-		)
+		# self.ui = ui(
+		# 	traces = [{
+		# 		"title": "Detection",
+		# 		"unit":  self.detection1.unit,
+		# 		"traces": [self.detection1, self.detection2],
+		# 		"colours": ["#000", "#07F"]
+		# 	}, {
+		# 		"title": "Transmittance",
+		# 		"unit":  self.transmittance.unit,
+		# 		"traces": [self.transmittance],
+		# 		"colours": ["#0c4"]
+		# 	}],
+		# )
 
 	def start (self):
 		def get_param (id):

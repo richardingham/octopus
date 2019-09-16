@@ -6,7 +6,7 @@ from twisted.internet.protocol import Factory
 from time import time as now
 
 # Sibling Imports
-from data import Image, DerivedImage
+from .data import Image, DerivedImage
 
 # Package Imports
 from ..machine import Machine, Property, Stream, ui

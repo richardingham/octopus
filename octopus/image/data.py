@@ -1,10 +1,14 @@
+# System Imports
+from io import StringIO
+from time import time as now
+
+try:
+	from urllib.parse import quote
+except ImportError:
+	from urllib import quote
+
 # Twisted Imports
 from twisted.internet import defer
-
-# System Imports
-import StringIO
-import urllib
-from time import time as now
 
 # Package Imports
 from ..data.errors import Immutable
@@ -33,6 +37,7 @@ class BaseImage (BaseVariable):
 	def __init__ (self):
 		self.alias = None
 		self.title = ""
+		self._value = None
 
 	def setLogFile (self, logFile):
 		pass
@@ -44,7 +49,7 @@ class BaseImage (BaseVariable):
 		output = StringIO.StringIO()
 		img = self.get_value()
 		img.scale(0.25).getPIL().save(output, format = "PNG")
-		encoded = "data:image/png;base64," + urllib.quote(output.getvalue().encode('base64'))
+		encoded = "data:image/png;base64," + quote(output.getvalue().encode('base64'))
 
 		return encoded
 

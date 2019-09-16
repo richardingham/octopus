@@ -12,6 +12,9 @@ from collections import deque
 from .. import util
 from ..constants import Event
 
+# Compatibility Imports
+from __future__ import print_function
+
 HOST = "127.0.0.1"
 PORT = 8789
 
@@ -99,7 +102,7 @@ class Marshal (object):
 				# Retry in 5 seconds
 				reactor.callLater(5, self.connect)
 			else:
-				print failure
+				print (failure)
 
 		if self.connected:
 			return
@@ -110,7 +113,7 @@ class Marshal (object):
 
 	def register (self):
 		def register_failed (failure):
-			print "Registration failed: " + str(failure)
+			print ("Registration failed: " + str(failure))
 
 		return self.marshal.callRemote(
 			"register", 
@@ -127,7 +130,7 @@ class Marshal (object):
 			self._send()
 
 		def failed (failure, events):
-			print "Event send failed"
+			print ("Event send failed")
 
 			f = failure.check(pb.PBConnectionLost)
 

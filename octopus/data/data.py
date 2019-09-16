@@ -6,7 +6,10 @@ import operator
 from ..util import now, timerange, EventEmitter
 
 # Sibling Imports
-import errors
+from . import errors
+
+# Compatibility Imports
+import six
 
 
 def _upper_bound (list, time):
@@ -54,7 +57,7 @@ def _get (x_vals, y_vals, x_max, x_min, start, interval):
 
 	# Return all data
 	if start is None and interval is None:
-		return zip(x_vals, y_vals)
+		return list(zip(x_vals, y_vals))
 
 	if interval is None:
 		interval = 0
@@ -84,7 +87,7 @@ def _get (x_vals, y_vals, x_max, x_min, start, interval):
 	if i_end is not None:
 		i_end += 1 # Return the interval length of data
 
-	vals = zip(x_vals[i_start:i_end], y_vals[i_start:i_end])
+	vals = list(zip(x_vals[i_start:i_end], y_vals[i_start:i_end]))
 
 	# Fill in the start and end points if necessary.
 	try:
@@ -148,7 +151,7 @@ class Archive (object):
 			# The delta must be at least {factor} * absolute spread
 			# of values collected so far, and at least {min_delta}.
 			threshold = max(
-				self.threshold_factor * (self._y_max - self._y_min), 
+				self.threshold_factor * (self._y_max - self._y_min),
 				self.min_delta
 			)
 
@@ -166,7 +169,7 @@ class Archive (object):
 		or self.threshold_factor is None \
 		or abs(self._prev_y - y) > threshold:
 
-			# Add up to one local maximum (or minimum) 
+			# Add up to one local maximum (or minimum)
 			# to retain concave curve shapes.
 			if self.threshold_factor is not None:
 				if self._max_since_last[1] > self._prev_y \
@@ -225,7 +228,7 @@ def _default_alias (object):
 		_default_alias_counters[class_name] = 1
 	else:
 		_default_alias_counters[class_name] += 1
-	
+
 	return "{:s}_{:d}".format(class_name, _default_alias_counters[class_name])
 
 
@@ -258,12 +261,14 @@ class BaseVariable (EventEmitter):
 	def __float__ (self):
 		return float(self.get_value())
 
-	def __nonzero__ (self):
+	def __bool__ (self):
 		return bool(self.get_value())
+
+	__nonzero__ = __bool__
 
 	def __repr__ (self):
 		return "<{class_name} at Ox{reference:x}: {var_alias} ({var_type}) = {var_value}>".format(
-			class_name = self.__class__.__name__, 
+			class_name = self.__class__.__name__,
 			reference = id(self),
 			var_alias = self.alias,
             var_type = self.type.__name__,
@@ -271,9 +276,11 @@ class BaseVariable (EventEmitter):
 		)
 
 
+_numeric_types = six.integer_types + (float, complex)
+
 class Variable (BaseVariable):
 	length = 30 # in seconds
-	
+
 	def __init__ (self, type, value = None):
 		self.alias = _default_alias(self)
 
@@ -284,7 +291,7 @@ class Variable (BaseVariable):
 		self._x = []
 		self._y = []
 
-		if type in (int, float, long, complex):
+		if type in _numeric_types:
 			self._archive = Archive()
 		else:
 			self._archive = StringArchive(self)
@@ -316,11 +323,11 @@ class Variable (BaseVariable):
 	def set (self, value):
 		self._push(value)
 
-	def get (self, start = None, interval = None):	
+	def get (self, start = None, interval = None):
 		"""
 		Returns the value of the variable over a particular time period.
 
-		Returns a list of (time, value) pairs between 
+		Returns a list of (time, value) pairs between
 		[time = start and time = start + interval] (inclusive).
 
 		start: earliest time to return data.
@@ -374,14 +381,14 @@ class Variable (BaseVariable):
 			mid = len(self._x) / 2
 			if time - self._x[mid] > self.length:
 				self._y = self._y[mid:]
-				self._x = self._x[mid:] 
+				self._x = self._x[mid:]
 
 		self._value = value
 		self._time  = time
 
 		self._archive.push(time, value)
 		self._log(time, value)
-		
+
 		# Trigger change event
 		if changed:
 			self.emit("change", time = time, value = value)
@@ -404,7 +411,7 @@ class Variable (BaseVariable):
 		if self._log_file is not None:
 			self._log_file.close()
 
-		self._log_file = None		
+		self._log_file = None
 
 
 class Constant (BaseVariable):
@@ -419,7 +426,7 @@ class Constant (BaseVariable):
 			return [(start, self._value)]
 
 		return [
-			(start, self._value), 
+			(start, self._value),
 			(start + interval, self._value)
 		]
 
@@ -438,10 +445,10 @@ _unary_ops = (
 	(" not ", operator.__not__), (" abs ", operator.__abs__),
 	(" -", operator.__neg__), (" +", operator.__pos__))
 _binary_ops = (
-	(" < ", operator.__lt__), (" <= ", operator.__le__), (" == ", operator.__eq__), 
+	(" < ", operator.__lt__), (" <= ", operator.__le__), (" == ", operator.__eq__),
 	(" != ", operator.__ne__), (" > ", operator.__gt__), (" >= ", operator.__ge__),
-	(" + ", operator.__add__), (" - ", operator.__sub__), (" / ", operator.__div__), 
-	(" / ", operator.__truediv__), (" // ", operator.__floordiv__), 
+	(" + ", operator.__add__), (" - ", operator.__sub__),
+	(" / ", operator.__truediv__), (" // ", operator.__floordiv__),
 	(" * ", operator.__mul__), (" % ", operator.__mod__),
 	("**", operator.__pow__),
 	(" & ", operator.__and__), (" | ", operator.__or__),
@@ -461,7 +468,7 @@ def _def_binary_op (symbol, operatorFn):
 			clsName = operatorFn.__name__[2:-2].capitalize() + "Expression"
 		attrName = operatorFn.__name__
 		rattrName = "__r" + operatorFn.__name__[2:]
-	
+
 	def init (self, lhs, rhs):
 		self.alias = _default_alias(self)
 
@@ -510,7 +517,7 @@ def _def_binary_op (symbol, operatorFn):
 			self._type = type(self._value)
 
 		return self._type
-	
+
 	def get (self, start = None, interval = None):
 		if self._archive_x is None:
 			self.get_archive()
@@ -522,7 +529,7 @@ def _def_binary_op (symbol, operatorFn):
 
 	def get_archive (self, store = True):
 		if self._archive_x is not None:
-			return zip(self._archive_x, self._archive_y)
+			return list(zip(self._archive_x, self._archive_y))
 
 		x = []
 		y = []
@@ -567,17 +574,17 @@ def _def_binary_op (symbol, operatorFn):
 			self._archive_x = x
 			self._archive_y = y
 
-		return zip(x, y)
-		
+		return list(zip(x, y))
+
 	def serialize (self):
 		return "(" + \
 			self._lhs.serialize() + symbol \
 			+ self._rhs.serialize() + ")"
 
 	cls = type(
-		clsName, 
-		(Expression,), 
-		{ 
+		clsName,
+		(Expression,),
+		{
 			"__init__": init,
 			"type": property(get_type),
 			"serialize": serialize,
@@ -623,19 +630,19 @@ def _def_unary_op (symbol, operatorFn):
 			self._type = type(self._value)
 
 		return self._type
-	
+
 	def get (self, start = None, interval = None):
 		if self._archive_x is None:
 			self.get_archive()
 
 		return _get(self._archive_x, self._archive_y, self._archive_x[-1], self._archive_x[0], start, interval)
-	
+
 	def at (self, time):
 		return _at(self.get(time, 0), time)
 
 	def get_archive (self, store = True):
 		if self._archive_x is not None:
-			return zip(self._archive_x, self._archive_y)
+			return list(zip(self._archive_x, self._archive_y))
 
 		x = []
 		y = []
@@ -653,15 +660,17 @@ def _def_unary_op (symbol, operatorFn):
 			self._archive_x = x
 			self._archive_y = y
 
-		return zip(x, y)
+		return list(zip(x, y))
 
 	def serialize (self):
 		return symbol + self._operand.serialize()
 
+	op = operatorFn
+
 	cls = type(
-		op.__name__[2:-2].capitalize() + "Expression", 
-		(Expression,), 
-		{ 
+		op.__name__[2:-2].capitalize() + "Expression",
+		(Expression,),
+		{
 			"__init__": init,
 			"type": property(get_type),
 			"serialize": serialize,
@@ -679,4 +688,3 @@ def _def_unary_op (symbol, operatorFn):
 
 [_def_unary_op(symbol, op) for symbol, op in _unary_ops]
 [_def_binary_op(symbol, op) for symbol, op in _binary_ops]
-

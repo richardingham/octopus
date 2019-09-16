@@ -5,6 +5,9 @@ from twisted.internet.protocol import Factory
 # System Imports
 from time import time as now
 
+# Compatibility Imports
+from __future__ import print_function
+
 # Package Imports
 from ..machine import Machine, Property, Stream, ui
 from ..protocol.basic import QueuedLineReceiver
@@ -35,13 +38,13 @@ class K120LineReceiver (QueuedLineReceiver):
 
 	def unexpectedMessage (self, line):
 		if line == "H":
-			print "Pump stopped due to an external stop signal"
+			print ("Pump stopped due to an external stop signal")
 		elif line == "R":
-			print "External stop signal removed"
+			print ("External stop signal removed")
 		elif line == "E1":
-			print "Motor blocked error"
+			print ("Motor blocked error")
 		elif line == "E2":
-			print "Manual stop attempt ignored"
+			print ("Manual stop attempt ignored")
 
 
 class K120 (Machine):
@@ -89,7 +92,7 @@ class K120 (Machine):
 		# Check that the version is correct.
 		def interpret_version (result):
 			if result not in ["V03.30", "V3.1"]:
-				raise Exception("Incompatible pump version: %s" % result)
+				raise Exception("Incompatible pump version: {:s}".format(result))
 
 		d = self.protocol.write("V?").addCallback(interpret_version)
 
@@ -97,7 +100,7 @@ class K120 (Machine):
 
 		def interpretFlowrate (result):
 			if result[0] is not "F":
-				print "Knauer Error: F? = %s" % result 
+				print ("Knauer Error: F? = {:s}".format(result)) 
 				return
 
 			target = float(result[1:]) * 1000

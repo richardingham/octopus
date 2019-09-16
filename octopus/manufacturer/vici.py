@@ -25,7 +25,7 @@ class MultiValve (Machine):
 	def setup (self):
 
 		# Number of positions
-		self.num_positions = 0;
+		self.num_positions = 0
 
 		def _set_position (pos):
 			return self.move(pos)

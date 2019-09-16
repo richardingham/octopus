@@ -22,6 +22,9 @@ import template
 import os
 from time import time as now
 
+# Compatibility Imports
+from __future__ import print_function
+
 BASE = "http://iego.ch.private.cam.ac.uk/labspiral"
 
 ##
@@ -31,12 +34,12 @@ BASE = "http://iego.ch.private.cam.ac.uk/labspiral"
 experiments = {}
 
 def register_experiment (id, expt):
-	print "Registered Expt: " + id
+	print ("Registered Expt: " + id)
 	
 	experiments[id] = expt
 
 def remove_experiment (id):
-	print "Unregistered Expt: " + id
+	print ("Unregistered Expt: " + id)
 
 	del experiments[id]
 
@@ -292,11 +295,11 @@ class ProgramRun (resource.Resource):
 			return "This script is already running"
 
 		def done (result):
-			print "Process complete"
-			print result
+			print ("Process complete")
+			print (result)
 			_running_scripts.discard(self._script_id)
 
-		print "Running Script: %s" % self._script_path
+		print ("Running Script: %s" % self._script_path)
 		d = utils.getProcessOutput(self._script_path, reactor = reactor)
 		d.addBoth(done)
 
@@ -339,7 +342,7 @@ class LabspiralServerProtocol (WampServerProtocol):
 
 			self.factory._subscribeClient(self, BASE + "/events#" + id)
 			
-			print "Monitoring Experiment %s" % id
+			print ("Monitoring Experiment %s" % id)
 
 			def combine (results):
 				return {
@@ -365,7 +368,7 @@ class LabspiralServerProtocol (WampServerProtocol):
 	@exportRpc
 	def state (self):
 		try:
-			print "Requesting State"
+			print ("Requesting State")
 			return self.monitor.callRemote("state")
 		except pb.DeadReferenceError:
 			raise Exception(BASE + "/error#experiment_disconnected", "Experiment has disconnected")
@@ -376,7 +379,7 @@ class LabspiralServerProtocol (WampServerProtocol):
 			raise Exception(BASE + "/error#not_monitoring", "You are not connected to an experiment")
 
 		try:
-			print "Requesting Set: %s -> %s" % (key, value)
+			print ("Requesting Set: %s -> %s" % (key, value))
 			return self.monitor.callRemote("set", key, value)
 		except pb.DeadReferenceError:
 			raise Exception(BASE + "/error#experiment_disconnected", "Experiment has disconnected")
@@ -387,7 +390,7 @@ class LabspiralServerProtocol (WampServerProtocol):
 			raise Exception(BASE + "/error#not_monitoring", "You are not connected to an experiment")
 
 		try:
-			print "Requesting Control Set: %s -> %s" % (control_alias, value)
+			print ("Requesting Control Set: %s -> %s" % (control_alias, value))
 			return self.monitor.callRemote("control_set", control_alias, value)
 		except pb.DeadReferenceError:
 			raise Exception(BASE + "/error#experiment_disconnected", "Experiment has disconnected")

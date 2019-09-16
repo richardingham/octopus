@@ -1,3 +1,5 @@
+# Compatibility Imports
+import six
 
 def names (layout_name, rack):
 	return ["{:s}:{:d}".format(layout_name, i) for i in rack.vials()]
@@ -9,15 +11,15 @@ class Layout (object):
 	name = "Layout"
 
 	def __init__ (self, **kwargs):
-		for k, v in kwargs.iteritems():
+		for k, v in six.iteritems(kwargs):
 			if hasattr (self, k):
 				setattr(self, k, v)
 
 	def xyz (self, i):
-		raise NotImplemented
+		raise NotImplementedError
 
 	def vials (self):
-		raise NotImplemented
+		raise NotImplementedError
 
 class NullLayout (Layout):
 	def xyz (self, i):
@@ -40,7 +42,7 @@ class GridLayout (Layout):
 	max = 50
 
 	def xyz (self, i):
-		if i > self.max or x < 1:
+		if i > self.max or i < 1:
 			raise OutOfRange
 		
 		x = self.x_zero + (i % self.x_count) * self.dx

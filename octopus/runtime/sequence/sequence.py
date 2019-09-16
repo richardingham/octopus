@@ -8,23 +8,27 @@ from twisted.python import log
 import twisted.internet.error
 
 # System Imports
-from exceptions import IndexError
 import re
 
 # Sibling Imports
-from error import Error, NotRunning, AlreadyRunning, NotPaused, Stopped
-import util
+from .error import Error, NotRunning, AlreadyRunning, NotPaused, Stopped
+from . import util
 
 # Package Imports
-from ..util import now, EventEmitter
-from ..constants import State
-from ..data.data import BaseVariable, Variable, Constant
+from ...util import now, EventEmitter
+from ...constants import State
+from ...data.data import BaseVariable, Variable, Constant
+
+# Compatibility Imports
+import six
+
 
 __all__ = [
 	"Step", "Sequence", "Parallel", "IfStep", "SetStep", "CancelStep",
-	"LogStep", "WhileStep", "WaitStep", "WaitUntilStep", "CallStep", 
+	"LogStep", "WhileStep", "WaitStep", "WaitUntilStep", "CallStep",
 	"Error", "NotRunning", "AlreadyRunning", "NotPaused", "Stopped"
 ]
+
 
 def _counter ():
 	i = 1
@@ -50,7 +54,7 @@ class Step (util.BaseStep, EventEmitter):
 		self.emit("state-changed", item = self, state = value)
 
 	def __init__ (self, expr = None):
-		self.id = _counter.next()
+		self.id = six.next(_counter)
 		self.complete = defer.Deferred()
 		self.dependents = util.Dependents()
 
@@ -278,7 +282,7 @@ class _StepWithLoop (util.Looping, _StepWithChild):
 			# Stops execution of child step
 			try:
 				return defer.maybeDeferred(_StepWithChild._cancel, self, abort)
-			except NotRunning, Stopped:
+			except (NotRunning, Stopped):
 				pass
 		else:
 			# Allows child step to finish normally
@@ -338,7 +342,7 @@ class Sequence (_StepWithChildren):
 				return None
 			else:
 				try:
-					step = iterator.next()
+					step = six.next(iterator)
 				except StopIteration:
 					self._complete(result)
 				else:
@@ -448,7 +452,7 @@ class CancelStep (Step):
 
 		try:
 			self._step.cancel()
-		except NotRunning, Stopped:
+		except (NotRunning, Stopped):
 			pass
 
 		return self._complete()
@@ -522,7 +526,7 @@ class WaitStep (Step):
 
 		self._start = now()
 		self._c = reactor.callLater(self.duration, complete)
-		self.emit("started", item = self, start = self._start, 
+		self.emit("started", item = self, start = self._start,
 			delay = round(self._delay, 4), duration = self.duration)
 
 		return self.complete
@@ -657,7 +661,7 @@ class CallStep (util.Caller, Step):
 		try:
 			d2 = util.Caller._cancel(self, abort)
 			return defer.gatherResults([d, d2])
-		except AttributeError, NotRunning:
+		except (AttributeError, NotRunning):
 			return d
 
 	def _reset (self):
@@ -710,7 +714,7 @@ class OnStep (Step):
 
 		if self.parent is not None:
 			parent = self.root.dependents.add(self._trigger)
- 
+
 		return self._complete()
 
 
@@ -728,9 +732,8 @@ class TickStep (Step):
 
 		if self.parent is not None:
 			parent = self.root.dependents.add(self._tick)
- 
+
 		return self._complete()
 
 
 # with(sets, stmt)
-

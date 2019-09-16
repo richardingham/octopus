@@ -14,37 +14,50 @@ import logging
 from ..machine import Stream
 from ..transport.gsioc import Slave
 
+# Compatibility Imports
+import six
+
+
 __all__ = [
-	"Error", "Busy", "NoDevice", 
+	"Error", "Busy", "NoDevice",
 	"ChannelOutOfRange",
-	"SyntaxError", "BufferedCommandFailed", 
-	"InvalidImmediateCommand", 
+	"SyntaxError", "BufferedCommandFailed",
+	"InvalidImmediateCommand",
 	"Receiver", "Slave", "FIFOStream"
 ]
+
 
 class Error (Exception):
 	pass
 
+
 class Busy (Error):
 	pass
+
 
 class TimedOut (Error):
 	pass
 
+
 class NoDevice (Error):
 	pass
-	
+
+
 class ChannelOutOfRange (Error):
 	pass
+
 
 class SyntaxError (Error):
 	pass
 
+
 class BufferedCommandFailed (Error):
 	pass
 
+
 class InvalidImmediateCommand (SyntaxError):
 	pass
+
 
 class FIFONotReset (Error):
 	pass
@@ -73,11 +86,11 @@ class Receiver (LineReceiver):
 
 	def _log (self, msg, level = None):
 		log.msg(
-			"GSIOC Receiver [%s][%s]: %s" % (
-				self.connection_name, 
-				self._selected, 
+			"GSIOC Receiver [{!s}][{!s}]: {!s}".format(
+				self.connection_name,
+				self._selected,
 				msg
-			), 
+			),
 			logLevel = level
 		)
 
@@ -87,7 +100,7 @@ class Receiver (LineReceiver):
 		try:
 			self._timer.cancel()
 		except:
-			self._log("discarding data: %s" % data, logging.WARN)
+			self._log("discarding data: {!r}".format(data), logging.WARN)
 			return
 
 		# Assume everything other than the last character is
@@ -118,13 +131,13 @@ class Receiver (LineReceiver):
 	def _timeout (self, string, count = 0):
 		# Try again (allow 5 retries after a timeout).
 		if count < 5:
-			self._log("command timed out, retrying: %s" % string, logging.WARN)
-			
+			self._log("command timed out, retrying: {!s}".format(string), logging.WARN)
+
 			self.transport.write(string)
 			self._timer = reactor.callLater(0.5, self._timeout, string, count + 1)
 
 		else:
-			self._log("command timed out, max retries: %s" % string, logging.WARN)
+			self._log("command timed out, max retries: {!s}".format(string), logging.WARN)
 
 			# Move on to the next command
 			try:
@@ -139,7 +152,7 @@ class Receiver (LineReceiver):
 			self._busy = True
 			chain_d, fn, id, command = self._queue.popleft()
 		except IndexError:
-			self._busy = False	
+			self._busy = False
 			return
 
 		def next (result):
@@ -167,9 +180,9 @@ class Receiver (LineReceiver):
 			return self.buffered_command(id, command)
 
 		return Slave(
-			immediate_command, 
-			buffered_command, 
-			name = "%s(GSIOC:%s)" % (self.connection_name, id)
+			immediate_command,
+			buffered_command,
+			name = "{!s}(GSIOC:{!s})".format(self.connection_name, id)
 		)
 
 	#
@@ -292,7 +305,7 @@ class Receiver (LineReceiver):
 			self._advance()
 
 		return d
-	
+
 	def _run_immediate_command (self, id, command):
 		if len(command) > 1:
 			raise InvalidImmediateCommand(command)
@@ -329,7 +342,7 @@ class Receiver (LineReceiver):
 	# (0A hexadecimal) and followed by a carriage return
 	# (0D hexadecimal.)
 	#
-	# After the master device selects a slave device, 
+	# After the master device selects a slave device,
 	# it begins the buffered command protocol with a single
 	# line feed character.
 	#
@@ -374,13 +387,13 @@ class Receiver (LineReceiver):
 			else:
 				if result == '#':
 					# If the response is "#", try again in 20ms.
-					# TODO: call any other requests for unbuffered 
+					# TODO: call any other requests for unbuffered
 					#       commands for other slaves in the meantime?
 					d = task.deferLater(reactor, 0.2, self._write, char)
 					return d.addCallback(send_char, char)
 
 			try:
-				char = string.next()
+				char = six.next(string)
 				# TODO: This may possibly run into call stack overflows...
 				# Maybe replace with callLater?
 				return self._write(char).addCallback(send_char, char)
@@ -407,7 +420,7 @@ class FIFOStream (Stream):
 					try:
 						self._update(buffer, now() - send_time)
 						return True
-					except TypeError, e:
+					except TypeError as e:
 						# Has not been properly reset
 						try:
 							def cb (result):
@@ -479,77 +492,77 @@ class FIFOStream (Stream):
 #
 # Data Compression Format
 # -----------------------
-# 
+#
 # The 506C is capable of digitizing analog data. It transfers this data
-# to a GSIOC system controller. Because of the large data volumes 
-# involved, a data compression technique is used to reduce the data load 
-# on the GSIOC. This also helps to conserve storage space. The 
+# to a GSIOC system controller. Because of the large data volumes
+# involved, a data compression technique is used to reduce the data load
+# on the GSIOC. This also helps to conserve storage space. The
 # compression process can be thought of as happening in two steps.
-# 
-# Raw data is collected which could occupy up to a 32-bit field if 
-# stored as a signed integer. The first level of compression involves 
-# taking the value of that integer and converting it to a 20-bit 
-# floating-point number. This number has the most significant four 
-# bits reserved for a binary exponent between 2**7 power and 2**-7 
-# power. The lower (the mantissa) representa standard 2's complement 
-# integer, between 32768 and -32768. This format is easier to work 
-# with than a 32-bit representation, and it eliminates "noise" bits 
+#
+# Raw data is collected which could occupy up to a 32-bit field if
+# stored as a signed integer. The first level of compression involves
+# taking the value of that integer and converting it to a 20-bit
+# floating-point number. This number has the most significant four
+# bits reserved for a binary exponent between 2**7 power and 2**-7
+# power. The lower (the mantissa) representa standard 2's complement
+# integer, between 32768 and -32768. This format is easier to work
+# with than a 32-bit representation, and it eliminates "noise" bits
 # that would interfere with the second level of compression.
-# 
-# For the second stage of compression, the list of 20-bit floating point 
-# numbers is scanned for similarity between neighboring mantissas. 
-# Usually there is a fairly high degree of correlation between each 
-# number and its successor, unless there is a lot of noise. If the 
-# correlation is high, there is a lot of redundancy which can be removed 
-# by compression. Since only the lower 16-bits are compared, any change 
-# to the exponent field requires that an escape code be sent. This 
-# compression scheme uses five different methods as needed to compress 
+#
+# For the second stage of compression, the list of 20-bit floating point
+# numbers is scanned for similarity between neighboring mantissas.
+# Usually there is a fairly high degree of correlation between each
+# number and its successor, unless there is a lot of noise. If the
+# correlation is high, there is a lot of redundancy which can be removed
+# by compression. Since only the lower 16-bits are compared, any change
+# to the exponent field requires that an escape code be sent. This
+# compression scheme uses five different methods as needed to compress
 # the data:
-# 
+#
 # 1. Runs of identical value.
-# 
-#    This method is the most obvious, and often the most efficient. 
-#    Sixteen codes are used to represent runs from 1 (a single 
-#    duplication) to 16 (16 duplications) of the same value. This 
+#
+#    This method is the most obvious, and often the most efficient.
+#    Sixteen codes are used to represent runs from 1 (a single
+#    duplication) to 16 (16 duplications) of the same value. This
 #    works very well on "quiet" data sets with little noise.
-#    
+#
 # 2. Three values differing by no more than 1 from their predecessor.
-# 
-#    In this method, each of the three values can be one higher, the 
-#    same as, or one lower than the prior value. This means that a 
-#    total of 3 x 3 x 3 (or 27) codes must be used to represent these 
-#    patterns. This is particularly good at handling noise in the 
-#    least significant bit. 
-#    
+#
+#    In this method, each of the three values can be one higher, the
+#    same as, or one lower than the prior value. This means that a
+#    total of 3 x 3 x 3 (or 27) codes must be used to represent these
+#    patterns. This is particularly good at handling noise in the
+#    least significant bit.
+#
 # 3. Single samples with small changes.
-# 
-#    This method uses a code to send the next value as a change from 
-#    the prior value. Thirty seven codes are used to allow changes 
-#    from 18 below the prior value to 18 above the prior value to be 
-#    sent in one code. This still offers significant compression 
+#
+#    This method uses a code to send the next value as a change from
+#    the prior value. Thirty seven codes are used to allow changes
+#    from 18 below the prior value to 18 above the prior value to be
+#    sent in one code. This still offers significant compression
 #    even if the data is changing somewhat rapidly.
-#    
+#
 # 4. Single samples with large changes.
-# 
-#    In this case, the compression has failed, and the complete 20-bit 
-#    value must be sent. One of four different codes is used to signal 
-#    the start of this 20-bit transmission, and three more data bytes 
-#    follow to complete the value. This code is used at the beginning 
-#    of a transfer to set the initial value, and it may be used at 
+#
+#    In this case, the compression has failed, and the complete 20-bit
+#    value must be sent. One of four different codes is used to signal
+#    the start of this 20-bit transmission, and three more data bytes
+#    follow to complete the value. This code is used at the beginning
+#    of a transfer to set the initial value, and it may be used at
 #    intervals to ensure a known value.
-# 
-# 5. No value ready. 
-# 
-#    An additional code is reserved to indicate that no value is 
-#    currently available for transmission. This code is sent if 
+#
+# 5. No value ready.
+#
+#    An additional code is reserved to indicate that no value is
+#    currently available for transmission. This code is sent if
 #    the GSIOC system controller polls an empty device.
-# 
-# The actual ASCII codes used had to be selected to meet the transmission 
-# restrictions imposed by the GSIOC. The codes selected for each of the 
+#
+# The actual ASCII codes used had to be selected to meet the transmission
+# restrictions imposed by the GSIOC. The codes selected for each of the
 # five cases are listed as follows:
-# 
+#
 # 1. Codes 36..51
-# 
+#
 #    The next (code - 35) values = prior value.
 #
 # 2. Codes 52..78
@@ -557,21 +570,21 @@ class FIFOStream (Stream):
 #    1st value = prior value + ((code - 52) div 9) - 1.
 #    2nd value = 1st value + (((code - 52) div 3) mod 3) - 1.
 #    3rd value = 2nd value + ((code - 52) mod 3) - 1.
-# 
+#
 # 3. Codes 79..115
-# 
+#
 #    The value = prior va1ue + (code - 97).
-#    
+#
 # 4. Codes 116..119 with following three codes.
-# 
+#
 #    The value = (code - 116) * 262114 +
 #                (code2 - 36) * 4096 +
 #                (code3 - 36) * 64 +
 #                (code4 - 36).
-# 
+#
 # 5. Code 124
 #
-#    No new value available. This code would normally be discarded when 
+#    No new value available. This code would normally be discarded when
 #    data is being stored, so it would not normally be in a data set.
 #
 
@@ -597,9 +610,10 @@ def _float_to_20b (value):
 	#val_expanded = value * 2**8
 	#exponent_expanded = int(min(15, max(0, math.log(val_expanded, 2))))
 	#mantissa = int(val_expanded / (2 ** exponent_expanded))
-	#return 
+	#return
 
 	raise NotImplemented
+
 
 def _add (value, diff):
 	# Add / subtract a small difference (< 25 in the decompression algorithm)
@@ -615,13 +629,14 @@ def _add (value, diff):
 
 	return new_value + (exponent << 16)
 
+
 def _decompress (compressed_data, current_value = None):
 	chars = iterstr(compressed_data)
 	values = []
 
 	try:
 		while 1:
-			code = ord(chars.next())
+			code = ord(six.next(chars))
 
 			if 35 < code < 52:
 				values.extend([current_value] * (code - 35))
@@ -634,9 +649,9 @@ def _decompress (compressed_data, current_value = None):
 				current_value = _add(current_value, code - 97)
 				values.append(current_value)
 			elif 115 < code < 120:
-				code2 = ord(chars.next())
-				code3 = ord(chars.next())
-				code4 = ord(chars.next())
+				code2 = ord(six.next(chars))
+				code3 = ord(six.next(chars))
+				code4 = ord(six.next(chars))
 				current_value = \
 					((code - 116) * 262114) + \
 					((code2 - 36) * 4096) + \
@@ -652,6 +667,7 @@ def _decompress (compressed_data, current_value = None):
 
 	except StopIteration:
 		return values
+
 
 def _encode_single (twenty_bit_number):
 	code1 = twenty_bit_number // 262144
@@ -670,4 +686,3 @@ def _encode_single (twenty_bit_number):
 		chr(code2 + 36) + \
 		chr(code3 + 36) + \
 		chr(code4 + 36)
-

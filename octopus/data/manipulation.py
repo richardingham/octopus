@@ -2,10 +2,11 @@
 import math
 
 # Sibling Imports
-import data
+from . import data
 
 # NumPy
 import numpy as np
+
 
 class _Counter (object):
 	def __init__ (self):
@@ -23,6 +24,7 @@ class _Counter (object):
 		return name + "_" + str(self.inc(name))
 
 _counter = _Counter()
+
 
 class Function (data.Variable):
 	def __init__ (self, expr):
@@ -52,15 +54,16 @@ class Function (data.Variable):
 		y_vals = self.interp(start, interval, step)
 
 		try:
-			return zip(x_vals.tolist(), y_vals.tolist())
-		except TypeError, ValueError:
-			return zip(x_vals.tolist(), [None] * len(x_vals))
+			return list(zip(x_vals.tolist(), y_vals.tolist()))
+		except (TypeError, ValueError):
+			return list(zip(x_vals.tolist(), [None] * len(x_vals)))
 
 	def interp (self, start, interval, step):
 		raise NotImplementedError
 
 	def serialize (self):
 		raise NotImplementedError
+
 
 class FramedManipulation (Function):
 	def __init__ (self, expr, frame = 1.0, title = "", alias = None):
@@ -69,6 +72,7 @@ class FramedManipulation (Function):
 		self.title = title
 		self.alias = alias
 		self._frame = float(frame)
+
 
 class Differential (FramedManipulation):
 	def interp (self, start, interval, step):
@@ -117,6 +121,7 @@ class Min (FramedManipulation):
 	def serialize (self):
 		return " Min (" + self._expr.serialize() + ", " + str(frame) + ")"
 
+
 class Smooth (FramedManipulation):
 	def __init__ (self, expr, window, frame = 1.0, title = "", alias = None):
 		FramedManipulation.__init__(self, expr, frame, title, alias)
@@ -130,7 +135,7 @@ class Smooth (FramedManipulation):
 			raise Exception ("Smooth(): length of supplied window must be 2n+1")
 
 	def get (self, start, interval, step):
-		
+
 		new_x = data.timerange(start, interval, step)
 
 		# Get the slice of y according to frame.
@@ -138,14 +143,14 @@ class Smooth (FramedManipulation):
 		# TODO: make all manupulations use raw data!
 		x = self._expr._x
 		y = self._expr._y
-		
+
 		if len(y) > self._window_len:
 			# Extend the slice so that the window can be applied to the edges.
 			s = np.r_[y[self._window_len-1:0:-1], y, y[-1:-self._window_len:-1]]
 
 			y_smooth = np.convolve(self._window, s, mode = 'valid')
 			y = y_smooth[self._half_window_len : len(y_smooth) - self._half_window_len]
-			
+
 		return np.interp(new_x, x, y)
 
 	def get_value (self):
@@ -159,6 +164,7 @@ class Smooth (FramedManipulation):
 		return " Smooth (" + self._expr.serialize() + ", " + str(frame) + ")"
 
 ## average?
+
 
 class Square (Function):
 	def get (self, start, interval, step):
@@ -224,6 +230,3 @@ class Tan (Function):
 
 	def serialize (self):
 		return " Tan (" + self._expr.serialize() + ")"
-
-
-

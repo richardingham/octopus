@@ -11,7 +11,7 @@ TRACE_TIME = 60
 
 
 def _prop (p):
-	result = {
+	return {
 		"name":  p.alias,
 		"title": p.title if hasattr(p, "title") else "",
 		"unit":  p.unit if hasattr(p, "unit") else "",
@@ -19,16 +19,12 @@ def _prop (p):
 		"value": p.value
 	}
 
-	return result
-
 def _img (p):
-	result = {
+	return {
 		"name":  p.alias,
 		"title": p.title,
 		"value": p.value
 	}
-
-	return result
 
 def _trace (t):
 	if "colours" not in t or len(t["colours"]) < len(t["traces"]):
@@ -38,7 +34,7 @@ def _trace (t):
 
 	interval = t["maxtime"] if "maxtime" in t else TRACE_TIME
 	start = now() - interval
-	
+
 	def compress (point):
 		try:
 			return (round(point[0] - start, 1), round(point[1], 2))
@@ -116,14 +112,14 @@ class InterfaceSectionSet (OrderedDict):
 	trace_time = 30
 
 	event = Event()
-	
+
 	def __init__ (self, *args, **kwargs):
 		OrderedDict.__init__(self, *args, **kwargs)
 
 		self.controls   = {}
 		self.properties = {}
 
-	def __setitem__ (self, name, section):
+	def __setitem__ (self, name: str, section: InterfaceSection):
 		assert(isinstance(section, InterfaceSection))
 
 		if name in self:
@@ -139,15 +135,15 @@ class InterfaceSectionSet (OrderedDict):
 		for p in section.properties:
 			self.properties[p.alias] = p
 
-		for t in section.traces.itervalues():
+		for t in section.traces.values():
 			for s in t["traces"]:
 				self.properties[s.alias] = s
 
-	def __delitem__ (self, name):
+	def __delitem__ (self, name: str):
 		self._delitem(name)
 		OrderedDict.__delitem__(self, name)
 
-	def _delitem (self, name):
+	def _delitem (self, name: str):
 		section = self[name]
 
 		for c in section.controls:

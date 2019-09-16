@@ -14,7 +14,7 @@ than a variable.
 from ..util import Event
 
 # Sibling Imports
-import errors
+from . import errors
 
 class Control (object):
 	_counter = 0

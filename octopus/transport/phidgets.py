@@ -1,6 +1,7 @@
 # Twisted Imports
 from twisted.internet import reactor, defer, task
 from twisted.internet.interfaces import IAddress
+from twisted.python import log
 
 # Zope Imports
 from zope.interface import implementer
@@ -10,7 +11,12 @@ from Phidgets.PhidgetException import PhidgetErrorCodes, PhidgetException
 
 # System Imports
 import time
-	
+import logging
+
+# Compatibility Imports
+from __future__ import print_function
+
+
 @implementer(IAddress)
 class PhidgetAddress (object):
 	compareAttributes = ('device_class', 'id')
@@ -19,7 +25,7 @@ class PhidgetAddress (object):
 		self.id = id
 
 	def __repr__ (self):
-		return "%s(%s)" % (self.__class__.__name, self.id)
+		return "{!s}({!s})".format(self.__class__.__name__, self.id)
 
 
 class PhidgetTransport (object):
@@ -36,7 +42,7 @@ class PhidgetTransport (object):
 class Phidget (object):
 	def __init__ (self, id):
 		self.id = id
-		self.name = "phidget(%s)" % id
+		self.name = "phidget({!s})".format(id)
 
 	def connect (self, protocolFactory):
 		d = defer.Deferred()
@@ -47,11 +53,16 @@ class Phidget (object):
 		@defer.inlineCallbacks
 		def check_attached ():
 			tries = 0
+
 			while tries < 20:
 				if protocol.isAttached():
 					serial = protocol.getSerialNum()
 					name = protocol.getDeviceName()
-					print("Phidget Device '" + str(name) + "', Serial Number: " + str(serial) + " Connected")
+
+					log.msg(
+						"Phidget Device '{!s}', Serial Number: {!s} connected".format(
+						name, serial
+					), logging.INFO)
 
 					defer.returnValue(protocol)
 				else:
@@ -71,4 +82,3 @@ class Phidget (object):
 			d.errback(e)
 
 		return d
-

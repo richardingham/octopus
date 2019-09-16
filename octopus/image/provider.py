@@ -1,5 +1,5 @@
 # Sibling Imports
-from data import Image
+from .data import Image
 
 # Package Imports
 from ..machine import Machine, ui

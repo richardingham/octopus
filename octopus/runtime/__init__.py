@@ -5,13 +5,13 @@ import os
 from twisted.internet import reactor, defer
 
 # Sibling Imports
-from sequence import Step
-import data
-import experiment
-from machine import Machine, ui as machine_ui
-import util
+from .sequence import Step
+from .. import data
+from . import experiment
+from ..machine import Machine
+from .. import util
 
-from sequence.shortcuts import *
+from .sequence.shortcuts import *
 
 _experiment = experiment.Experiment()
 
@@ -24,21 +24,18 @@ def _new_machine_init (self, *a, **k):
 
 Machine.__init__ = _new_machine_init
 
+
 def id (id):
 	_experiment.id = id
+
 
 def title (title):
 	_experiment.title = title
 
-def ui (replace = "experiment", **kwargs):
-	if replace is True:
-		_experiment.interface.clear()
-		replace = "experiment"
-
-	_experiment.interface[replace] = machine_ui(**kwargs)
 
 def chdir (dir):
 	return os.chdir(dir)
+
 
 def variable (value, alias, title, unit = ""):
 	v = experiment.Variable(title, type(value), unit = unit)
@@ -47,11 +44,13 @@ def variable (value, alias, title, unit = ""):
 
 	return v
 
+
 def derived (expr, alias, title, unit = ""):
 	expr.title = title
 	expr.alias = alias
 
 	return expr
+
 
 def constant (value, alias, title, unit = ""):
 	v = data.Constant(value)
@@ -61,8 +60,10 @@ def constant (value, alias, title, unit = ""):
 
 	return v
 
+
 def log_variables (*variables):
 	_experiment.log_variables(*variables)
+
 
 def run (step):
 	started_reactor = False
@@ -84,6 +85,7 @@ def run (step):
 		started_reactor = True
 		reactor.run()
 
+
 def run_later (step):
 	if step is not None:
 		_experiment.step = step
@@ -91,8 +93,10 @@ def run_later (step):
 	if reactor.running is False:
 		reactor.run()
 
+
 def log_output (name):
 	return SetLogOutputStep(name)
+
 
 class SetLogOutputStep (Step):
 	def _run (self):

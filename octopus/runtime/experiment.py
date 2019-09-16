@@ -10,13 +10,12 @@ from collections import deque
 
 # Sibling Imports
 from .. import data
-from .. import sequence
+from . import sequence
 from .. import util
 from ..machine import Machine, Component
 from ..machine.interface import InterfaceSection, InterfaceSectionSet
 from ..constants import Event, State
 
-from marshal import Marshal
 
 class LogFile (object):
 
@@ -83,7 +82,7 @@ class Experiment (object):
 	@state.setter
 	def state (self, value):
 		self._state = value
-		self.marshal.event(Event.EXPERIMENT, { "state": value.value })
+		# self.marshal.event(Event.EXPERIMENT, { "state": value.value })
 
 		try:
 			# todo... collect in a list to write later.
@@ -91,12 +90,12 @@ class Experiment (object):
 		except AttributeError:
 			pass
 
-	@property
-	def marshal (self):
-		return self._marshal
+	# @property
+	# def marshal (self):
+	# 	return self._marshal
 
 	def _log (self, msg, level = None):
-		log.msg("Experiment [%s]: %s" % (self.id, msg),	logLevel = level)
+		log.msg("Experiment [{!s}]: {!s}".format(self.id, msg), logLevel = level)
 
 	id_set = util.Event()
 	started = util.Event()
@@ -116,7 +115,8 @@ class Experiment (object):
 	#   [z] timezero { time: x }
 	#
 
-	def __init__ (self, step = None, id = None, marshal = None):
+	# def __init__ (self, step = None, id = None, marshal = None):
+	def __init__ (self, step = None, id = None):
 		self._id = None
 
 		self._machines = set()
@@ -130,11 +130,11 @@ class Experiment (object):
 		self.interface = InterfaceSectionSet()
 		self.interface["experiment"] = InterfaceSection()
 
-		if marshal is None:
-			self._marshal = Marshal(self)
-		else:
-			self._marshal = marshal
-			self._marshal.push(self)
+		# if marshal is None:
+		# 	self._marshal = Marshal(self)
+		# else:
+		# 	self._marshal = marshal
+		# 	self._marshal.push(self)
 
 		self.state = State.READY
 
@@ -222,8 +222,8 @@ class Experiment (object):
 				self.step.log -= self._step_log
 
 				# pop experiment from marshal
-				self._log("Waiting for marshal")
-				yield self._marshal.popExperiment()
+				# self._log("Waiting for marshal")
+				# yield self._marshal.popExperiment()
 
 				# stop logging
 				self.stop_logging()
@@ -234,7 +234,7 @@ class Experiment (object):
 		d.addErrback(log.err)
 
 		# TODO:
-		# log for events 
+		# log for events
 		# log for log events
 		# make a new dir for each invocation of run
 		# store child.log in this dir
@@ -246,7 +246,7 @@ class Experiment (object):
 
 	def _interface_event (self, item, **data):
 		data["item"] = item.name
-		self._marshal.event(Event.INTERFACE, data)
+		# self._marshal.event(Event.INTERFACE, data)
 
 	def _step_event (self, item, **data):
 		data["step"] = item.id
@@ -264,7 +264,7 @@ class Experiment (object):
 		# send to event log
 		self._event_log.write(util.now(), "step:" + str(data))
 
-		self._marshal.event(Event.STEP, data)
+		# self._marshal.event(Event.STEP, data)
 
 	def _step_log (self, message, level = None):
 		data = {
@@ -275,7 +275,7 @@ class Experiment (object):
 		# send to log
 		self._msg_log.write(util.now(), message)
 
-		self._marshal.event(Event.LOG, data)
+		# self._marshal.event(Event.LOG, data)
 
 	def pause (self):
 		"""
@@ -374,7 +374,7 @@ class Experiment (object):
 		self._time_zero = time_zero
 
 		self._event_log.write(time_zero, "tz")
-		self.marshal.event(Event.TIMEZERO, { "time": time_zero, "clear": True } )
+		# self.marshal.event(Event.TIMEZERO, { "time": time_zero, "clear": True } )
 
 	def stop_logging (self):
 		self._logging = False

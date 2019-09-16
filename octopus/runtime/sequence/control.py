@@ -2,25 +2,28 @@
 from twisted.python import log
 
 # Package Imports
-from ..constants import State
-from ..util import now
+from ...constants import State
+from ...util import now
 
 # Sibling Imports
-import util
-import error
+from . import util
+from . import error
+
+# Compatibility Imports
+import six
 
 
 class Bind (util.Dependent):
 	"""
 	Connects a variable to an expression.
-	
-	Each iteration, the value of expr is evaluated. 
+
+	Each iteration, the value of expr is evaluated.
 	If process is defined, then the result is passed through this function.
 	(If expr is None, then the return value of process is used).
-	
+
 	variable is updated with this new value.
-	
-	Process must be a function that accepts one parameter, 
+
+	Process must be a function that accepts one parameter,
 	usually a Variable or Expression.
 
 	Set max and min to limit the value of variable.
@@ -55,7 +58,7 @@ class Bind (util.Dependent):
 			return
 
 		# Use self.process if set
-		if callable(self.process):
+		if six.callable(self.process):
 			try:
 				new_val = self.process(self.expr)
 			except NoUpdate:
@@ -78,10 +81,10 @@ class Bind (util.Dependent):
 class PID (util.Looping, util.Dependent):
 	"""
 	PID controller.
-	
+
 	Each iteration, response is updated with a new value based on
 	the error variable.
-	
+
 	Alter the proportional, integral and differential parameters
 	to alter the nature of the response.
 
@@ -192,14 +195,14 @@ class StateMonitor (util.Dependent):
 	When the monitors become True, monitor.trigger_step is cancelled and
 	monitor.reset_step is run. (If the monitor is triggered again,
 	reset_step is cancelled before trigger_step is run).
-	
+
 	Parameters:
 		auto_reset: If False, then reset_trigger() must be called
 		            before the monitor can be triggered again.
 		cancel_on_trigger: If False, then reset_step will not be
 					cancelled.
 		cancel_on_reset: If False, then trigger_step will not be cancelled.
-	
+
 	"""
 
 	@property
@@ -345,4 +348,3 @@ class StateMonitor (util.Dependent):
 			pass
 
 		return defer.gatherResults(d)
-
