@@ -22,9 +22,6 @@ import template
 import os
 from time import time as now
 
-# Compatibility Imports
-from __future__ import print_function
-
 BASE = "http://iego.ch.private.cam.ac.uk/labspiral"
 
 ##

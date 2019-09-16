@@ -9,9 +9,6 @@ from ...util import now
 from . import util
 from . import error
 
-# Compatibility Imports
-import six
-
 
 class Bind (util.Dependent):
 	"""
@@ -58,7 +55,7 @@ class Bind (util.Dependent):
 			return
 
 		# Use self.process if set
-		if six.callable(self.process):
+		if callable(self.process):
 			try:
 				new_val = self.process(self.expr)
 			except NoUpdate:

@@ -9,9 +9,6 @@ from .error import NotRunning, AlreadyRunning, NotPaused, Stopped
 from ...constants import State
 from ...util import EventEmitter
 
-# Compatibility Imports
-import six
-
 
 def init_child (parent, child):
 	from .sequence import Sequence
@@ -275,7 +272,7 @@ class Caller (EventEmitter):
 		if isinstance(self._fn, BaseStep):
 			self._step = self._fn
 
-		elif six.callable(self._fn):
+		elif callable(self._fn):
 			# Act based on the result of fn().
 			result = self._fn(*self._args, **self._kwargs)
 

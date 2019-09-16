@@ -8,9 +8,6 @@ from ..util import now, timerange, EventEmitter
 # Sibling Imports
 from . import errors
 
-# Compatibility Imports
-import six
-
 
 def _upper_bound (list, time):
 	# Return the index of the first item in {list} which
@@ -276,7 +273,7 @@ class BaseVariable (EventEmitter):
 		)
 
 
-_numeric_types = six.integer_types + (float, complex)
+_numeric_types = (int, float, complex)
 
 class Variable (BaseVariable):
 	length = 30 # in seconds

@@ -12,9 +12,6 @@ from ..machine import Machine, Component, Property, Stream
 from ..util import now
 from ..protocol import basic, gsioc
 
-# Compatibility Imports
-from __future__ import print_function
-
 from .gilson_components import layout
 
 #__all__ = ["UVVis151"]

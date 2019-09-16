@@ -9,9 +9,6 @@ import exceptions
 from collections import deque
 import logging
 
-# Compatibility Imports
-import six
-
 # Package Imports
 from ..util import AsyncQueue, AsyncQueueRetry
 
@@ -65,7 +62,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		)
 
 	def write (self, line, expectReply = True, wait = 0):
-		command = _Command(six.next(self.index), line, expectReply, wait)
+		command = _Command(next(self.index), line, expectReply, wait)
 		self.queue.append(command)
 
 		return command.d

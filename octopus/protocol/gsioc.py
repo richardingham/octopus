@@ -14,9 +14,6 @@ import logging
 from ..machine import Stream
 from ..transport.gsioc import Slave
 
-# Compatibility Imports
-import six
-
 
 __all__ = [
 	"Error", "Busy", "NoDevice",
@@ -393,7 +390,7 @@ class Receiver (LineReceiver):
 					return d.addCallback(send_char, char)
 
 			try:
-				char = six.next(string)
+				char = next(string)
 				# TODO: This may possibly run into call stack overflows...
 				# Maybe replace with callLater?
 				return self._write(char).addCallback(send_char, char)
@@ -636,7 +633,7 @@ def _decompress (compressed_data, current_value = None):
 
 	try:
 		while 1:
-			code = ord(six.next(chars))
+			code = ord(next(chars))
 
 			if 35 < code < 52:
 				values.extend([current_value] * (code - 35))
@@ -649,9 +646,9 @@ def _decompress (compressed_data, current_value = None):
 				current_value = _add(current_value, code - 97)
 				values.append(current_value)
 			elif 115 < code < 120:
-				code2 = ord(six.next(chars))
-				code3 = ord(six.next(chars))
-				code4 = ord(six.next(chars))
+				code3 = ord(next(chars))
+				code2 = ord(next(chars))
+				code4 = ord(next(chars))
 				current_value = \
 					((code - 116) * 262114) + \
 					((code2 - 36) * 4096) + \

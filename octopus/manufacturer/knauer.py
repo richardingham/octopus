@@ -5,9 +5,6 @@ from twisted.internet.protocol import Factory
 # System Imports
 from time import time as now
 
-# Compatibility Imports
-from __future__ import print_function
-
 # Package Imports
 from ..machine import Machine, Property, Stream, ui
 from ..protocol.basic import QueuedLineReceiver

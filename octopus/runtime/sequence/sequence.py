@@ -19,9 +19,6 @@ from ...util import now, EventEmitter
 from ...constants import State
 from ...data.data import BaseVariable, Variable, Constant
 
-# Compatibility Imports
-import six
-
 
 __all__ = [
 	"Step", "Sequence", "Parallel", "IfStep", "SetStep", "CancelStep",
@@ -54,7 +51,7 @@ class Step (util.BaseStep, EventEmitter):
 		self.emit("state-changed", item = self, state = value)
 
 	def __init__ (self, expr = None):
-		self.id = six.next(_counter)
+		self.id = next(_counter)
 		self.complete = defer.Deferred()
 		self.dependents = util.Dependents()
 
@@ -342,7 +339,7 @@ class Sequence (_StepWithChildren):
 				return None
 			else:
 				try:
-					step = six.next(iterator)
+					step = next(iterator)
 				except StopIteration:
 					self._complete(result)
 				else:
