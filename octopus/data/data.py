@@ -168,7 +168,7 @@ class Archive (object):
 
 			# Add up to one local maximum (or minimum)
 			# to retain concave curve shapes.
-			if self.threshold_factor is not None:
+			if self.threshold_factor is not None and self._prev_y is not None:
 				if self._max_since_last[1] > self._prev_y \
 				and self._max_since_last[1] > y:
 					self._x.append(self._max_since_last[0])
@@ -375,7 +375,7 @@ class Variable (BaseVariable):
 			changed = True
 
 			# Trim old data
-			mid = len(self._x) / 2
+			mid = len(self._x) // 2
 			if time - self._x[mid] > self.length:
 				self._y = self._y[mid:]
 				self._x = self._x[mid:]
