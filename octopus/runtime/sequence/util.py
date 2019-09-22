@@ -177,7 +177,7 @@ class Looping (Runnable, Pausable, Cancellable):
 			elif self.state is State.CANCELLED:
 				self._iteration_stop()
 				return
-			elif (self._max_calls > 0 and self._calls >= int(self._max_calls)):
+			elif (self._max_calls is not None and self._max_calls > 0 and self._calls >= int(self._max_calls)):
 				raise StopIteration
 			elif self.state is State.RUNNING and self._test():
 				d = self._call()

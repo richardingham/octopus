@@ -1,10 +1,11 @@
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from mock import Mock
+from unittest.mock import Mock
 
-from .. import sequence, util, control
-from ...data import data
+from ... import sequence
+from .. import control
+from ....data import data
 
 class BindTestCase (unittest.TestCase):
 	def test_boundVariable (self):

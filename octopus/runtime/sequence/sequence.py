@@ -112,10 +112,13 @@ class Step (util.BaseStep, EventEmitter):
 			except defer.AlreadyCalledError:
 				pass
 
-		dep_fn() \
-			.addErrback(log.err) \
-			.addBoth(cb) \
-			.addErrback(log.err)
+		try:
+			dep_fn() \
+				.addErrback(log.err) \
+				.addBoth(cb) \
+				.addErrback(log.err)
+		except NotRunning:
+			pass
 
 		return self.complete
 

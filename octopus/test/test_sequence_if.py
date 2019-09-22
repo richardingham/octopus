@@ -1,11 +1,11 @@
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from mock import Mock
+from unittest.mock import Mock
 
 from octopus.constants import State
-from octopus.sequence import Step, IfStep
-from octopus import sequence
+from octopus.runtime.sequence import Step, IfStep
+from octopus.runtime import sequence
 
 def simple_step ():
 	d = defer.Deferred()

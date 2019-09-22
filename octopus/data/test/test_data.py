@@ -1,7 +1,7 @@
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from mock import Mock
+from unittest.mock import Mock
 
 from .. import data
 
@@ -22,7 +22,7 @@ class UtilsTestCase (unittest.TestCase):
 		# Get all data
 		self.assertEqual(
 			data._get(self.x, self.y, self.max_x, self.min_x, None, None), 
-			zip(self.x, self.y)
+			list(zip(self.x, self.y))
 		)
 
 		# Zero interval

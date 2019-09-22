@@ -11,7 +11,7 @@ from . import experiment
 from ..machine import Machine
 from .. import util
 
-from .sequence.shortcuts import *
+# from .sequence.shortcuts import *
 
 _experiment = experiment.Experiment()
 

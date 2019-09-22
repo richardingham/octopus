@@ -359,7 +359,7 @@ class Variable (BaseVariable):
 
 		if time is None:
 			time = now()
-		elif time < self._time:
+		elif self._time is not None and time < self._time:
 			raise Exception("Cannot insert values earlier than latest value")
 
 		# Only store changes
@@ -439,16 +439,16 @@ class Expression (BaseVariable):
 
 # Variable should emulate a numerical variable
 _unary_ops = (
-	(" not ", operator.__not__), (" abs ", operator.__abs__),
-	(" -", operator.__neg__), (" +", operator.__pos__))
+	(" not ", operator.not_), (" abs ", operator.abs),
+	(" -", operator.neg), (" +", operator.pos))
 _binary_ops = (
-	(" < ", operator.__lt__), (" <= ", operator.__le__), (" == ", operator.__eq__),
-	(" != ", operator.__ne__), (" > ", operator.__gt__), (" >= ", operator.__ge__),
-	(" + ", operator.__add__), (" - ", operator.__sub__),
-	(" / ", operator.__truediv__), (" // ", operator.__floordiv__),
-	(" * ", operator.__mul__), (" % ", operator.__mod__),
-	("**", operator.__pow__),
-	(" & ", operator.__and__), (" | ", operator.__or__),
+	(" < ", operator.lt), (" <= ", operator.le), (" == ", operator.eq),
+	(" != ", operator.ne), (" > ", operator.gt), (" >= ", operator.ge),
+	(" + ", operator.add), (" - ", operator.sub),
+	(" / ", operator.truediv), (" // ", operator.floordiv),
+	(" * ", operator.mul), (" % ", operator.mod),
+	("**", operator.pow),
+	(" & ", operator.and_), (" | ", operator.or_),
 	(" and ", lambda a, b: a and b), (" or ", lambda a, b: a or b),
 )
 
@@ -456,15 +456,17 @@ _binary_ops = (
 def _def_binary_op (symbol, operatorFn):
 	if symbol in (" and ", " or "):
 		clsName = symbol[1:-1].capitalize() + "Expression"
-		attrName = symbol[1:-1]
+		attrName = symbol[1:-1] + "_"
 		rattrName = None
 	else:
-		if operatorFn in (operator.__and__, operator.__or__):
-			clsName = "Bitwise" + operatorFn.__name__[2:-2].capitalize() + "Expression"
+		if operatorFn in (operator.and_, operator.or_):
+			clsName = "Bitwise" + operatorFn.__name__[:-1].capitalize() + "Expression"
+			attrName = "__" + operatorFn.__name__[:-1] + "__"
+			rattrName = "__r" + operatorFn.__name__[:-1] + "__"
 		else:
-			clsName = operatorFn.__name__[2:-2].capitalize() + "Expression"
-		attrName = operatorFn.__name__
-		rattrName = "__r" + operatorFn.__name__[2:]
+			clsName = operatorFn.__name__.capitalize() + "Expression"
+			attrName = "__" + operatorFn.__name__ + "__"
+			rattrName = "__r" + operatorFn.__name__ + "__"
 
 	def init (self, lhs, rhs):
 		self.alias = _default_alias(self)

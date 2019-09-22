@@ -1,5 +1,6 @@
 # Twisted Imports
 from twisted.python import log
+from twisted.internet.defer import maybeDeferred
 
 # Package Imports
 from ...constants import State
@@ -47,7 +48,7 @@ class Bind (util.Dependent):
 	def _run (self):
 		self.expr.on("change", self._update)
 
-	def _cancel (self):
+	def _cancel (self, abort = False):
 		self.expr.off("change", self._update)
 
 	def _update (self, data):
@@ -72,7 +73,7 @@ class Bind (util.Dependent):
 		if self.variable.value != new_val:
 			# Return a value so that self._calls gets incremented,
 			# swallow any errors to avoid terminating the loop.
-			return self.variable.set(new_val).addErrback(log.err)
+			return maybeDeferred(self.variable.set, new_val).addErrback(log.err)
 
 
 class PID (util.Looping, util.Dependent):
