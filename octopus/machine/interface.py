@@ -2,7 +2,8 @@
 from collections import OrderedDict
 
 # Sibling Imports
-from ..util import Event, now
+from ..util import now
+from ..events import Event
 
 
 __all__ = ["InterfaceSection", "InterfaceSectionSet", "Trace", "Property"]

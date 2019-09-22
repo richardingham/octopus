@@ -147,7 +147,7 @@ class ExperimentView (resource.Resource):
 				request.finish()
 			except Exception as e:
 				import traceback, pprint
-				request.write("Exception during rendering<br><br><pre>%s %s</pre>" % (traceback.format_exc(), pprint.pformat(variables)))
+				request.write("Exception during rendering<br><br><pre>%s %s</pre>" % (traceback.format_exc(), pprint.pformat(variables)).encode("utf-8"))
 				request.finish()
 
 				raise e
@@ -185,7 +185,7 @@ class ExperimentList (resource.Resource):
 				"</html>"
 			])
 
-			request.write("\n".join(response))
+			request.write("\n".join(response).encode("utf-8"))
 			request.finish()
 
 		defers = []

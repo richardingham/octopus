@@ -1,0 +1,386 @@
+// Vendor Prefixes
+//
+// All vendor mixins are deprecated as of v3.2.0 due to the introduction of
+// Autoprefixer in our Gruntfile. They will be removed in v4.
+
+// Drop shadows
+//
+// Note: Deprecated `.box-shadow()` as of v3.1.0 since all of Bootstrap's
+// supported browsers that have box shadow capabilities now support it.
+
+.box-shadow(@shadow) {
+  -webkit-box-shadow: @shadow; // iOS <4.3 & Android <4.1
+          box-shadow: @shadow;
+}
+
+// Border Radius
+.border-radius(@radius) {
+  -webkit-border-radius: @radius;
+     -moz-border-radius: @radius;
+          border-radius: @radius;
+}
+
+// Dividers (basically an hr) within dropdowns and nav lists
+.nav-divider(@top: #e5e5e5, @bottom: @white) {
+  // IE7 needs a set width since we gave a height. Restricting just
+  // to IE7 to keep the 1px left/right space in other browsers.
+  // It is unclear where IE is getting the extra space that we need
+  // to negative-margin away, but so it goes.
+  *width: 100%;
+  height: 1px;
+  margin: ((@baseLineHeight / 2) - 1) 1px; // 8px 1px
+  *margin: -5px 0 5px;
+  overflow: hidden;
+  background-color: @top;
+  border-bottom: 1px solid @bottom;
+}
+
+// Gradients
+#gradient {
+  .horizontal(@startColor: #555, @endColor: #333) {
+    background-color: @endColor;
+    background-image: -moz-linear-gradient(left, @startColor, @endColor); // FF 3.6+
+    background-image: -webkit-gradient(linear, 0 0, 100% 0, from(@startColor), to(@endColor)); // Safari 4+, Chrome 2+
+    background-image: -webkit-linear-gradient(left, @startColor, @endColor); // Safari 5.1+, Chrome 10+
+    background-image: -o-linear-gradient(left, @startColor, @endColor); // Opera 11.10
+    background-image: linear-gradient(to right, @startColor, @endColor); // Standard, IE10
+    background-repeat: repeat-x;
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=1)",argb(@startColor),argb(@endColor))); // IE9 and down
+  }
+  .vertical(@startColor: #555, @endColor: #333) {
+    background-color: mix(@startColor, @endColor, 60%);
+    background-image: -moz-linear-gradient(top, @startColor, @endColor); // FF 3.6+
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(@startColor), to(@endColor)); // Safari 4+, Chrome 2+
+    background-image: -webkit-linear-gradient(top, @startColor, @endColor); // Safari 5.1+, Chrome 10+
+    background-image: -o-linear-gradient(top, @startColor, @endColor); // Opera 11.10
+    background-image: linear-gradient(to bottom, @startColor, @endColor); // Standard, IE10
+    background-repeat: repeat-x;
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",argb(@startColor),argb(@endColor))); // IE9 and down
+  }
+  .directional(@startColor: #555, @endColor: #333, @deg: 45deg) {
+    background-color: @endColor;
+    background-repeat: repeat-x;
+    background-image: -moz-linear-gradient(@deg, @startColor, @endColor); // FF 3.6+
+    background-image: -webkit-linear-gradient(@deg, @startColor, @endColor); // Safari 5.1+, Chrome 10+
+    background-image: -o-linear-gradient(@deg, @startColor, @endColor); // Opera 11.10
+    background-image: linear-gradient(@deg, @startColor, @endColor); // Standard, IE10
+  }
+  .horizontal-three-colors(@startColor: #00b3ee, @midColor: #7a43b6, @colorStop: 50%, @endColor: #c3325f) {
+    background-color: mix(@midColor, @endColor, 80%);
+    background-image: -webkit-gradient(left, linear, 0 0, 0 100%, from(@startColor), color-stop(@colorStop, @midColor), to(@endColor));
+    background-image: -webkit-linear-gradient(left, @startColor, @midColor @colorStop, @endColor);
+    background-image: -moz-linear-gradient(left, @startColor, @midColor @colorStop, @endColor);
+    background-image: -o-linear-gradient(left, @startColor, @midColor @colorStop, @endColor);
+    background-image: linear-gradient(to right, @startColor, @midColor @colorStop, @endColor);
+    background-repeat: no-repeat;
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",argb(@startColor),argb(@endColor))); // IE9 and down, gets no color-stop at all for proper fallback
+  }
+
+  .vertical-three-colors(@startColor: #00b3ee, @midColor: #7a43b6, @colorStop: 50%, @endColor: #c3325f) {
+    background-color: mix(@midColor, @endColor, 80%);
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(@startColor), color-stop(@colorStop, @midColor), to(@endColor));
+    background-image: -webkit-linear-gradient(@startColor, @midColor @colorStop, @endColor);
+    background-image: -moz-linear-gradient(top, @startColor, @midColor @colorStop, @endColor);
+    background-image: -o-linear-gradient(@startColor, @midColor @colorStop, @endColor);
+    background-image: linear-gradient(@startColor, @midColor @colorStop, @endColor);
+    background-repeat: no-repeat;
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",argb(@startColor),argb(@endColor))); // IE9 and down, gets no color-stop at all for proper fallback
+  }
+  .radial(@innerColor: #555, @outerColor: #333) {
+    background-color: @outerColor;
+    background-image: -webkit-gradient(radial, center center, 0, center center, 460, from(@innerColor), to(@outerColor));
+    background-image: -webkit-radial-gradient(circle, @innerColor, @outerColor);
+    background-image: -moz-radial-gradient(circle, @innerColor, @outerColor);
+    background-image: -o-radial-gradient(circle, @innerColor, @outerColor);
+    background-repeat: no-repeat;
+  }
+  .striped(@color: #555, @angle: 45deg) {
+    background-color: @color;
+    background-image: -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.25, rgba(255,255,255,.15)), color-stop(.25, transparent), color-stop(.5, transparent), color-stop(.5, rgba(255,255,255,.15)), color-stop(.75, rgba(255,255,255,.15)), color-stop(.75, transparent), to(transparent));
+    background-image: -webkit-linear-gradient(@angle, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+    background-image: -moz-linear-gradient(@angle, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+    background-image: -o-linear-gradient(@angle, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+    background-image: linear-gradient(@angle, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+  }
+}
+// Reset filters for IE
+.reset-filter() {
+  filter: e(%("progid:DXImageTransform.Microsoft.gradient(enabled = false)"));
+}
+
+// User select
+// For selecting text on the page
+
+.user-select(@select) {
+  -webkit-user-select: @select;
+     -moz-user-select: @select;
+      -ms-user-select: @select; // IE10+
+          user-select: @select;
+}
+
+
+@black:                 #000;
+@grayDark:              #333;
+@grayLight:             #999;
+@white:                 #fff;
+@linkColor:             #08c;
+
+@baseBorderRadius:      4px;
+@zindexDropdown:        1000;
+@baseLineHeight:        20px;
+
+// Dropdowns
+// -------------------------
+@dropdownBackground:            @white;
+@dropdownBorder:                rgba(0,0,0,.2);
+@dropdownDividerTop:            #e5e5e5;
+@dropdownDividerBottom:         @white;
+
+@dropdownLinkColor:             @grayDark;
+@dropdownLinkColorHover:        @white;
+@dropdownLinkColorActive:       @white;
+
+@dropdownLinkBackgroundActive:  @linkColor;
+@dropdownLinkBackgroundHover:   @dropdownLinkBackgroundActive;
+
+
+//
+// Dropdown menus
+// --------------------------------------------------
+#menu-container {
+
+  // Use the .menu class on any <li> element within the topbar or ul.tabs and you'll get some superfancy dropdowns
+  .dropup,
+  .dropdown {
+    position: relative;
+  }
+  .dropdown-toggle {
+    // The caret makes the toggle a bit too tall in IE7
+    *margin-bottom: -3px;
+  }
+  .dropdown-toggle:active,
+  &.open .dropdown-toggle {
+    outline: 0;
+  }
+
+  // Dropdown arrow/caret
+  // --------------------
+  .caret {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    vertical-align: top;
+    border-top:   4px solid @black;
+    border-right: 4px solid transparent;
+    border-left:  4px solid transparent;
+    content: "";
+  }
+
+  // Place the caret
+  .dropdown .caret {
+    margin-top: 8px;
+    margin-left: 2px;
+  }
+
+  // The dropdown menu (ul)
+  // ----------------------
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: @zindexDropdown;
+    display: none; // none by default, but block on "open" of the menu
+    float: left;
+    min-width: 160px;
+    padding: 5px 0;
+    margin: 2px 0 0; // override default ul
+    list-style: none;
+    background-color: @dropdownBackground;
+    border: 1px solid #ccc; // Fallback for IE7-8
+    border: 1px solid @dropdownBorder;
+    *border-right-width: 2px;
+    *border-bottom-width: 2px;
+    .border-radius(6px);
+    .box-shadow(0 5px 10px rgba(0,0,0,.2));
+    -webkit-background-clip: padding-box;
+       -moz-background-clip: padding;
+            background-clip: padding-box;
+
+    // Aligns the dropdown menu to right
+    &.pull-right {
+      right: 0;
+      left: auto;
+    }
+
+    // Dividers (basically an hr) within the dropdown
+    .divider {
+      .nav-divider(@dropdownDividerTop, @dropdownDividerBottom);
+    }
+
+    // Links within the dropdown menu
+    > li > a {
+      cursor: default;
+      display: block;
+      padding: 3px 20px;
+      clear: both;
+      font-weight: normal;
+      line-height: @baseLineHeight;
+  	text-decoration: none;
+      color: @dropdownLinkColor;
+      white-space: nowrap;
+    }
+
+    &.selectable > li > a  {
+      padding-left: 40px;
+    }
+
+    > li.selected {
+      background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAnCAYAAABJ0cukAAAACXBIWXMAAAsTAAALEwEAmpwYAAABVUlEQVRYhdXU3VGEMBRA4XNtADvYErAD7WTtxFJoxa1AS9AKLOH6IDjLkoT83rCZyVtCzsdARFU56hCRZ+BLVb99ax4Me5KGiEzAO/ApIqN3oaoebgIToFfzBxida3vHRsQHEd2DI+O9iO7RCfFORPfwxPgN4h7jV4iu1+h8Vb5mbn8EXu7xzS9z6vYJ1YrvAqgZbw6oHb8LAAbgdNT4IAAY+buqFDgfMd4LuInXEkTLeCfAE5+FaB2/AezEJyEs4leAyPgohFX8PyAxPoiwjJ/P45QR70RYxy+At8JDz73iF8AAfBQeXro/K/76H6iBMI+/vYV6IIriV4AOiOL4DcAQUSXeCTBAVIv3AhoiqsYHAQ0Q1eN3ARURTeKjABUQzeKjAQWIpvFJgAxE8/hkQALCJD4LEIEwi88GBBCm8UUAB8I8XlWROSR7iMgAPKnqpehBmeMXV/AuOX2wQ6sAAAAASUVORK5CYII=);
+      background-size: 9%;
+      background-repeat: no-repeat;
+      background-position: 13px 7px;
+    }
+  }
+
+  // Hover/Focus state
+  // -----------
+  .dropdown-menu > li > a:hover,
+  .dropdown-menu > li > a:focus,
+  .dropdown-submenu:hover > a,
+  .dropdown-submenu:focus > a {
+    text-decoration: none;
+    color: @dropdownLinkColorHover;
+    #gradient > .vertical(@dropdownLinkBackgroundHover, darken(@dropdownLinkBackgroundHover, 5%));
+  }
+
+  // Disabled items should look enabled if submenu items are hovered.
+  .dropdown-submenu.disabled:hover > a {
+    text-decoration: none;
+    color: @dropdownLinkColorHover;
+    #gradient > .vertical(@dropdownLinkBackgroundHover, darken(@dropdownLinkBackgroundHover, 5%));
+  }
+
+  // Disabled state
+  // --------------
+  // Gray out text and ensure the hover/focus state remains gray
+  .dropdown-menu > .disabled:not(.dropdown-submenu) > a,
+  .dropdown-menu > .disabled:not(.dropdown-submenu) > a:hover,
+  .dropdown-menu > .disabled:not(.dropdown-submenu) > a:focus {
+    color: @grayLight;
+  }
+
+  .dropdown-menu > .disabled:not(.dropdown-submenu) > a:hover,
+  .dropdown-menu > .disabled:not(.dropdown-submenu) > a:focus {
+    text-decoration: none;
+    color: @dropdownLinkColorActive;
+    //background-image: none; // Remove CSS gradient
+    #gradient > .vertical(lighten(@grayLight, 20%), lighten(@grayLight, 15%));
+    cursor: default;
+  }
+
+  // Open state for the dropdown
+  // ---------------------------
+  &.open {
+    // IE7's z-index only goes to the nearest positioned ancestor, which would
+    // make the menu appear below buttons that appeared later on the page
+    *z-index: @zindexDropdown;
+
+    & > .dropdown-menu {
+      display: block;
+    }
+  }
+
+  // Backdrop to catch body clicks on mobile, etc.
+  // ---------------------------
+  .dropdown-backdrop {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    z-index: @zindexDropdown - 10;
+  }
+
+  // Right aligned dropdowns
+  // ---------------------------
+  .pull-right > .dropdown-menu {
+    right: 0;
+    left: auto;
+  }
+
+  // Allow for dropdowns to go bottom up (aka, dropup-menu)
+  // ------------------------------------------------------
+  // Just add .dropup after the standard .dropdown class and you're set, bro.
+  .dropup {
+    // Reverse the caret
+    .caret {
+      border-top: 0;
+      border-bottom: 4px solid @black;
+      content: "";
+    }
+    // Different positioning for bottom up menu
+    .dropdown-menu {
+      top: auto;
+      bottom: auto;
+      margin-bottom: 1px;
+    }
+  }
+
+  // Sub menus
+  // ---------------------------
+  .dropdown-submenu {
+    position: relative;
+  }
+  // Default dropdowns
+  .dropdown-submenu > .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -6px;
+    margin-left: -1px;
+    .border-radius(0 6px 6px 6px);
+  }
+  .dropdown-submenu:hover > .dropdown-menu {
+    display: block;
+  }
+
+  // Dropups
+  .dropup.dropdown-submenu > .dropdown-menu {
+    top: auto;
+    bottom: 0;
+    margin-top: 0;
+    margin-bottom: -2px;
+    .border-radius(5px 5px 5px 0);
+  }
+
+  // Caret to indicate there is a submenu
+  .dropdown-submenu > a:after {
+    display: block;
+    content: " ";
+    float: right;
+    width: 0;
+    height: 0;
+    border-color: transparent;
+    border-style: solid;
+    border-width: 5px 0 5px 5px;
+    border-left-color: darken(@dropdownBackground, 20%);
+    margin-top: 5px;
+    margin-right: -10px;
+  }
+  .dropdown-submenu:hover > a:after {
+    border-left-color: @dropdownLinkColorHover;
+  }
+
+  // Left aligned submenus
+  .dropdown-submenu.pull-left {
+    // Undo the float
+    // Yes, this is awkward since .pull-left adds a float, but it sticks to our conventions elsewhere.
+    float: none !important;
+
+    // Positioning the submenu
+    > .dropdown-menu {
+      left: -100%;
+      margin-left: 10px;
+      .border-radius(6px 0 6px 6px);
+    }
+  }
+}

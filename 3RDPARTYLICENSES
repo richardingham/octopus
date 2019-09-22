@@ -157,3 +157,63 @@ Included as part of bootstrap.
 
 http://glyphicons.com/
 
+
+
+Blockly
+=======
+
+Copyright 2011 Google Inc.
+https://github.com/google/blockly
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+
+Colpick
+=======
+
+Copyright 2013 Jose Vargas.
+
+Licensed under GPL license.
+
+Based on Stefan Petre's Color Picker www.eyecon.ro, dual licensed
+under the MIT and GPL licenses
+
+
+Contextmenu
+===========
+
+Adapted from Bootstrap JS component.
+
+Copyright (c) 2011-2014 Twitter, Inc
+Licensed under MIT License
+
+
+GridStack
+=========
+
+(c) 2014-2015 Pavel Reznikov
+gridstack.js may be freely distributed under the MIT license.
+
+
+jQuery UI
+=========
+
+Copyright jQuery Foundation and other contributors; Licensed MIT
+
+
+Prettify
+========
+
+Copyright (C) 2006 Google Inc.
+
+Licensed under the Apache License, Version 2.0

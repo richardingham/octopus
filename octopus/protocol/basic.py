@@ -9,7 +9,7 @@ from collections import deque
 import logging
 
 # Package Imports
-from ..util import AsyncQueue, AsyncQueueRetry
+from ..queue import AsyncQueue, AsyncQueueRetry
 
 
 class _Command (object):

@@ -1,0 +1,262 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<title>Edit Sketch</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+
+	<!-- jQuery -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+	<!-- tinycolor -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.4.1/tinycolor.min.js"></script>
+
+	<!-- Bootstrap -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+
+	<script src="/resources/blockly/pack/blockly.js"></script>
+	<script src="/resources/blockly/pack/blockly-messages.js"></script>
+	<script src="/resources/blockly/pack/octopus-generator.js"></script>
+	<script src="/resources/prettify/prettify.js"></script>
+	<script src="/resources/contextmenu/contextmenu.js"></script>
+	<script src="/resources/sketch-edit.js"></script>
+
+	<link rel="stylesheet" href="/resources/blockly/blockly.css" />
+	<link rel="stylesheet" href="/resources/blockly/blockly-ext.css" />
+	<link rel="stylesheet" href="/resources/prettify/prettify.css" />
+	<link rel="stylesheet" href="/resources/contextmenu/dropdown.css" />
+	<link rel="stylesheet" href="/resources/sketch-edit.css" />
+
+</head>
+<body t:render="editor_body">
+
+<nav id="toolbar" class="navbar navbar-default">
+	<div class="container-fluid">
+		<div class="navbar-left">
+			<a href="/" id="btn-home" class="btn btn-default navbar-btn"><i class="fa fa-home" /></a>
+			<button type="button" id="btn-run" class="btn navbar-btn"><i class="fa fa-play" /> Run</button>
+			<button type="button" id="btn-pause" class="btn navbar-btn"><i class="fa fa-pause" /> Pause</button>
+			<button type="button" id="btn-resume" class="btn navbar-btn"><i class="fa fa-play" /> Resume</button>
+			<button type="button" id="btn-stop" class="btn navbar-btn"><i class="fa fa-stop" /> Stop</button>
+		</div>
+
+		<form class="navbar-form navbar-left">
+			<div class="form-group">
+				<input type="text" class="form-control" size="30" id="experiment-title" placeholder="Title" />
+			</div>
+		</form>
+
+		<div class="navbar-right">
+			<button type="button" id="btn-lock" class="btn navbar-btn"><i class="fa fa-unlock" /></button>
+			<button type="button" id="btn-code" class="btn navbar-btn"><i class="fa fa-code" /></button>
+			<button type="button" id="btn-download" class="btn navbar-btn"><i class="fa fa-download" /></button>
+			<button type="button" id="btn-upload" class="btn navbar-btn"><i class="fa fa-upload" /></button>
+		</div>
+	</div>
+</nav>
+
+<div id="editor">
+	<ul id="toolbox"></ul>
+	<div id="blockly">
+		<t:attr name="data-websocket"><t:slot name="websocket_url" /></t:attr>
+		<t:attr name="data-sketch"><t:slot name="sketch_id" /></t:attr>
+	</div>
+	<div id="code">
+		<pre></pre>
+	</div>
+</div>
+
+<div id="experiments-log"></div>
+<div id="menu-container"></div>
+<xml id="toolbox-categories" style="display: none">
+	<category name="Machines" icon="bolt">
+		<block type="machine_vapourtec_R2R4"></block>
+		<block type="machine_knauer_K120"></block>
+		<block type="machine_knauer_S100"></block>
+		<block type="machine_vici_multivalve"></block>
+		<block type="machine_mt_icir"></block>
+		<block type="machine_wpi_aladdin"></block>
+		<block type="machine_phidgets_phsensor"></block>
+		<block type="machine_omega_hh306a"></block>
+		<block type="machine_harvard_phd2000"></block>
+		<block type="machine_mt_sics_balance"></block>
+		<block type="machine_gilson_FractionCollector203B"></block>
+		<block type="machine_startech_powerremotecontrol"></block>
+		<block type="connection_tcp"></block>
+		<block type="connection_serial"></block>
+		<block type="connection_phidget"></block>
+		<block type="connection_gsioc"></block>
+	</category>
+	<category name="Control" icon="cogs">
+		<block type="controls_wait"></block>
+		<block type="controls_maketime"></block>
+		<block type="controls_wait_until"></block>
+		<block type="controls_if"></block>
+		<block type="controls_repeat_ext">
+			<value name="TIMES">
+			<block type="math_number">
+				<field name="NUM">10</field>
+			</block>
+			</value>
+		</block>
+		<block type="controls_whileUntil"></block>
+		<block type="controls_parallel"></block>
+		<block type="controls_dependents"></block>
+		<block type="controls_bind"></block>
+		<block type="controls_statemonitor"></block>
+		<block type="controls_dependent_stack"></block>
+		<!--block type="controls_run"></block-->
+	</category>
+	<category name="Logic" icon="question-circle">
+		<block type="logic_compare"></block>
+		<block type="logic_operation"></block>
+		<block type="logic_negate"></block>
+		<block type="logic_boolean"></block>
+		<block type="logic_null"></block>
+		<block type="logic_ternary"></block>
+	</category>
+	<category name="Images" icon="camera">
+		<block type="machine_imageprovider"></block>
+		<block type="machine_singletracker"></block>
+		<block type="machine_multitracker"></block>
+		<block type="connection_cvcamera"></block>
+		<block type="colour_picker"></block>
+		<block type="image_findcolour"></block>
+		<block type="image_threshold"></block>
+		<block type="image_erode"></block>
+		<block type="image_invert"></block>
+		<block type="image_colourdistance"></block>
+		<block type="image_huedistance"></block>
+		<block type="image_crop"></block>
+		<block type="image_intensityfn"></block>
+		<block type="image_tonumber"></block>
+	</category>
+	<category name="Math" icon="superscript">
+		<block type="math_number"></block>
+		<block type="math_arithmetic"></block>
+		<block type="math_single"></block>
+		<block type="math_trig"></block>
+		<block type="math_constant"></block>
+		<block type="math_number_property"></block>
+		<block type="math_change"></block>
+		<block type="math_round"></block>
+		<block type="math_on_list"></block>
+		<block type="math_modulo"></block>
+		<block type="math_constrain">
+			<value name="LOW">
+			<block type="math_number">
+				<field name="NUM">1</field>
+			</block>
+			</value>
+			<value name="HIGH">
+			<block type="math_number">
+				<field name="NUM">100</field>
+			</block>
+			</value>
+		</block>
+		<block type="math_random_int">
+			<value name="FROM">
+			<block type="math_number">
+				<field name="NUM">1</field>
+			</block>
+			</value>
+			<value name="TO">
+			<block type="math_number">
+				<field name="NUM">100</field>
+			</block>
+			</value>
+		</block>
+		<block type="math_random_float"></block>
+		<block type="math_framed"></block>
+		<block type="math_throttle"></block>
+	</category>
+	<category name="Text" icon="font">
+		<block type="text"></block>
+		<block type="text_join"></block>
+		<block type="controls_log"></block>
+		<!--block type="text_append">
+			<value name="TEXT">
+			<block type="text"></block>
+			</value>
+		</block>
+		<block type="text_length"></block>
+		<block type="text_isEmpty"></block>
+		<block type="text_indexOf">
+			<value name="VALUE">
+			<block type="variables_get">
+				<field name="VAR">text</field>
+			</block>
+			</value>
+		</block>
+		<block type="text_charAt">
+			<value name="VALUE">
+			<block type="variables_get">
+				<field name="VAR">text</field>
+			</block>
+			</value>
+		</block>
+		<block type="text_getSubstring">
+			<value name="STRING">
+			<block type="variables_get">
+				<field name="VAR">text</field>
+			</block>
+			</value>
+		</block>
+		<block type="text_changeCase"></block>
+		<block type="text_trim"></block-->
+	</category>
+	<!--category name="Lists">
+		<block type="lists_create_empty"></block>
+		<block type="lists_create_with"></block>
+		<block type="lists_repeat">
+			<value name="NUM">
+			<block type="math_number">
+				<field name="NUM">5</field>
+			</block>
+			</value>
+		</block>
+		<block type="lists_length"></block>
+		<block type="lists_isEmpty"></block>
+		<block type="lists_indexOf">
+			<value name="VALUE">
+			<block type="variables_get">
+				<field name="VAR">list</field>
+			</block>
+			</value>
+		</block>
+		<block type="lists_getIndex">
+			<value name="VALUE">
+			<block type="variables_get">
+				<field name="VAR">list</field>
+			</block>
+			</value>
+		</block>
+		<block type="lists_setIndex">
+			<value name="LIST">
+			<block type="variables_get">
+				<field name="VAR">list</field>
+			</block>
+			</value>
+		</block>
+		<block type="lists_getSublist">
+			<value name="LIST">
+			<block type="variables_get">
+				<field name="VAR">list</field>
+			</block>
+			</value>
+		</block>
+	</category-->
+	<!--category name="Variables" custom="VARIABLE"></category-->
+	<category name="Variables" icon="square">
+		<block type="global_declaration"></block>
+		<block type="lexical_variable_set"></block>
+		<block type="lexical_variable_set_to"></block>
+		<block type="lexical_variable_get"></block>
+	</category>
+	<!--category name="Functions" custom="PROCEDURE"></category-->
+</xml>
+
+<iframe id="download" style="display:none"></iframe>
+
+</body>
+</html>

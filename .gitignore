@@ -41,6 +41,19 @@ _trial_temp/
 # Twisted plugins
 twisted/plugins/dropin.cache
 
+# Dependencies
+node_modules/*
+
+# npm
+package-lock.json
+
+# Build
+octopus/blocktopus/resources/blockly/pack/*
+octopus/blocktopus/resources/blockly/msg/js/*.js
+
+# Stored data
+data/*
+
 # Twisted log
 child.log
 

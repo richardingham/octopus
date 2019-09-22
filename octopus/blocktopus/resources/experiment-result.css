@@ -1,0 +1,152 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+
+body {
+  font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #333;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  -webkit-touch-callout: none;
+}
+
+#toolbar {
+  background-color: #526E9C;
+  border-radius: 0;
+  color: #FFF;
+  height: 60px;
+  margin-bottom: 0;
+  padding-top: 10px;
+}
+
+#toolbar span {
+  color: #fff;
+  padding-bottom: 3px;
+  font-size: 24px;
+  margin-left: 15px;
+}
+
+#toolbar .btn {
+  font-size: 18px;
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+  margin-top: 0;
+}
+
+#viewer > * {
+  top: 60px;
+}
+
+#variables {
+  padding: 10px 0;
+  width: 180px;
+  bottom: 0;
+  margin-bottom: 0;
+  position: fixed;
+  list-style-type: none;
+  overflow-y: scroll;
+}
+
+#variables li {
+  padding: 2px 15px;
+  cursor: default;
+  font-size: 18px;
+}
+
+#variables li:hover {
+  background: #526E9C;
+}
+
+#data {
+  position: fixed;
+  left: 180px;
+  right: 0;
+  bottom: 0;
+  overflow-y: scroll;
+}
+
+#data .grid-stack-item-handle i {
+  float: right;
+  padding: 3px;
+  cursor: pointer;
+}
+
+#data .grid-stack-item-handle i:hover {
+  color: #fff;
+}
+
+#data .chart-container div.grid-stack-item-content {
+  background: #FFF;
+  border: 1px solid #000;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#data .chart-container div.grid-stack-item-handle {
+  background: rgb(171, 178, 209);
+  height: 20px;
+  float: left;
+  width: 100%;
+}
+
+#data .chart-container .chart {
+  height: 100%;
+  padding-top: 20px;
+}
+
+#data .property-container div.grid-stack-item-content {
+  background: #FFF;
+  border: 1px solid #000;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#data .property-container div.grid-stack-item-handle {
+  background: rgb(171, 178, 209);
+  height: 20px;
+  float: left;
+  padding-left: 5px;
+  width: 100%;
+}
+
+#data .property-container .property {
+  height: 100%;
+  padding-top: 20px;
+}
+
+#data .property-container .value {
+  padding: 5px;
+  font-size: 18px;
+}
+
+svg .line {
+  fill: none;
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+svg {
+  font: 10px sans-serif;
+}
+
+svg .axis path, svg .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+svg .x.axis line {
+  shape-rendering: auto;
+}
+
+svg .legend rect {
+  fill: white;
+  stroke: black;
+  opacity: 0.8;
+}

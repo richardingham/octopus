@@ -15,7 +15,8 @@ from .error import Error, NotRunning, AlreadyRunning, NotPaused, Stopped
 from . import util
 
 # Package Imports
-from ..util import now, EventEmitter
+from ..util import now
+from ..events import EventEmitter
 from ..constants import State
 from ..data.data import BaseVariable, Variable, Constant
 

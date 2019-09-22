@@ -53,3 +53,6 @@ RUN apt-get update \
 ENV DEBIAN_FRONTEND=
 
 RUN pip install -e /workspaces/octopus
+
+EXPOSE 8001
+EXPOSE 9000

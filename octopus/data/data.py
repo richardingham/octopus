@@ -3,7 +3,8 @@ from math import ceil
 import operator
 
 # Package Imports
-from ..util import now, timerange, EventEmitter
+from ..util import now, timerange
+from ..events import EventEmitter
 
 # Sibling Imports
 from . import errors

@@ -1,0 +1,52 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1"  flex="" vertical="" layout="">
+<head>
+	<title>Experiment Results</title>
+
+	<script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+	<script src="/resources/jquery-ui/jquery-ui.min.js"></script>
+	<!-- includes: draggable, droppable, resizable -->
+	<script src="/resources/gridstack/gridstack.js"></script>
+
+	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/4.12.2/d3.min.js"></script>
+
+	<script src="/resources/experiment-result.js"></script>
+	<script src="/resources/experiment-popup.js"></script>
+	<script src="/resources/experiment-graph.js"></script>
+
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+	<link rel="stylesheet" href="/resources/gridstack/gridstack.css" />
+	<link rel="stylesheet" href="/resources/experiment-result.css" />
+	<link rel="stylesheet" href="/resources/experiment-popup.css" />
+
+</head>
+<body t:render="body">
+
+<nav id="toolbar" class="navbar navbar-default">
+	<div class="container-fluid">
+		<div class="navbar-left">
+			<a href="/" id="btn-home" class="btn btn-default navbar-btn"><i class="fa fa-home" /></a>
+			<a id="btn-download" class="btn btn-default navbar-btn">
+				<t:attr name="href"><t:slot name="download_url" /></t:attr>
+				<i class="fa fa-download" />
+			</a>
+			<span id="experiment-title"><t:slot name="title" /></span>
+		</div>
+	</div>
+</nav>
+
+<div id="viewer">
+	<t:attr name="data-url"><t:slot name="data_url" /></t:attr>
+	<t:attr name="data-timezero"><t:slot name="started_date" /></t:attr>
+	<t:attr name="data-timeend"><t:slot name="finished_date" /></t:attr>
+	<t:attr name="data-variables"><t:slot name="variables" /></t:attr>
+
+	<ul id="variables"></ul>
+	<div id="data"></div>
+</div>
+
+</body>
+</html>

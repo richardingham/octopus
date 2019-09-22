@@ -8,7 +8,7 @@ from octopus.constants import State
 
 def simple_step ():
 	from octopus.sequence import Step
-	from octopus.util import Event
+	from octopus.events import Event
 
 	d = defer.Deferred()
 	step = Mock(spec = Step)

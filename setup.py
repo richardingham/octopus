@@ -16,6 +16,7 @@ setuptools.setup(
     url="https://github.com/richardingham/octopus",
     packages=['octopus'],
     install_requires=requirements,
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3.5",
         "License :: OSI Approved :: MIT License",
