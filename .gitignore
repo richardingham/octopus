@@ -41,5 +41,10 @@ _trial_temp/
 # Twisted plugins
 twisted/plugins/dropin.cache
 
+# Twisted log
+child.log
+
 # Eclipse IDE
 .metadata/
+
+.DS_Store
