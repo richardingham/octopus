@@ -1,11 +1,11 @@
-from twisted.python import log
+import twisted.python.log
 import sys
-log.startLogging(sys.stdout)
+twisted.python.log.startLogging(sys.stdout)
 
 from twisted.internet import defer
 defer.Deferred.debug = True
 
-from octopus.runtime import *
+from octopus.sequence.runtime import *
 
 s = sequence(
 	log("one"),

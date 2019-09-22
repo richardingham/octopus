@@ -1,4 +1,4 @@
-from octopus.runtime import *
+from octopus.sequence.runtime import *
 from octopus.sequence.control import Bind
 
 from twisted.internet import defer

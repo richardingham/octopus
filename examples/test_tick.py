@@ -1,11 +1,11 @@
 from twisted.internet import reactor
 
-from octopus.runtime import *
-from octopus import runtime as r
+from octopus.sequence.runtime import *
+from octopus.sequence import runtime as r
 from octopus.sequence.util import Tick
 
 def fn1 ():
-	print "d3 tick."
+	print ("d3 tick.")
 
 def fn2 ():
 	return log("d4 tick...")

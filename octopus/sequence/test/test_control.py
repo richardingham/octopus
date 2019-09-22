@@ -3,9 +3,9 @@ from twisted.trial import unittest
 
 from unittest.mock import Mock
 
-from ... import sequence
+from .. import sequence
 from .. import control
-from ....data import data
+from ...data import data
 
 class BindTestCase (unittest.TestCase):
 	def test_boundVariable (self):

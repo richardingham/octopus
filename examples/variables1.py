@@ -1,5 +1,5 @@
 
-from octopus.runtime import *
+from octopus.sequence.runtime import *
 
 v = variable(0, "variable", "variable")
 

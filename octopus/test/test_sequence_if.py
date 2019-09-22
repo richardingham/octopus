@@ -4,8 +4,8 @@ from twisted.trial import unittest
 from unittest.mock import Mock
 
 from octopus.constants import State
-from octopus.runtime.sequence import Step, IfStep
-from octopus.runtime import sequence
+from octopus.sequence import Step, IfStep
+from octopus.sequence.error import NotRunning, NotPaused, AlreadyRunning
 
 def simple_step ():
 	d = defer.Deferred()
@@ -112,7 +112,7 @@ class IfStepTestCase (unittest.TestCase):
 		d = s.run()
 	
 		# Run the step again?
-		self.assertRaises(sequence.AlreadyRunning, s.run)
+		self.assertRaises(AlreadyRunning, s.run)
 
 		# Finish and reset the step
 		dt.callback("my_old_result")
@@ -142,16 +142,16 @@ class IfStepTestCase (unittest.TestCase):
 
 		# Run the step
 		s = IfStep(True, if_true, if_false)
-		self.assertRaises(sequence.NotRunning, s.pause)
+		self.assertRaises(NotRunning, s.pause)
 		d = s.run()
 
 		# Pause the step
-		self.assertRaises(sequence.NotPaused, s.resume)
+		self.assertRaises(NotPaused, s.resume)
 		s.pause()
 		self.assertEqual(s.state, State.PAUSED)
 
 		# Pause the step
-		self.assertRaises(sequence.NotRunning, s.pause)
+		self.assertRaises(NotRunning, s.pause)
 		s.resume()
 		self.assertEqual(s.state, State.RUNNING)
 

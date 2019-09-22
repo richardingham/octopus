@@ -1,7 +1,7 @@
 from twisted.internet import reactor
 from twisted.python import log
 from octopus.sequence.shortcuts import *
-from octopus.experiment import Experiment
+from octopus.sequence.experiment import Experiment
 
 s = wait(2)
 e = Experiment(s)

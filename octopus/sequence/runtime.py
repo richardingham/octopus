@@ -9,9 +9,7 @@ from .sequence import Step
 from .. import data
 from . import experiment
 from ..machine import Machine
-from .. import util
-
-# from .sequence.shortcuts import *
+from .shortcuts import *
 
 _experiment = experiment.Experiment()
 

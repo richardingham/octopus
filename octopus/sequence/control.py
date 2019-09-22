@@ -3,15 +3,15 @@ from twisted.python import log
 from twisted.internet.defer import maybeDeferred
 
 # Package Imports
-from ...constants import State
-from ...util import now
+from ..constants import State
+from ..util import now
 
 # Sibling Imports
-from . import util
+from .util import Looping, Dependent
 from . import error
 
 
-class Bind (util.Dependent):
+class Bind (Dependent):
 	"""
 	Connects a variable to an expression.
 
@@ -39,7 +39,7 @@ class Bind (util.Dependent):
 		pass
 
 	def __init__ (self, variable, expr = None, process = None):
-		util.Dependent.__init__(self)
+		Dependent.__init__(self)
 
 		self.variable = variable
 		self.expr = expr
@@ -76,7 +76,7 @@ class Bind (util.Dependent):
 			return maybeDeferred(self.variable.set, new_val).addErrback(log.err)
 
 
-class PID (util.Looping, util.Dependent):
+class PID (Looping, Dependent):
 	"""
 	PID controller.
 
@@ -108,8 +108,8 @@ class PID (util.Looping, util.Dependent):
 	min_integral = -500
 
 	def __init__ (self, response, error, proportional = None, integral = None, differential = None, max = None, min = None, interval = 0.5):
-		util.Dependent.__init__(self)
-		util.Looping.__init__(self, interval)
+		Dependent.__init__(self)
+		Looping.__init__(self, interval)
 
 		self.error = error
 		self.response = response
@@ -182,7 +182,7 @@ class PID (util.Looping, util.Dependent):
 		self.response.set(new)
 
 
-class StateMonitor (util.Dependent):
+class StateMonitor (Dependent):
 	"""
 	Monitors a set of expressions.
 
@@ -220,7 +220,7 @@ class StateMonitor (util.Dependent):
 		self._reset_step = util.init_child(self, step)
 
 	def __init__ (self, tests = None, trigger_step = None, reset_step = None, auto_reset = True, cancel_on_trigger = True, cancel_on_reset = True):
-		util.Dependent.__init__(self)
+		Dependent.__init__(self)
 
 		self._tests = set()
 

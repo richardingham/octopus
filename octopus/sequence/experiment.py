@@ -9,9 +9,8 @@ import logging
 from collections import deque
 
 # Sibling Imports
-from .. import data
-from . import sequence
-from .. import util
+from ..data import Variable as data_Variable
+from ..util import now, Event
 from ..machine import Machine, Component
 from ..machine.interface import InterfaceSection, InterfaceSectionSet
 from ..constants import Event, State
@@ -44,9 +43,9 @@ class LogFile (object):
 		self.f.close()
 
 
-class Timer (data.Variable):
+class Timer (data_Variable):
 	def __init__ (self):
-		self.time_zero = util.now()
+		self.time_zero = now()
 
 	def get_value (self):
 		return self._value
@@ -86,7 +85,7 @@ class Experiment (object):
 
 		try:
 			# todo... collect in a list to write later.
-			self._event_log.write(util.now(), "expt-state:%s" % value.value)
+			self._event_log.write(now(), "expt-state:%s" % value.value)
 		except AttributeError:
 			pass
 
@@ -97,13 +96,13 @@ class Experiment (object):
 	def _log (self, msg, level = None):
 		log.msg("Experiment [{!s}]: {!s}".format(self.id, msg), logLevel = level)
 
-	id_set = util.Event()
-	started = util.Event()
-	finished = util.Event()
-	cancelled = util.Event()
-	paused = util.Event()
-	resumed = util.Event()
-	error = util.Event()
+	id_set = Event()
+	started = Event()
+	finished = Event()
+	cancelled = Event()
+	paused = Event()
+	resumed = Event()
+	error = Event()
 
 	#
 	# event types:
@@ -123,7 +122,7 @@ class Experiment (object):
 
 		self._logging = False
 		self._log_variables = {}
-		self._time_zero = util.now()
+		self._time_zero = now()
 
 		self.step = step
 
@@ -262,7 +261,7 @@ class Experiment (object):
 			data["state"] = data["state"].value
 
 		# send to event log
-		self._event_log.write(util.now(), "step:" + str(data))
+		self._event_log.write(now(), "step:" + str(data))
 
 		# self._marshal.event(Event.STEP, data)
 
@@ -273,7 +272,7 @@ class Experiment (object):
 		}
 
 		# send to log
-		self._msg_log.write(util.now(), message)
+		self._msg_log.write(now(), message)
 
 		# self._marshal.event(Event.LOG, data)
 
@@ -336,14 +335,14 @@ class Experiment (object):
 		self._log_variables = {}
 
 		for v in variables:
-			if isinstance(v, data.Variable) and v.alias not in self._variables:
+			if isinstance(v, data_Variable) and v.alias not in self._variables:
 				self._log_variables[v.alias] = v
 
 			elif isinstance(v, Component):
 				self._log_variables.update(v.variables)
 
 	def set_log_output (self, name):
-		time_zero = util.now()
+		time_zero = now()
 		name = LogFile.get_dir(name)
 
 		if len(self._log_variables) is 0:
@@ -400,9 +399,9 @@ class Experiment (object):
 			pass
 
 
-class Variable (data.Variable):
+class Variable (data_Variable):
 	def __init__ (self, title, type, unit = None):
-		data.Variable.__init__(self, type)
+		data_Variable.__init__(self, type)
 
 		self.title = title
 		self.unit = unit
@@ -420,9 +419,9 @@ class Variable (data.Variable):
 			# Make a step change by inserting the initial and
 			# final values at the same time.
 			if self.value is not None:
-				data.Variable._push(self, self.value, time)
+				data_Variable._push(self, self.value, time)
 
-			data.Variable._push(self, value, time)
+			data_Variable._push(self, value, time)
 
 	def get (self, start, interval = None, step = 1):
 		return self._archive.get(start, interval)

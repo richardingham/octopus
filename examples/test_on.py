@@ -1,10 +1,10 @@
-from octopus.runtime import *
+from octopus.sequence.runtime import *
 from octopus.sequence.util import Trigger
 from twisted.internet import reactor
 
 
 def fn ():
-	print "fn called"
+	print ("fn called")
 	return sequence(
 		log("fn called"),
 		set(v, False)
