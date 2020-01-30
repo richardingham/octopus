@@ -80,7 +80,10 @@ def _redirectOrJSON (result, request: http.Request, url: urlpath.URLPath, data):
 	try:
 		if request.getHeader('x-requested-with') == 'XMLHttpRequest':
 			request.write(json.dumps(data).encode('utf-8'))
-			request.finish()
+
+			if not request.notifyFinish().called:
+				request.finish()
+			
 			return
 	except:
 		pass
@@ -90,7 +93,9 @@ def _redirectOrJSON (result, request: http.Request, url: urlpath.URLPath, data):
 
 def _respondWithJSON (result, request):
 	request.write(json.dumps(result).encode('utf-8'))
-	request.finish()
+
+	if not request.notifyFinish().called:
+		request.finish()
 
 def _error (failure, request):
 	try:
