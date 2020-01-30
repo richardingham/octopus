@@ -119,7 +119,7 @@ class Experiment (EventEmitter):
 
 		# Write a snapshot of the sketch.
 		with snapFile.create() as fp:
-			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
+			fp.write("\n".join(map(json.dumps, workspace.toEvents())).encode('utf-8'))
 
 		# Log events emitted by the sketch (block changes, etc.)
 		# The idea is that with the snapshot and change log, the
@@ -155,7 +155,7 @@ class Experiment (EventEmitter):
 				"data": data
 			}
 
-			file.write(json.dumps(event) + "\n")
+			file.write((json.dumps(event) + "\n").encode('utf-8'))
 
 		sketch.subscribe(self, onSketchEvent)
 
@@ -201,13 +201,10 @@ class Experiment (EventEmitter):
 				addUsedFile(varName, fileName, workspace.variables.get(data['name']))
 
 				logFile.write(
-					"# name:{:s}\n# type:{:s} \n# start:{:.2f}\n".format(
-						data['name'],
-						type(data['value']).__name__,
-						self.startTime
-				))
+					f"# name:{data['name']}\n# type:{type(data['value']).__name__} \n# start:{self.startTime:.2f}\n".encode('utf-8')
+				)
 
-			logFile.write("{:.2f}, {:s}\n".format(data['time'] - self.startTime, str(data['value'])))
+			logFile.write(f"{data['time'] - self.startTime:.2f}, {data['value']}\n".encode('utf-8'))
 
 		# Update the open files list if a variable is renamed.
 		#
@@ -279,7 +276,7 @@ class Experiment (EventEmitter):
 
 			# Close file pointers
 			with varsFile.create() as fp:
-				fp.write(json.dumps(usedFiles))
+				fp.write(json.dumps(usedFiles).encode('utf-8'))
 
 			try:
 				flushFilesLoop.stop()

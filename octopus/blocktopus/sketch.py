@@ -158,7 +158,7 @@ class Sketch (EventEmitter):
 				snapFile.create()
 
 			with snapFile.open('w') as fp:
-				fp.write("\n".join(map(json.dumps, self.workspace.toEvents())).encode())
+				fp.write("\n".join(map(json.dumps, self.workspace.toEvents())).encode('utf-8'))
 
 		# Set the modified date
 		self.db.runOperation('''
