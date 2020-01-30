@@ -38,7 +38,7 @@ now = time.time
 ## Database
 ##
 
-data_path = os.path.abspath(os.path.join(os.path.basename(__file__), "..", "data"))
+data_path = os.path.abspath(os.path.join(os.getcwd(), "data"))
 
 print(data_path)
 dbfilename = os.path.join(data_path, "octopus.db")
