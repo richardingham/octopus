@@ -7,5 +7,5 @@ xlsxwriter
 cryptography 
 pyasn1
 autobahn 
-jinja2
 wget
+
