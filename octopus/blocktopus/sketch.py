@@ -188,7 +188,7 @@ class Sketch (EventEmitter):
 		if subscriber in self.subscribers:
 			del self.subscribers[subscriber]
 
-		if len(self.subscribers) is 0:
+		if len(self.subscribers) == 0:
 			self.close()
 
 	def notifySubscribers (self, protocol, topic, payload, source = None):

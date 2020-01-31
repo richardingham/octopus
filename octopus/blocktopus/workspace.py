@@ -192,7 +192,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				for decl in decls:
 					item["deps"].discard(decl)
 
-				if len(item["deps"]) is 0:
+				if len(item["deps"]) == 0:
 					toRun.append(item)
 
 			# _runBlock needs to be called in the next tick (done in _runBlock)
@@ -339,7 +339,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 					)
 					dependencyError = True
 
-			if len(deps) is 0:
+			if len(deps) == 0:
 				log.msg("Block %s has no deps, running now" % block.id)
 				blocksToRunImmediately.append(block)
 
@@ -377,7 +377,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 					for decl in block["decls"]:
 						item["deps"].discard(decl)
 
-					if len(item["deps"]) is 0:
+					if len(item["deps"]) == 0:
 						toRemove.append(item)
 
 				for item in toRemove:

@@ -62,18 +62,18 @@ def _get (x_vals, y_vals, x_max, x_min, start, interval):
 
 	# Request range is outside data range
 	if start > x_max:
-		if interval is 0:
+		if interval == 0:
 			return [(start, y_vals[-1])]
 		else:
 			return [(start, y_vals[-1]), (start + interval, y_vals[-1])]
 	if start + interval < x_min:
 		try:
-			if interval is 0:
+			if interval == 0:
 				return [(start, y_vals[0])]
 			else:
 				return [(start, y_vals[0]), (start + interval, y_vals[0])]
 		except IndexError:
-			if interval is 0:
+			if interval == 0:
 				return [(start, 0)]
 			else:
 				return [(start, 0), (start + interval, 0)]
@@ -104,9 +104,9 @@ def _get (x_vals, y_vals, x_max, x_min, start, interval):
 
 
 def _at (val, time):
-	if len(val) is 1:
+	if len(val) == 1:
 		return val[0][1]
-	elif len(val) is 0:
+	elif len(val) == 0:
 		return 0
 	else:
 		a, b = val[0:2]
@@ -199,7 +199,7 @@ class Archive (object):
 	def at (self, time):
 		val = self.get(time, 0)
 
-		if len(val) is 0:
+		if len(val) == 0:
 			return ""
 		else:
 			return val[0][1]

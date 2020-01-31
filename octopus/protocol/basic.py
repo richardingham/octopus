@@ -93,7 +93,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		return LineOnlyReceiver.dataReceived(self, b"")
 
 	def lineReceived (self, line: bytes):
-		if len(line) is 0:
+		if len(line) == 0:
 			return
 
 		try:

@@ -346,7 +346,7 @@ class Experiment (object):
 		time_zero = now()
 		name = LogFile.get_dir(name)
 
-		if len(self._log_variables) is 0:
+		if len(self._log_variables) == 0:
 			for m in self._machines:
 				self._log_variables.update(m.variables)
 

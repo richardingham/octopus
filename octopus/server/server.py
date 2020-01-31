@@ -576,7 +576,7 @@ def makeService (options):
 		try:
 			with open(options["scripts"]) as f:
 				scripts = [line.split("\t") for line in f.readlines()]
-				scripts = [(s[0], s[1].strip()) for s in scripts if len(s) is 2]
+				scripts = [(s[0], s[1].strip()) for s in scripts if len(s) == 2]
 		except IOError:
 			scripts = []
 	else:

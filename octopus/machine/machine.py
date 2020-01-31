@@ -28,7 +28,7 @@ class Component (object):
 	def variables (self):
 		base = self.alias
 
-		if base is not "":
+		if base != "":
 			base += "."
 
 		# Enumerate public variables

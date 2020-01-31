@@ -464,7 +464,7 @@ class CompletedExperiment (object):
 		# This is done over the entire dataframe, after filling empty values,
 		# so that all property values are retained.
 		def format_time (x):
-			if x is not "":
+			if x != "":
 				return round(float(x) / time_divisor, time_dp)
 
 		dataframe = dataframe.groupby(format_time).first()

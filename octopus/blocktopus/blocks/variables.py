@@ -19,9 +19,9 @@ from octopus.image.data import DerivedImage
 def variableName (name):
 	split = name.split('::')
 
-	if len(split) is 2:
+	if len(split) == 2:
 		return (split[0] + "::" + split[1], None)
-	elif len(split) is 3:
+	elif len(split) == 3:
 		return (split[0] + "::" + split[1], split[2].split('.'))
 	else:
 		raise InvalidVariableNameError(name)
