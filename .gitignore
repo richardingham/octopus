@@ -50,12 +50,14 @@ package-lock.json
 # Build
 octopus/blocktopus/resources/blockly/pack/*
 octopus/blocktopus/resources/blockly/msg/js/*.js
+octopus/blocktopus/resources/cache
 
 # Stored data
 data/*
 
-# Twisted log
+# Twisted log / PID
 child.log
+twistd.pid
 
 # Eclipse IDE
 .metadata/
