@@ -1,21 +1,20 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" flex="" vertical="" layout="">
 <head>
-	<script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
-
-	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script t:render="cached_js">
+		<t:attr name="src"><t:slot name="src" /></t:attr>
+	</script>
+	<link rel="stylesheet" t:render="cached_css">
+		<t:attr name="href"><t:slot name="src" /></t:attr>
+	</link>
 
 	<script src="/resources/jquery-ui/jquery-ui.min.js"></script>
 	<!-- includes: draggable, droppable, resizable -->
 	<script src="/resources/gridstack/gridstack.js"></script>
 
-	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/4.12.2/d3.min.js"></script>
-
 	<script src="/resources/experiment-running.js"></script>
 	<script src="/resources/experiment-popup.js"></script>
 	<script src="/resources/experiment-graph.js"></script>
 
-	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
 	<link rel="stylesheet" href="/resources/gridstack/gridstack.css" />
 	<link rel="stylesheet" href="/resources/experiment-result.css" />
 	<link rel="stylesheet" href="/resources/experiment-popup.css" />

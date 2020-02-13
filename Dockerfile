@@ -49,7 +49,6 @@ WORKDIR /src/octopus
 COPY package.json .
 RUN npm install
 
-COPY tools/ ./tools/
 COPY twisted/ ./twisted/
 
 COPY rollup.config.js .
@@ -57,6 +56,9 @@ COPY octopus/ ./octopus/
 RUN ./node_modules/.bin/rollup -c
 
 COPY override_manufacturer/* .devcontainer/noop.txt ./octopus/manufacturer/
+
+COPY tools/ ./tools/
+RUN python tools/build.py
 
 WORKDIR /app
 COPY start.sh .

@@ -1,0 +1,60 @@
+{
+    "root": {
+         "js/jquery-3.4.1.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js",
+         "js/bootstrap-3.3.7.min.js": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js",
+         "css/bootstrap-3.3.7.min.css": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
+         "css/fontawesome-4.7.0.min.css": "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
+         "js/jquery.dataTables-1.10.19.min.js": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/jquery.dataTables.min.js",
+         "js/dataTables.bootstrap-1.10.19.min.js": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/dataTables.bootstrap.min.js",
+         "css/jquery.dataTables-1.10.19.min.css": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/jquery.dataTables.min.css", 
+         "css/dataTables.bootstrap-1.10.19.min.css": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/dataTables.bootstrap.min.css", 
+         "js/moment-2.24.0.min.js": "https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js", 
+         "js/moment-locale-en-gb-2.24.0.js": "https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/locale/en-gb.js", 
+         "js/bootstrap-datepicker-1.9.0.min.js": "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js", 
+         "js/bootstrap-datepicker-en-GB-1.9.0.min.js": "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.en-GB.min.js", 
+         "css/bootstrap-datepicker-1.9.0.min.css": "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" 
+    },
+    "sketch-edit": {
+         "js/jquery-3.4.1.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js",
+         "js/bootstrap-3.3.7.min.js": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js",
+         "css/bootstrap-3.3.7.min.css": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
+         "css/fontawesome-4.7.0.min.css": "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
+         "js/tinycolor-1.4.1.min.js": "https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.4.1/tinycolor.min.js"
+    },
+    "experiment-running": {
+         "js/lodash-4.17.15.min.js": "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js",
+         "js/jquery-3.4.1.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js",
+         "css/bootstrap-3.3.7.min.css": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
+         "css/fontawesome-4.7.0.min.css": "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
+         "js/d3-4.12.2.min.js": "https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.2/d3.min.js"
+    },
+    "experiment-result": {
+         "js/lodash-4.17.15.min.js": "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js",
+         "js/jquery-3.4.1.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js",
+         "css/bootstrap-3.3.7.min.css": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
+         "css/fontawesome-4.7.0.min.css": "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
+         "js/d3-4.12.2.min.js": "https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.2/d3.min.js"
+    },
+    "experiment-download": {
+         "js/jquery-3.4.1.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js",
+         "js/jquery.dataTables-1.10.19.min.js": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/jquery.dataTables.min.js",
+         "js/dataTables.bootstrap-1.10.19.min.js": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/dataTables.bootstrap.min.js",
+         "css/jquery.dataTables-1.10.19.min.css": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/jquery.dataTables.min.css", 
+         "css/dataTables.bootstrap-1.10.19.min.css": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/dataTables.bootstrap.min.css", 
+         "css/bootstrap-3.3.7.min.css": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
+         "css/fontawesome-4.7.0.min.css": "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
+         "js/popper.js": "https://unpkg.com/popper.js",
+         "js/tooltip.js": "https://unpkg.com/tooltip.js"
+    },
+    "_fonts": {
+          "fonts/fontawesome-webfont.ttf": "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/fonts/fontawesome-webfont.ttf",
+          "fonts/glyphicons-halflings-regular.ttf": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts/glyphicons-halflings-regular.ttf"
+    },
+    "_images": {
+         "images/sort_both.png": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/images/sort_both.png",
+         "images/sort_desc.png": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/images/sort_desc.png",
+         "images/sort_desc_disabled.png": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/images/sort_desc_disabled.png",
+         "images/sort_asc.png": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/images/sort_asc.png",
+         "images/sort_asc_disabled.png": "https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/images/sort_asc_disabled.png"
+    }
+}

@@ -1,4 +1,4 @@
-from twisted.web.template import Element, renderer, XMLFile, Tag
+from twisted.web.template import Element, renderer, XMLFile as Twisted_XMLFile, Tag
 from twisted.python.filepath import FilePath
 
 import os
@@ -6,12 +6,47 @@ import json
 import time
 import datetime
 
-templatesDir = FilePath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+blocktopus_dir = os.path.join(os.path.dirname(__file__), "..")
+templates_dir = FilePath(os.path.join(blocktopus_dir, "templates"))
+resources_dir = os.path.join(blocktopus_dir, "resources", "cache")
+resources_json = os.path.join(blocktopus_dir, "templates", "template-resources.json")
 
-websocketUrl = "ws://localhost:9000"
+resources_uri = '/resources/cache/'
+websocket_url = "ws://localhost:9000"
 
-class Root (Element):
-	loader = XMLFile(templatesDir.child('root.xml'))
+with open(resources_json) as templates_file:
+    resources = json.load(templates_file)
+
+
+class XMLFile (Twisted_XMLFile):
+	def getTemplateName (self):
+		return os.path.splitext(self._path.basename())[0]
+
+
+class ElementWithCachedResources (Element):
+	@renderer
+	def cached_js (self, request, tag):
+		for src in resources[self.loader.getTemplateName()].keys():
+			if os.path.splitext(src)[1] != '.js':
+				continue
+
+			yield tag.clone().fillSlots(
+				src = resources_uri + src
+			)
+
+	@renderer
+	def cached_css (self, request, tag):
+		for src in resources[self.loader.getTemplateName()].keys():
+			if os.path.splitext(src)[1] != '.css':
+				continue
+
+			yield tag.clone().fillSlots(
+				src = resources_uri + src
+			)
+
+
+class Root (ElementWithCachedResources):
+	loader = XMLFile(templates_dir.child('root.xml'))
 
 	def __init__ (self, running_experiments, past_experiments, saved_sketches):
 		Element.__init__(self)
@@ -87,8 +122,8 @@ class Root (Element):
 		return self.saved_sketches.addCallback(_done)
 
 
-class SketchEdit (Element):
-	loader = XMLFile(templatesDir.child('sketch-edit.xml'))
+class SketchEdit (ElementWithCachedResources):
+	loader = XMLFile(templates_dir.child('sketch-edit.xml'))
 
 	def __init__ (self, sketch_id):
 		Element.__init__(self)
@@ -97,13 +132,13 @@ class SketchEdit (Element):
 	@renderer
 	def editor_body (self, request, tag):
 		return tag.fillSlots(
-			websocket_url = websocketUrl,
+			websocket_url = websocket_url,
 			sketch_id = self.sketch_id
 		)
 
 
-class ExperimentResult (Element):
-	loader = XMLFile(templatesDir.child('experiment-result.xml'))
+class ExperimentResult (ElementWithCachedResources):
+	loader = XMLFile(templates_dir.child('experiment-result.xml'))
 
 	def __init__ (self, expt):
 		Element.__init__(self)
@@ -128,8 +163,8 @@ class ExperimentResult (Element):
 		return self._load.addCallback(_done)
 
 
-class ExperimentDownload (Element):
-	loader = XMLFile(templatesDir.child('experiment-download.xml'))
+class ExperimentDownload (ElementWithCachedResources):
+	loader = XMLFile(templates_dir.child('experiment-download.xml'))
 
 	def __init__ (self, expt):
 		Element.__init__(self)
@@ -153,8 +188,8 @@ class ExperimentDownload (Element):
 		return self._load.addCallback(_done)
 
 
-class ExperimentRunning (Element):
-	loader = XMLFile(templatesDir.child('experiment-running.xml'))
+class ExperimentRunning (ElementWithCachedResources):
+	loader = XMLFile(templates_dir.child('experiment-running.xml'))
 
 	def __init__ (self, experiment):
 		Element.__init__(self)

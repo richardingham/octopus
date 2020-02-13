@@ -3,17 +3,14 @@
 	<title>Edit Sketch</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 
-	<!-- jQuery -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script t:render="cached_js">
+		<t:attr name="src"><t:slot name="src" /></t:attr>
+	</script>
+	<link rel="stylesheet" t:render="cached_css">
+		<t:attr name="href"><t:slot name="src" /></t:attr>
+	</link>
 
-	<!-- tinycolor -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.4.1/tinycolor.min.js"></script>
-
-	<!-- Bootstrap -->
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
-
+	<!-- local -->
 	<script src="/resources/blockly/pack/blockly.js"></script>
 	<script src="/resources/blockly/pack/blockly-messages.js"></script>
 	<script src="/resources/blockly/pack/octopus-generator.js"></script>
