@@ -168,7 +168,7 @@ class Root (resource.Resource):
 
 class Sketch (resource.Resource):
 
-	def getChild (self, id, request):
+	def getChild (self, id: bytes, request):
 		if id == b"create":
 			return NewSketch()
 
@@ -230,7 +230,7 @@ class EditSketch (resource.Resource):
 
 		return server.NOT_DONE_YET
 
-	def getChild (self, action, request):
+	def getChild (self, action: bytes, request):
 		if action == b"copy":
 			return CopySketch(self._id)
 		elif action == b"delete":
@@ -304,8 +304,8 @@ class UndeleteSketch (resource.Resource):
 
 
 class Experiment (resource.Resource):
-	def getChild (self, id, request):
-		return ShowExperiment(id)
+	def getChild (self, id: bytes, request):
+		return ShowExperiment(id.decode('ascii'))
 
 
 class ExperimentFind (resource.Resource):
@@ -316,12 +316,13 @@ class ExperimentFind (resource.Resource):
 	def render_GET (self, request):
 		draw = _getIntArg(request, 'draw')
 		start = _getIntArg(request, 'start')
-		limit = _getIntArg(request, 'length')
+		limit = _getIntArg(request, 'length') or None
 		sorts = _getJSONArg(request, 'sort', [])
 		filters = _getJSONArg(request, 'filter', [])
 
 		def _done (result):
 			result['draw'] = draw
+			print(result)
 			_respondWithJSON(result, request)
 
 		experiment.find(
@@ -355,7 +356,7 @@ class ExperimentsRunning (resource.Resource):
 
 class ShowExperiment (resource.Resource):
 
-	def __init__ (self, id):
+	def __init__ (self, id: str):
 		resource.Resource.__init__(self)
 		self._id = id
 
@@ -385,14 +386,14 @@ class ShowExperiment (resource.Resource):
 
 		return server.NOT_DONE_YET
 
-	def getChild (self, action, request):
-		if action == "data":
+	def getChild (self, action: bytes, request):
+		if action == b"data":
 			return GetExperimentData(self._id)
-		elif action == "download":
+		elif action == b"download":
 			return DownloadExperimentData(self._id)
-		elif action == "delete":
+		elif action == b"delete":
 			return DeleteExperiment(self._id)
-		elif action == "restore":
+		elif action == b"restore":
 			return UndeleteExperiment(self._id)
 
 		return NoResource()
