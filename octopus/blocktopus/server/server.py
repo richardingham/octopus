@@ -179,7 +179,7 @@ class SketchFind (resource.Resource):
 
 	def render_GET (self, request):
 		start = _getIntArg(request, 'start')
-		limit = _getIntArg(request, 'limit')
+		limit = _getIntArg(request, 'limit') or None
 		sorts = _getJSONArg(request, 'sort', [])
 		filters = _getJSONArg(request, 'filter', [])
 
