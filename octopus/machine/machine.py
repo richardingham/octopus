@@ -300,9 +300,12 @@ class Property (Stream):
 
 	def set (self, value):
 		if self._setter is None:
-			raise data.errors.Immutable
+			return defer.fail(data.errors.Immutable())
 
-		value = self._type(value)
+		try:
+			value = self._type(value)
+		except ValueError:
+			return defer.fail(data.errors.InvalidType(f"{self.alias}: Unable to convert {value!r} into {self._type}."))
 
 		try:
 			self.check(value)
@@ -325,13 +328,13 @@ class Property (Stream):
 
 	def check (self, value):
 		if self.options is not None and value not in self.options:
-			raise data.errors.InvalidValue
+			raise data.errors.InvalidValue(f"{self.alias}: {value!r} is not a valid option. Allowed values: {self.options}")
 
 		if self.min is not None and value < self.min:
-			raise data.errors.ValueTooSmall
+			raise data.errors.ValueTooSmall(f"{self.alias}: {value} is below the minimum value of {self.min}")
 
 		if self.max is not None and value > self.max:
-			raise data.errors.ValueTooLarge
+			raise data.errors.ValueTooLarge(f"{self.alias}: {value} is above the maximum value of {self.max}")
 
 		return True
 
