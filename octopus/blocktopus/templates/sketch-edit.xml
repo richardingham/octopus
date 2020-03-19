@@ -85,8 +85,12 @@
 		<block type="connection_gsioc"></block>
 	</category>
 	<category name="Control" icon="cogs">
-		<block type="controls_wait"></block>
-		<block type="controls_maketime"></block>
+		<block type="controls_wait">
+			<value name="TIME">
+			<block type="controls_maketime"></block>
+			</value>
+		</block>
+		<!--block type="controls_maketime"></block-->
 		<block type="controls_wait_until"></block>
 		<block type="controls_if"></block>
 		<block type="controls_repeat_ext">
