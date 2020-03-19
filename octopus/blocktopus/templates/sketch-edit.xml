@@ -112,7 +112,7 @@
 		<block type="logic_null"></block>
 		<block type="logic_ternary"></block>
 	</category>
-	<category name="Images" icon="camera">
+	<!--category name="Images" icon="camera">
 		<block type="machine_imageprovider"></block>
 		<block type="machine_singletracker"></block>
 		<block type="machine_multitracker"></block>
@@ -127,7 +127,7 @@
 		<block type="image_crop"></block>
 		<block type="image_intensityfn"></block>
 		<block type="image_tonumber"></block>
-	</category>
+	</category-->
 	<category name="Math" icon="superscript">
 		<block type="math_number"></block>
 		<block type="math_arithmetic"></block>
