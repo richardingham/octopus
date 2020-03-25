@@ -253,6 +253,7 @@
 		<block type="lexical_variable_set"></block>
 		<block type="lexical_variable_set_to"></block>
 		<block type="lexical_variable_get"></block>
+		<block type="lexical_variable_compare"></block>
 	</category>
 	<!--category name="Functions" custom="PROCEDURE"></category-->
 </xml>

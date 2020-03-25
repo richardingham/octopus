@@ -1,5 +1,6 @@
 from ..workspace import Block
 from twisted.internet import defer
+from .variables import lexical_variable
 
 import operator
 
@@ -28,35 +29,63 @@ class logic_negate (Block):
 		return self._complete
 
 
+_operators_map = {
+	"EQ": operator.eq,
+	"NEQ": operator.ne,
+	"LT": operator.lt,
+	"LTE": operator.le,
+	"GT": operator.gt,
+	"GTE": operator.ge
+}
+
+def _compare (lhs, rhs, op_id):
+	if lhs is None or rhs is None:
+		return None
+
+	op = _operators_map[op_id]
+	return op(lhs, rhs)
+
+	# Emit a warning if bad op given
+
 class logic_compare (Block):
 	outputType = bool
 
-	_map = {
-		"EQ": operator.eq,
-		"NEQ": operator.ne,
-		"LT": operator.lt,
-		"LTE": operator.le,
-		"GT": operator.gt,
-		"GTE": operator.ge
-	}
-
 	def eval (self):
-		def compare (results):
-			lhs, rhs = results
-
-			if lhs is None or rhs is None:
-				return None
-
-			op = self._map[self.fields['OP']]
-			return op(lhs, rhs)
-
-			# Emit a warning if bad op given
-
 		lhs = self.getInputValue('A')
 		rhs = self.getInputValue('B')
+		op_id = self.fields['OP']
 
-		self._complete = defer.gatherResults([lhs, rhs]).addCallback(compare)
+		def _eval (results):
+			lhs, rhs = results
+			return _compare(lhs, rhs, op_id)
+
+		self._complete = defer.gatherResults([lhs, rhs]).addCallback(_eval)
 		return self._complete
+
+
+class lexical_variable_compare (lexical_variable):
+	outputType = bool
+
+	def eval (self):
+		variable = self._getVariable()
+
+		if variable is None:
+			self.emitLogMessage(
+				"Unknown variable: " + str(self.getFieldValue('VAR')),
+				"error"
+			)
+
+			return defer.succeed(None)
+
+		value = self.getFieldValue('VALUE')
+		op_id = self.getFieldValue('OP')
+
+		unit = self.getFieldValue('UNIT', None)
+		
+		if isinstance(unit, (int, float)):
+			value *= unit
+		
+		return defer.succeed(_compare(variable.value, value, op_id))
 
 
 class logic_operation (Block):

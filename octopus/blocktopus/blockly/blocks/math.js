@@ -32,7 +32,7 @@ import Names from '../core/names';
 import FieldDropdown from '../core/field_dropdown';
 import FieldTextInput from '../core/field_textinput';
 import FieldLexicalVariable from '../core/field_lexical_variable';
-import {withVariableDropdown} from './mixins.js';
+import {withVariableDropdown, addUnitDropdown} from './mixins.js';
 import {MATH_CATEGORY_HUE} from '../colourscheme';
 import {numberValidator} from '../core/validators';
 
@@ -264,12 +264,13 @@ Blocks['math_change'] = {
     this.setColour(MATH_CATEGORY_HUE);
     this.fieldVar_ = new FieldLexicalVariable(" ", { readonly: false, type: "Number" });
     this.fieldVar_.setBlock(this);
-    this.appendDummyInput()
+    this.appendDummyInput('VARIABLE')
 		.appendField(new FieldDropdown([
 			['increment', 'INCREMENT'],
 			['decrement', 'DECREMENT']
 		]), 'MODE')
         .appendField(this.fieldVar_, 'VAR');
+    this.appendDummyInput('_UNIT').appendField('...', 'UNIT').setVisible(false);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
     // Assign 'this' to a variable for use in the tooltip closure below.
@@ -282,6 +283,19 @@ Blocks['math_change'] = {
 
     // TODO: need to filter only number variables in dropdown.
     withVariableDropdown.call(this, this.fieldVar_, 'VAR');
+  },
+  variableChanged_: function (variable) {
+    var input = this.getInput('VARIABLE');
+    var currentUnitSelection = this.getFieldValue('UNIT');
+
+    input.removeField('BY', true);
+    input.removeField('UNIT', true);
+
+    // Unit
+    if (variable.flags.unit) {
+      input.appendField('by 1', 'BY');
+    }
+    addUnitDropdown(this, input, variable, currentUnitSelection);
   }
 };
 

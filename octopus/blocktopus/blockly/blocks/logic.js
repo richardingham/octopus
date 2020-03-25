@@ -29,7 +29,36 @@ import Blocks from '../core/blocks';
 import Block from '../core/block';
 import Msg from '../core/msg';
 import FieldDropdown from '../core/field_dropdown';
-import {LOGIC_CATEGORY_HUE} from '../colourscheme';
+import FieldTextInput from '../core/field_textinput';
+import FieldLexicalVariable from '../core/field_lexical_variable';
+import {LOGIC_CATEGORY_HUE, VARIABLES_CATEGORY_HUE} from '../colourscheme';
+import {withVariableDropdown, withMagicVariableValue} from './mixins.js';
+
+const OPERATORS = Blockly.RTL ? [
+  ['=', 'EQ'],
+  ['\u2260', 'NEQ'],
+  ['>', 'LT'],
+  ['\u2265', 'LTE'],
+  ['<', 'GT'],
+  ['\u2264', 'GTE']
+] : [
+  ['=', 'EQ'],
+  ['\u2260', 'NEQ'],
+  ['<', 'LT'],
+  ['\u2264', 'LTE'],
+  ['>', 'GT'],
+  ['\u2265', 'GTE']
+];
+const OPERATORS_OPTIONS = OPERATORS.slice(0, 2);
+
+const TOOLTIPS = {
+  'EQ': Msg.LOGIC_COMPARE_TOOLTIP_EQ,
+  'NEQ': Msg.LOGIC_COMPARE_TOOLTIP_NEQ,
+  'LT': Msg.LOGIC_COMPARE_TOOLTIP_LT,
+  'LTE': Msg.LOGIC_COMPARE_TOOLTIP_LTE,
+  'GT': Msg.LOGIC_COMPARE_TOOLTIP_GT,
+  'GTE': Msg.LOGIC_COMPARE_TOOLTIP_GTE
+};
 
 Blocks['logic_compare'] = {
   /**
@@ -37,21 +66,6 @@ Blocks['logic_compare'] = {
    * @this Block
    */
   init: function() {
-    var OPERATORS = Blockly.RTL ? [
-          ['=', 'EQ'],
-          ['\u2260', 'NEQ'],
-          ['>', 'LT'],
-          ['\u2265', 'LTE'],
-          ['<', 'GT'],
-          ['\u2264', 'GTE']
-        ] : [
-          ['=', 'EQ'],
-          ['\u2260', 'NEQ'],
-          ['<', 'LT'],
-          ['\u2264', 'LTE'],
-          ['>', 'GT'],
-          ['\u2265', 'GTE']
-        ];
     this.setHelpUrl(Msg.LOGIC_COMPARE_HELPURL);
     this.setColour(LOGIC_CATEGORY_HUE);
     this.setOutput(true, 'Boolean');
@@ -63,18 +77,66 @@ Blocks['logic_compare'] = {
     var thisBlock = this;
     this.setTooltip(function() {
       var op = thisBlock.getFieldValue('OP');
-      var TOOLTIPS = {
-        'EQ': Msg.LOGIC_COMPARE_TOOLTIP_EQ,
-        'NEQ': Msg.LOGIC_COMPARE_TOOLTIP_NEQ,
-        'LT': Msg.LOGIC_COMPARE_TOOLTIP_LT,
-        'LTE': Msg.LOGIC_COMPARE_TOOLTIP_LTE,
-        'GT': Msg.LOGIC_COMPARE_TOOLTIP_GT,
-        'GTE': Msg.LOGIC_COMPARE_TOOLTIP_GTE
-      };
+      
       return TOOLTIPS[op];
     });
   }
 };
+
+Blocks['lexical_variable_compare'] = {
+  // Variable setter.
+  category: 'Variables',
+  //helpUrl: Msg.LANG_LEXICAL_VARIABLES_COMPARE_HELPURL,
+  init: function() {
+    this.setColour(VARIABLES_CATEGORY_HUE);
+    this.fieldVar_ = new FieldLexicalVariable(" ");
+    this.fieldVar_.setBlock(this);
+    this.appendDummyInput('INPUT')
+        .appendField(this.fieldVar_, 'VAR')
+        .appendField(new FieldDropdown(OPERATORS), 'OP')
+        .appendField('...', 'UNIT');
+    this.appendDummyInput('BLANK')
+        .appendField(new FieldTextInput(''), 'VALUE')
+        .setVisible(false);
+    this.setOutput(true, 'Boolean');
+    this.setTooltip(''); //Msg.LANG_LEXICAL_VARIABLES_COMPARE_TOOLTIP);
+
+    var block = this;
+
+    function valueInOptions (options, newValue) {
+      for (var x = 0; x < options.length; x++) {
+        // Options are tuples of human-readable text and language-neutral values.
+        if (options[x][1] == newValue) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function onVariableChange (variable) {
+      var input = block.getInput('INPUT');
+      var opValue = block.getFieldValue('OP');
+      var options = [];
+      input.removeField('OP', true);
+        
+      // Drop-down menu
+      if (variable.flags.options || variable.type === "String") {
+        options = OPERATORS_OPTIONS;
+      } else {
+        options = OPERATORS;
+      }
+
+      input.insertField(1, new FieldDropdown(options), 'OP');
+
+      if (valueInOptions(options, opValue)) {
+        block.setFieldValue(opValue, 'OP');
+      }
+    }
+
+    withVariableDropdown.call(this, this.fieldVar_, 'VAR');
+    withMagicVariableValue.call(this, onVariableChange);
+  }
+}
 
 Blocks['logic_operation'] = {
   /**

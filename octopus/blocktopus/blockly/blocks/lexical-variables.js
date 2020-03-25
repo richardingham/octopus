@@ -8,7 +8,7 @@ import FieldTextInput from '../core/field_textinput';
 import FieldLexicalVariable from '../core/field_lexical_variable';
 import FieldFlydown from '../core/field_flydown';
 import FieldGlobalFlydown from '../core/field_global_flydown';
-import {withVariableDropdown, withVariableDefinition} from './mixins.js';
+import {withVariableDropdown, withVariableDefinition, withMagicVariableValue, addUnitDropdown} from './mixins.js';
 import {VARIABLES_CATEGORY_HUE} from '../colourscheme';
 
 /**
@@ -47,7 +47,7 @@ Blocks['lexical_variable_get'] = {
     this.setColour(VARIABLES_CATEGORY_HUE);
     this.fieldVar_ = new FieldLexicalVariable(" ");
     this.fieldVar_.setBlock(this);
-    this.appendDummyInput()
+    this.appendDummyInput('VARIABLE')
         .appendField('get') //Msg.LANG_VARIABLES_GET_TITLE_GET)
         .appendField(this.fieldVar_, 'VAR');
     this.setOutput(true, null);
@@ -56,7 +56,14 @@ Blocks['lexical_variable_get'] = {
     withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
   variableChanged_: function (variable) {
+    var input = this.getInput('VARIABLE');
+    var currentUnitSelection = this.getFieldValue('UNIT');
+
     this.changeOutput(variable.getType());
+    input.removeField('UNIT', true);
+
+    // Unit
+    addUnitDropdown(this, input, variable, currentUnitSelection);
   }
 };
 
@@ -75,7 +82,7 @@ Blocks['lexical_variable_set'] = {
     this.appendValueInput('VALUE')
         .appendField('set') //Msg.LANG_VARIABLES_SET_TITLE_SET)
         .appendField(this.fieldVar_, 'VAR')
-        .appendField('to') //Msg.LANG_VARIABLES_SET_TITLE_TO);
+        .appendField('to', 'TO'); //Msg.LANG_VARIABLES_SET_TITLE_TO);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
     this.setTooltip(''); //Msg.LANG_VARIABLES_SET_TOOLTIP);
@@ -83,7 +90,18 @@ Blocks['lexical_variable_set'] = {
 	  withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
   variableChanged_: function (variable) {
-    this.getInput('VALUE').setCheck(variable.getType());
+    var input = this.getInput('VALUE');
+    var currentUnitSelection = this.getFieldValue('UNIT');
+
+    input.setCheck(variable.getType());
+    input.removeField('TO', true);
+    input.removeField('UNIT', true);
+
+    // Unit
+    addUnitDropdown(this, input, variable, currentUnitSelection);
+
+    // 'To' label
+    input.appendField('to', 'TO');
   }
 };
 
@@ -111,62 +129,7 @@ Blocks['lexical_variable_set_to'] = {
     this.setNextStatement(true);
     this.setTooltip(''); //Msg.LANG_VARIABLES_SET_TOOLTIP);
 
-	  withVariableDropdown.call(this, this.fieldVar_, 'VAR');
-  },
-  variableChanged_: function (variable) {
-    var input = this.getInput('INPUT');
-    var value = this.getFieldValue('VALUE');
-    var type = variable.getType();
-    var field, options;
-
-    this.removeInput('BLANK', true);
-    input.removeField('VALUE', true);
-    input.removeField('UNIT', true);
-
-    // Drop-down menu
-    if (variable.flags.options) {
-      options = [];
-      for (var i = 0; i < variable.flags.options.length; i++) {
-        options.push([variable.flags.options[i], variable.flags.options[i]]);
-      }
-
-      field = input.appendField(new FieldDropdown(options), 'VALUE');
-
-      if (variable.flags.options.indexOf(value) >= 0) {
-        this.setFieldValue(value, 'VALUE');
-      }
-
-    // Number field
-    } else if (type == "Number") {
-      value = parseFloat(value);
-      field = input.appendField(new FieldTextInput(
-        isNaN(value) ? '0' : String(value),
-        FieldTextInput.numberValidator
-      ), 'VALUE');
-
-    // Boolean field
-    } else if (type == "Boolean") {
-      options = [
-        [Msg.LOGIC_BOOLEAN_TRUE, 'TRUE'],
-        [Msg.LOGIC_BOOLEAN_FALSE, 'FALSE']
-      ];
-
-      field = input.appendField(new FieldDropdown(options), 'VALUE');
-
-      if (value) {
-        this.setFieldValue('TRUE', 'VALUE');
-      }
-
-    // Text field
-    } else {
-      field = input.appendField(new FieldTextInput(
-        String(value)
-      ), 'VALUE');
-    }
-
-    // Unit
-    if (variable.flags.unit) {
-      input.appendField(variable.flags.unit, 'UNIT');
-    }
-  }
+    withVariableDropdown.call(this, this.fieldVar_, 'VAR');
+    withMagicVariableValue.call(this);
+  } 
 };
