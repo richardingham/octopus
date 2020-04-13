@@ -27,6 +27,7 @@
 import EventEmitter from 'events';
 import {inject} from './inject';
 import Block from './block';
+import Blocks from './blocks';
 import Msg from './msg';
 import Workspace from './workspace';
 import {Connection} from './connection';
@@ -838,6 +839,6 @@ export function hideChaff () {
   Blockly.hideChaff();
 }
 
-export {inject, Msg};
+export {inject, Msg, Blocks};
 
 Blockly.Msg = Msg;

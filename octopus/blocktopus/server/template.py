@@ -136,6 +136,15 @@ class SketchEdit (ElementWithCachedResources):
 			sketch_id = self.sketch_id
 		)
 
+	@renderer
+	def plugin_machines (self, request, tag):
+		from octopus.blocktopus.workspace import get_block_plugin_block_names
+		
+		for block_name in sorted(get_block_plugin_block_names()):
+			yield tag.clone().fillSlots(
+				type = block_name
+			)
+
 
 class ExperimentResult (ElementWithCachedResources):
 	loader = XMLFile(templates_dir.child('experiment-result.xml'))

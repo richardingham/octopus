@@ -13,6 +13,7 @@
 	<!-- local -->
 	<script src="/resources/blockly/pack/blockly.js"></script>
 	<script src="/resources/blockly/pack/blockly-messages.js"></script>
+	<script src="/resources/blockly/pack/octopus-machines.js"></script>
 	<script src="/resources/blockly/pack/octopus-generator.js"></script>
 	<script src="/resources/prettify/prettify.js"></script>
 	<script src="/resources/contextmenu/contextmenu.js"></script>
@@ -25,7 +26,7 @@
 	<link rel="stylesheet" href="/resources/sketch-edit.css" />
 
 </head>
-<body t:render="editor_body">
+<body>
 
 <nav id="toolbar" class="navbar navbar-default">
 	<div class="container-fluid">
@@ -52,7 +53,7 @@
 	</div>
 </nav>
 
-<div id="editor">
+<div id="editor" t:render="editor_body">
 	<ul id="toolbox"></ul>
 	<div id="blockly">
 		<t:attr name="data-websocket"><t:slot name="websocket_url" /></t:attr>
@@ -79,6 +80,9 @@
 		<block type="machine_mt_sics_balance"></block>
 		<block type="machine_gilson_FractionCollector203B"></block>
 		<block type="machine_startech_powerremotecontrol"></block>
+		<block t:render="plugin_machines">
+			<t:attr name="type"><t:slot name="type"/></t:attr>
+		</block>
 		<block type="connection_tcp"></block>
 		<block type="connection_serial"></block>
 		<block type="connection_phidget"></block>

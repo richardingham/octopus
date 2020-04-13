@@ -22,5 +22,8 @@
 		"python.linting.pylintEnabled": true,
 		"python.linting.pylintPath": "/usr/local/bin/pylint",
 		"python.linting.enabled": true
-	}
+	},
+	"mounts": [
+		"source=${localWorkspaceFolder}/plugins,target=/workspaces/octopus-plugins,type=bind,consistency=cached"
+	]
 }

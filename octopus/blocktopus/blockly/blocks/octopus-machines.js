@@ -489,3 +489,7 @@ Blocks['machine_gilson_FractionCollector203B'] = extend({
   ],
   machineConnectionType: "GSIOCConnection"
 }, machineBlock);
+
+Blocks.addMachineBlock = function(name, definition) {
+  Blocks[name] = extend(definition, machineBlock);
+};

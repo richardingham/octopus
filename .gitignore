@@ -41,6 +41,9 @@ _trial_temp/
 # Twisted plugins
 twisted/plugins/dropin.cache
 
+# Octopus plugins
+plugins/*
+
 # Dependencies
 node_modules/*
 
