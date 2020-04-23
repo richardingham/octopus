@@ -39,43 +39,6 @@ import {MACHINES_CATEGORY_HUE} from '../colourscheme';
 import {_extend as extend} from '../core/utils';
 import {numberValidator} from '../core/validators';
 
-var _R2R4_vars = [{
-  name: "status", title: "Status", type: "String", readonly: true
-}, {
-  name: "power", title: "Power", type: "String", options: ['off', 'on']
-}, {
-  name: "loop1", title: "Loop A", type: "String", options: ['load', 'inject']
-}, {
-  name: "loop2", title: "Loop B", type: "String", options: ['load', 'inject']
-}, {
-  name: "pressure_limit", title: "Pressure Limit", type: "Number", unit: 'mbar'
-}, {
-  name: "pressure", title: "System Pressure", type: "Number", readonly: true
-}, {
-  name: "output", title: "Output", type: "String", options: ['waste', 'collect']
-}]
-for (var i = 1; i < 3; i++) {
-  _R2R4_vars.push({
-    name: "pump" + i, title: "Pump " + String.fromCharCode(64 + i), parts: [
-      { name: "target", title: "Target", type: "Number", unit: 'uL/min' },
-      { name: "rate", title: "Flow Rate", type: "Number", readonly: true },
-      { name: "pressure", title: "Pressure", type: "Number", readonly: true },
-      { name: "input", title: "Input", type: "String", options: ['solvent', 'reagent'] },
-      { name: "airlock", title: "Airlock", type: "Number", readonly: true }
-    ]
-  });
-}
-for (var i = 1; i < 5; i++) {
-  _R2R4_vars.push({
-    name: "heater" + i, title: "Heater " + String.fromCharCode(64 + i), parts: [
-      { name: "target", title: "Target", type: "Number", unit: 'C' },
-      { name: "temp", title: "Temperature", type: "Number", readonly: true },
-      { name: "mode", title: "Mode", type: "Number", readonly: true },
-      { name: "power", title: "Power", type: "Number", readonly: true }
-    ]
-  });
-}
-
 var _K120_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
   { name: "power", title: "Power", type: "String", options: ['off', 'on'] },
@@ -347,12 +310,6 @@ Blocks['machine_quark_argument'] = {
     this.setNextStatement(true);
   }
 };
-
-Blocks['machine_vapourtec_R2R4'] = extend({
-  machineTitle: "Vapourtec R2+/R4",
-  machineVars: _R2R4_vars,
-  machineVarFlags: { providesGSIOC: true }
-}, machineBlock);
 
 Blocks['machine_knauer_K120'] = extend({
   machineTitle: "Knauer K120",

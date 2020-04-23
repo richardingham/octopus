@@ -104,12 +104,6 @@ class machine_declaration (Block):
 		)
 
 
-class machine_vapourtec_R2R4 (machine_declaration):
-	def getMachineClass (self):
-		from octopus.manufacturer import vapourtec
-		return vapourtec.R2R4
-
-
 class machine_knauer_K120 (machine_declaration):
 	def getMachineClass (self):
 		from octopus.manufacturer import knauer
