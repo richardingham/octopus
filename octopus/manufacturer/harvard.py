@@ -33,12 +33,12 @@ _status_map = {
 _prompt_re = re.compile('^[0-9]{1,2}[:<>\/\*\^]')
 
 class PHD2000Protocol (VaryingDelimiterQueuedLineReceiver):
-	start_delimiter = '\n'
-	delimiter = '\r'
+	start_delimiter = b'\n'
+	delimiter = b'\r'
 	character_delay = 0.002
 
-	def length (self, buffer):
-		parts = buffer.split('\n', 1)
+	def length (self, buffer: bytes):
+		parts = buffer.decode('ascii').split('\n', 1)
 		match = _prompt_re.match(parts[-1])
 
 		if match is None:
@@ -52,7 +52,7 @@ class PHD2000Protocol (VaryingDelimiterQueuedLineReceiver):
 		else:
 			return len(parts[0]) + 1 + match.end(0)
 
-	def processLine (self, line):
+	def processLine (self, line: str):
 		parts = line.split('\n', 1)
 
 		if len(parts) == 1:
