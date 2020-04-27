@@ -1,6 +1,6 @@
 
 Octopus provides ability to create control programmes for laboratory automation
-using [Python 2.7](http://www.python.org) and [Twisted](http://www.twistedmatrix.com),
+using [Python 3](http://www.python.org) and [Twisted](http://www.twistedmatrix.com),
 and real-time remote monitoring over http/websockets for running protocols.
 
 It can provide a command-line interface for interacting with machines using
@@ -42,7 +42,7 @@ substitute `/home/pi` for `/home/[your user]`.
 
  2.  Copy the two directories `octopus` and `twisted` to `/home/pi/lib/python`.
 
- 3.  Create a file: `/usr/lib/python2.7/dist-packages/my-path.pth`
+ 3.  Create a file: `/usr/lib/python3.x/dist-packages/my-path.pth`
      containing the contents `/home/pi/lib/python` (or whichever path you have chosen).
 
 Source: [darmawan-salihun.blogspot.co.uk](http://darmawan-salihun.blogspot.co.uk/2012/12/adding-new-path-to-pythonpath.html)
