@@ -77,18 +77,6 @@ disconnection terminate the experiment. For a good introduction to screen,
 visit [aperiodic.net](http://aperiodic.net/screen/start).
 
 
-Running the Server Software
-===========================
-
-For realtime remote monitoring, the interface server must be running.
-This runs by default on port 80, but this can be changed.
-
-The server can run on the same computer as the control script, or a 
-different one.
-
- *  [Installation and documentation](doc/Octopus Server.md)
-
-
 Available Machine Interfaces
 ============================
 
@@ -111,7 +99,3 @@ Before use, the DLL and API must be installed.
 
  *  [Phidgets](doc/Manufacturer - Phidgets.md).
 
-Using Computer Vision
-=====================
-
- * [Installation of OpenCV and SimpleCV](doc/Installation - SimpleCV.md)
