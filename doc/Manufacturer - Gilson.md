@@ -60,13 +60,13 @@ Properties
 
  *	`input1` ... `input4` (r, str)
 
-	State of digital contacts. 
+	State of digital contacts.
 
 	Values: "open", "closed".
 
  *	`output1` ... `output6` (rw, str)
 
-	State of digital contacts. 
+	State of digital contacts.
 
 	Values: "open", "closed".
 
@@ -85,7 +85,7 @@ gilson.SampleInjector233(master.gsioc(id))
 ```
 
 Default locations (based on manual calibration of our machine and needle - CAUTION!)
- * "zero": Home position 
+ * "zero": Home position
  * "inject:1": Injection port 1
  * "inject:2": Injection port 2
  * "wash:a:deep": Wash station A, needle in deep recess.
@@ -93,7 +93,7 @@ Default locations (based on manual calibration of our machine and needle - CAUTI
  * "wash:a:drain": Wash station A, needle over drain
 
 Modify the `_default_locations` attribute to change these.
- 
+
 Properties
 ----------
 
@@ -107,14 +107,14 @@ Properties
 	Default: "zero"
 
  *	`injection` (rw, str)
- 
+
 	Position of the injection valve.
 
 	Values: "load", "inject".  
 	Default: "load".
 
  *	`switching` (rw, str)
- 
+
 	Position of the switching valve.
 
 	Values: "load", "inject".  
@@ -257,3 +257,37 @@ Methods
  *	`zero()`
 
 	Zero the readings.
+
+
+Fraction Collector 203B
+=======================
+
+```python
+gilson.FractionCollector203B(master.gsioc(id))
+```
+
+Properties
+----------
+
+ *	`position` (rw, int)
+
+    Default: 0
+
+    The current tube position of the collector. The valve is set to waste whilst
+    the arm is moving.Setting the position to a nonzero location will
+    automatically set the valve to collect once the movement is complete.
+
+    Note: the program does not know how many tubes there are (the tube map is
+    set using the 203B's keypad). Moving to a nonexistent tube will cause an
+    error (valve will be set to waste).
+
+    Position 0 = Home position (valve is set to waste)
+
+ *	`valve` (rw, str)
+
+    Default: "waste"
+
+    The position of the output valve. Set to waste to discard output without
+    moving collector position.
+
+    Values: "collect", "waste"

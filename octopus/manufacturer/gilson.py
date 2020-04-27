@@ -3,6 +3,7 @@
 from twisted.internet import reactor, defer, task
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
+from twisted.python import log
 
 # System Imports
 from collections import namedtuple
@@ -388,14 +389,14 @@ class _syringe_piston (Component):
 	piston_ids = ("L", "R")
 
 	piston_sizes = {
-		None:  _PistonSize(  0, lambda x: 0), 
-		100:   _PistonSize(  6, lambda x: round(max(0.001, min(x,  6)), 3)), 
-		250:   _PistonSize( 15, lambda x: round(max(0.001, min(x, 15)), 3)), 
-		500:   _PistonSize( 30, lambda x: round(max(0.001, min(x, 30)), 3)), 
-		1000:  _PistonSize( 60, lambda x: round(max(0.01, min(x,  60)), 2)), 
-		5000:  _PistonSize(120, lambda x: round(max(0.01, min(x, 120)), 2)), 
-		10000: _PistonSize(240, lambda x: round(max(0.02, min(x, 240)), 2)), 
-		25000: _PistonSize(240, lambda x: round(max(0.04, min(x, 240)), 2)), 
+		None:  _PistonSize(  0, lambda x: 0),
+		100:   _PistonSize(  6, lambda x: round(max(0.001, min(x,  6)), 3)),
+		250:   _PistonSize( 15, lambda x: round(max(0.001, min(x, 15)), 3)),
+		500:   _PistonSize( 30, lambda x: round(max(0.001, min(x, 30)), 3)),
+		1000:  _PistonSize( 60, lambda x: round(max(0.01, min(x,  60)), 2)),
+		5000:  _PistonSize(120, lambda x: round(max(0.01, min(x, 120)), 2)),
+		10000: _PistonSize(240, lambda x: round(max(0.02, min(x, 240)), 2)),
+		25000: _PistonSize(240, lambda x: round(max(0.04, min(x, 240)), 2)),
 		39000: _PistonSize(39000, lambda x: int(max(1, min(x, 39000))))
 	}
 
@@ -457,7 +458,7 @@ class _syringe_piston (Component):
 		# Send the command, e.g. "AL00100", followed by a go command, e.g. "BL"
 		self._machine.protocol.buffered_command(command.format(
 			"D" if movement < 0 else "A",
-			self._id, 
+			self._id,
 			abs(movement)
 		))
 
@@ -470,7 +471,7 @@ class _syringe_piston (Component):
 		def check_finished (delay):
 			def cb (result):
 				status = result[6 * self._i]
-				
+
 				if status == "N":
 					# Movement complete, now idle
 					monitor.stop()
@@ -508,7 +509,7 @@ class _syringe_piston (Component):
 	def set_rate (self, rate):
 		"""
 		Set the syringe piston flow rate.
-		
+
 		@param rate: The desired flow rate in mL/min
 		"""
 
@@ -534,7 +535,7 @@ class _syringe_piston (Component):
 	def aspirate (self, volume, timely_start = False):
 		"""
 		Aspirate a volume of solution.
-		
+
 		@param volume: The volume to aspirate in uL.
 		@param timely_start: Synchronise with other syringe.
 		"""
@@ -544,7 +545,7 @@ class _syringe_piston (Component):
 	def dispense (self, volume, timely_start = False):
 		"""
 		Dispense a volume of solution.
-		
+
 		@param volume: The volume to dispense in uL.
 		@param timely_start: Synchronise with other syringe.
 		"""
@@ -595,7 +596,7 @@ class SyringePump402 (Machine):
 	name = "Gilson Piston Pump 402"
 
 	initialise_on_start = True
-	
+
 	valve_positions = {
 		"N": "needle",
 		"R": "reservoir",
@@ -616,16 +617,16 @@ class SyringePump402 (Machine):
 
 			def start_checking (result, position, finished):
 				return task.deferLater(
-					reactor, 0.5, check_finished, 
+					reactor, 0.5, check_finished,
 					position, finished
 				)
 
 			def check_finished (position, finished):
-				
+
 				def cb (result):
 					status = result[id]
 
-					if status == "N" or status == "R": 
+					if status == "N" or status == "R":
 						# Workaround...
 						if id is 0:
 							self.valve1._push(position)
@@ -657,12 +658,12 @@ class SyringePump402 (Machine):
 			return setter
 
 		self.valve1 = Property(
-			title = "L Valve Position", type = str, 
+			title = "L Valve Position", type = str,
 			options = ("reservoir", "needle"),
 			setter = _set_valve_position(0)
 		)
 		self.valve2 = Property(
-			title = "R Valve Position", type = str, 
+			title = "R Valve Position", type = str,
 			options = ("reservoir", "needle"),
 			setter = _set_valve_position(1)
 		)
@@ -811,3 +812,98 @@ class UVVis151 (Machine):
 
 	def zero (self):
 		return self.protocol.buffered_command("Z")
+
+
+class FractionCollector203B (Machine):
+
+	protocolFactory = Factory.forProtocol(basic.QueuedLineReceiver)
+	name = "Gilson Fraction Collector 203B"
+
+	def setup (self):
+		@defer.inlineCallbacks
+		def set_position (location):
+			# Position zero is 'waste' -
+			if location == 0:
+				yield set_valve('waste')
+				yield self.protocol.buffered_command('KE')
+				self.position._push(0)
+				defer.returnValue('ok')
+
+			current_position = self.position.value
+			if current_position != 0 and abs(location - current_position) < 3:
+				expected_time = 0.5
+				interval = 0.1
+			else:
+				expected_time = 1
+				interval = 0.5
+
+			# Set valve to waste
+			yield set_valve('waste')
+
+			# Send move command
+			yield self.protocol.buffered_command('T' + ('000' + str(location))[-3:])
+
+			# Wait for an expected move time (0.5 for short move, 1 for long move)
+			yield task.deferLater(reactor, expected_time, lambda: True)
+
+			# Test that the move is complete. The position is returned as 0
+			# during the move. Allow up to 5 seconds for a 'long' move.
+			for i in range(10):
+				try:
+					position = yield self.protocol.immediate_command("T")
+					position = int(position)
+				except:
+					position = None
+
+				# If move is successful, set valve to collect
+				if position == location:
+					yield set_valve('collect')
+					defer.returnValue('ok')
+
+				yield task.deferLater(reactor, interval, lambda: True)
+
+			raise Exception('Could not move to position %s' % location)
+
+		def set_valve (pos):
+			self.valve._push(pos)
+			return self.protocol.buffered_command('V{:d}'.format(1 if pos == 'waste' else 0))
+
+		# setup variables
+		self.position = Property(title = "Position", type = int, setter = set_position)
+		self.valve = Property(title = "Diverter Valve", type = str, options = ("collect", "waste"), setter = set_valve)
+
+		self.ui = ui(
+			properties = [
+				self.position,
+				self.valve
+			]
+		)
+
+	@defer.inlineCallbacks
+	def start (self):
+		version = yield self.protocol.immediate_command("%")
+		if version[0:4] != '203B':
+			raise Exception('Not connected to a 203B Fraction Collector')
+
+		def interpretTubePosition (result):
+			result = int(result)
+			if result > 0:
+				self.position._push(result)
+
+		def monitor ():
+			self.protocol.immediate_command("T")\
+				.addCallback(interpretTubePosition)\
+				.addErrback(log.err)
+
+		yield monitor()
+
+		self._tick(monitor, 1)
+
+	def stop (self):
+		self._stopTicks()
+
+	def reset (self):
+		return defer.gatherResults([
+			self.valve.set("waste"),
+			self.position.set(0)
+		])

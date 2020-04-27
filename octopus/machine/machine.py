@@ -18,9 +18,9 @@ __all__ = ["Machine", "Component", "ComponentList", "Stream", "Property"]
 class Component (object):
 	"""
 	A sub-component of a Machine.
-	
-	This can encapsulate sub-components (such as each of two pumps 
-	on a multi-pump system). Components can contain methods, 
+
+	This can encapsulate sub-components (such as each of two pumps
+	on a multi-pump system). Components can contain methods,
 	Streams and Properties.
 	"""
 
@@ -33,15 +33,15 @@ class Component (object):
 
 		# Enumerate public variables
 		varList = dict([
-			(base + x, getattr(self, x)) 
-			for x in vars(self) 
+			(base + x, getattr(self, x))
+			for x in vars(self)
 			if (isinstance(getattr(self, x), BaseVariable) \
 			or isinstance(getattr(self, x), Image))
 		])
 
 		# Reduce likelihood of recursion by avoiding any private variables
 		cptList = [
-			x for x in vars(self) 
+			x for x in vars(self)
 			if isinstance(getattr(self, x), Component) and x[0] != "_"
 		]
 
@@ -53,14 +53,14 @@ class Component (object):
 	@property
 	def controls (self):
 		ctrlList = dict([
-			(getattr(self, x).alias, getattr(self, x)) 
-			for x in vars(self) 
+			(getattr(self, x).alias, getattr(self, x))
+			for x in vars(self)
 			if isinstance(getattr(self, x), data.control.Control)
 		])
 
 		# Reduce likelihood of recursion by avoiding any private variables
 		cptList = [
-			x for x in vars(self) 
+			x for x in vars(self)
 			if isinstance(getattr(self, x), Component) and x[0] != "_"
 		]
 
@@ -195,6 +195,7 @@ class Machine (Component):
 
 		def startError (failure):
 			self.disconnect()
+			log.err(failure)
 			self.ready.errback(failure)
 
 		def connected (protocol):
@@ -273,7 +274,7 @@ class Stream (data.Variable):
 
 	def __repr__ (self):
 		return "<{class_name} at {reference}: {var_alias} ({var_type}) = {var_value}{var_unit}>".format(
-			class_name = self.__class__.__name__, 
+			class_name = self.__class__.__name__,
 			reference = hex(id(self)),
 			var_alias = self.alias,
             var_type = self.type.__name__,
