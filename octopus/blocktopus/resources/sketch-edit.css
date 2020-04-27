@@ -1,0 +1,233 @@
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+
+body {
+  font-size: 17px;
+  font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+#toolbar, #toolbox, #blockly {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  -webkit-touch-callout: none;
+}
+
+#toolbar {
+  background-color: #526E9C;
+  border-radius: 0;
+  color: #FFF;
+  height: 60px;
+  margin-bottom: 0;
+  transition: background-color 0.2s linear 0.5s;
+}
+#toolbar .navbar-right {
+  margin-right: 0;
+}
+
+#toolbar[experiment-state=running] {
+  background-color: #0D7C38;
+}
+#toolbar[experiment-state=paused] {
+  background-color: #FFC200;
+}
+#toolbar[experiment-state=error] {
+  background-color: #CB0909;
+}
+
+#toolbar[experiment-state=running] #btn-run,
+#toolbar[experiment-state=paused] #btn-run,
+#toolbar #btn-pause,
+#toolbar #btn-resume,
+#toolbar #btn-stop {
+  display: none;
+}
+#toolbar[experiment-state=running] #btn-pause,
+#toolbar[experiment-state=paused] #btn-resume,
+#toolbar[experiment-state=running] #btn-stop,
+#toolbar[experiment-state=paused] #btn-stop {
+  display: inline-block;
+}
+
+#toolbar input {
+  color: #fff;
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  font-size: 24px;
+  margin-left: 15px;
+  height: 38px;
+  padding: 3px 10px;
+
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  -webkit-transition: none;
+  transition: none;
+}
+#toolbar input.active,
+#toolbar input:active,
+#toolbar input:focus,
+#toolbar input:hover {
+  border-color: #FFF;
+}
+
+#toolbar input:focus {
+  background-color: rgba(255, 255, 255, 0.2);
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+}
+
+#toolbar .btn {
+  font-size: 18px;
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+}
+#toolbar .btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #FFF;
+}
+#toolbar .navbar-left button i {
+  margin-right: 3px;
+}
+#toolbar .navbar-right button {
+  width: 2.5em;
+}
+
+#experiments-log {
+  position: absolute;
+  right: 10px;
+  top: 40px;
+  width: 500px;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: element;
+}
+
+#experiments-log .experiment {
+  background: #fff;
+  border: 2px solid #223388;
+  margin-top: 10px;
+  padding: 5px;
+  position: relative;
+}
+
+#experiments-log .experiment .experiment-link {
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+#experiments-log .experiment .experiment-link a {
+  text-decoration: none;
+  color: #223388;
+}
+
+#experiments-log .experiment core-icon {
+  width: 16px;
+  height: 16px;
+}
+
+#experiments-log .experiment i.cancel {
+  color: #223388;
+  cursor: pointer;
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 16px;
+  height: 24px;
+}
+#experiments-log .experiment i.cancel:hover {
+  color: #526E9C;
+}
+
+#experiments-log .experiment ul {
+  font-size: 12px;
+  list-style-type: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+#toolbox {
+  padding: 12px 0;
+  width: 180px;
+  bottom: 0;
+  position: fixed;
+  list-style-type: none;
+}
+
+#editor > * {
+  top: 60px;
+}
+
+#editor.locked #toolbox {
+  display: none;
+}
+
+#toolbox li {
+  padding: 5px 15px;
+  cursor: default;
+  font-size: 18px;
+}
+
+#toolbox li:hover {
+  background: rgb(240, 240, 240);
+}
+
+#toolbox li.active {
+  background: #E2E2E2;
+}
+
+#toolbox li i {
+  margin-right: 14px;
+  text-align: center;
+  width: 20px;
+}
+
+#blockly {
+  position: fixed;
+  left: 180px;
+  right: 0;
+  bottom: 0;
+}
+#editor.locked #blockly {
+  left: 0;
+}
+#editor.code #blockly {
+  right: 400px;
+}
+
+#blockly svg {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+#code {
+  position: fixed;
+  display: none;
+  width: 400px;
+  right: 0;
+  bottom: 0;
+}
+
+#editor.code #code {
+  display: block;
+}
+
+#code pre {
+  border: none;
+  border-radius: 0;
+  height: 100%;
+  margin: 0;
+  overflow: scroll;
+  padding: 20px;
+}

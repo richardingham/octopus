@@ -77,7 +77,7 @@ class K120 (Machine):
 		# setup variables
 		self.status = Property(title = "Status", type = str)
 		self.power = Property(title = "Power", type = str, options = ("on", "off"), setter = set_power)
-		self.target = Property(title = "Flow rate target", type = int, unit = "uL/min", min = 0, max = 50000, setter = set_target)
+		self.target = Property(title = "Flow rate target", type = int, unit = "uL/min", min = 0, max = 50.0, setter = set_target)
 		self.rate = Stream(title = "Flow rate", type = int, unit = "uL/min")
 
 		self.ui = ui(
@@ -96,14 +96,14 @@ class K120 (Machine):
 		# setup monitor on a tick to update variables
 
 		def interpretFlowrate (result):
-			if result[0] is not "F":
+			if result[0] != "F":
 				print ("Knauer Error: F? = {:s}".format(result)) 
 				return
 
 			target = float(result[1:]) * 1000
 
 			self.target._push(target) # uL/min
-			self.rate._push(target if self.power.value is "on" else 0)
+			self.rate._push(target if self.power.value == "on" else 0)
 
 		def interpretStatus (result):
 			power, error = ord(result[1]), ord(result[2])
@@ -123,11 +123,11 @@ class K120 (Machine):
 			elif power == 16:
 				self.power._push("off")
 
-			if error is 0:
+			if error == 0:
 				self.status._push("ok")
-			elif error is 1:
+			elif error == 1:
 				self.status._push("motor-blocked")
-			elif error is 2:
+			elif error == 2:
 				self.status._push("manual-stop")
 
 		def monitor ():

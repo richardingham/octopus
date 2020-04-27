@@ -521,7 +521,7 @@ class _syringe_piston (Component):
 		self._rate = rate
 
 		# It seems that the specified flow rate can be only 5 characters long
-		if self._size is 39000:
+		if self._size == 39000:
 			rate = "{:05d}".format(rate)
 		else:
 			rate = "{:05.3f}".format(rate)[:5]
@@ -628,9 +628,9 @@ class SyringePump402 (Machine):
 
 					if status == "N" or status == "R":
 						# Workaround...
-						if id is 0:
+						if id == 0:
 							self.valve1._push(position)
-						elif id is 1:
+						elif id == 1:
 							self.valve2._push(position)
 
 						finished.callback(None)

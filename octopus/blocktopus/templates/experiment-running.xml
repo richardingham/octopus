@@ -1,0 +1,45 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" flex="" vertical="" layout="">
+<head>
+	<script t:render="cached_js">
+		<t:attr name="src"><t:slot name="src" /></t:attr>
+	</script>
+	<link rel="stylesheet" t:render="cached_css">
+		<t:attr name="href"><t:slot name="src" /></t:attr>
+	</link>
+
+	<script src="/resources/jquery-ui/jquery-ui.min.js"></script>
+	<!-- includes: draggable, droppable, resizable -->
+	<script src="/resources/gridstack/gridstack.js"></script>
+
+	<script src="/resources/experiment-running.js"></script>
+	<script src="/resources/experiment-popup.js"></script>
+	<script src="/resources/experiment-graph.js"></script>
+
+	<link rel="stylesheet" href="/resources/gridstack/gridstack.css" />
+	<link rel="stylesheet" href="/resources/experiment-result.css" />
+	<link rel="stylesheet" href="/resources/experiment-popup.css" />
+</head>
+<body t:render="editor_body">
+
+<nav id="toolbar" class="navbar navbar-default">
+	<div class="container-fluid">
+		<div class="navbar-left">
+			<a href="/" id="btn-home" class="btn btn-default navbar-btn"><i class="fa fa-home" /></a>
+			<span id="experiment-title"><t:slot name="title" /></span>
+		</div>
+	</div>
+</nav>
+
+<div id="viewer">
+	<t:attr name="data-url"><t:slot name="websocket_url" /></t:attr>
+	<t:attr name="data-sketch"><t:slot name="sketch_id" /></t:attr>
+	<t:attr name="data-experiment"><t:slot name="experiment_id" /></t:attr>
+	<t:attr name="data-title"><t:slot name="title" /></t:attr>
+	<t:attr name="data-timezero"><t:slot name="started_date" /></t:attr>
+
+	<ul id="variables"></ul>
+	<div id="data"></div>
+</div>
+
+</body>
+</html>

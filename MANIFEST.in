@@ -1,0 +1,2 @@
+include octopus/blocktopus/resources/*
+include octopus/blocktopus/templates/*

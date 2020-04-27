@@ -11,9 +11,10 @@ from collections import deque
 # Sibling Imports
 from ..data import Variable as data_Variable
 from ..util import now, Event
+from ..events import Event
 from ..machine import Machine, Component
 from ..machine.interface import InterfaceSection, InterfaceSectionSet
-from ..constants import Event, State
+from ..constants import Event as EventType, State
 
 
 class LogFile (object):
@@ -37,7 +38,7 @@ class LogFile (object):
 		self.time_zero = time_zero
 
 	def write (self, time, value):
-		self.f.write("{:.2f},{:.2f},{}\n".format(time, time - self.time_zero, value))
+		self.f.write("{:.2f},{:.2f},{}\n".format(time, time - self.time_zero, value).encode())
 
 	def close (self):
 		self.f.close()
@@ -81,7 +82,7 @@ class Experiment (object):
 	@state.setter
 	def state (self, value):
 		self._state = value
-		# self.marshal.event(Event.EXPERIMENT, { "state": value.value })
+		# self.marshal.event(EventType.EXPERIMENT, { "state": value.value })
 
 		try:
 			# todo... collect in a list to write later.
@@ -245,7 +246,7 @@ class Experiment (object):
 
 	def _interface_event (self, item, **data):
 		data["item"] = item.name
-		# self._marshal.event(Event.INTERFACE, data)
+		# self._marshal.event(EventType.INTERFACE, data)
 
 	def _step_event (self, item, **data):
 		data["step"] = item.id
@@ -263,7 +264,7 @@ class Experiment (object):
 		# send to event log
 		self._event_log.write(now(), "step:" + str(data))
 
-		# self._marshal.event(Event.STEP, data)
+		# self._marshal.event(EventType.STEP, data)
 
 	def _step_log (self, message, level = None):
 		data = {
@@ -274,7 +275,7 @@ class Experiment (object):
 		# send to log
 		self._msg_log.write(now(), message)
 
-		# self._marshal.event(Event.LOG, data)
+		# self._marshal.event(EventType.LOG, data)
 
 	def pause (self):
 		"""
@@ -345,7 +346,7 @@ class Experiment (object):
 		time_zero = now()
 		name = LogFile.get_dir(name)
 
-		if len(self._log_variables) is 0:
+		if len(self._log_variables) == 0:
 			for m in self._machines:
 				self._log_variables.update(m.variables)
 
@@ -373,7 +374,7 @@ class Experiment (object):
 		self._time_zero = time_zero
 
 		self._event_log.write(time_zero, "tz")
-		# self.marshal.event(Event.TIMEZERO, { "time": time_zero, "clear": True } )
+		# self.marshal.event(EventType.TIMEZERO, { "time": time_zero, "clear": True } )
 
 	def stop_logging (self):
 		self._logging = False

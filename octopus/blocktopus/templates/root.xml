@@ -1,0 +1,174 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<script t:render="cached_js">
+		<t:attr name="src"><t:slot name="src" /></t:attr>
+	</script>
+	<link rel="stylesheet" t:render="cached_css">
+		<t:attr name="href"><t:slot name="src" /></t:attr>
+	</link>
+
+	<!-- local -->
+	<script src="/resources/root.js"></script>
+	<link rel="stylesheet" href="/resources/root.css" />
+
+	<title>Octopus</title>
+</head>
+<body>
+	<section id="header">
+	<div class="container">
+		<h1>Octopus</h1>
+	</div>
+	</section>
+
+	<section id="action">
+	<div class="container">
+	<div class="row">
+		<div class="col-md-6" id="create">
+			<form action="/sketch/create" method="post">
+				<button class="btn btn-success btn-lg" type="submit">New Sketch</button>
+			</form>
+		</div>
+		<div class="col-md-6" id="running">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h2 class="panel-title">Running Experiments</h2>
+			</div>
+			<div class="list-group">
+				<a class="list-group-item" t:render="running_experiment">
+					<t:attr name="href"><t:slot name="url" /></t:attr>
+					<t:slot name="title" />
+					<span class="badge">
+						<t:slot name="duration" />
+					</span>
+				</a>
+			</div>
+		</div>
+		</div>
+	</div>
+	</div>
+	</section>
+
+	<section id="stored">
+	<div class="container">
+		<h2>Saved Sketches</h2>
+
+		<table class="table">
+		<thead>
+		<tr>
+			<th>Name</th>
+			<th>Last modified</th>
+			<th>Actions</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr t:render="saved_sketch">
+			<t:attr name="data-guid"><t:slot name="guid" /></t:attr>
+			<td>
+				<a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a>
+			</td>
+			<td>
+				<t:attr name="data-sort"><t:slot name="modified_date_raw" /></t:attr>
+				<t:slot name="modified_date" />
+			</td>
+			<td>
+				<form method="post">
+					<t:attr name="action"><t:slot name="copy_url" /></t:attr>
+					<button class="btn btn-default btn-sm" type="submit">Duplicate</button>
+				</form>
+				<form method="post">
+					<t:attr name="action"><t:slot name="delete_url" /></t:attr>
+					<button class="btn btn-danger btn-sm" type="submit">Delete</button>
+				</form>
+			</td>
+		</tr>
+		</tbody>
+		</table>
+	</div>
+	</section>
+
+	<section id="past">
+	<div class="container">
+		<div class="pull-right">
+			<a href="#filters" class="btn btn-default" data-toggle="collapse" data-target="#filter-panel">Filter</a>
+		</div>
+		<h2>
+			Completed Experiments
+		</h2>
+
+		<div class="panel panel-default collapse" id="filter-panel">
+			<div class="panel-heading">
+				<h4 class="panel-title">Filters</h4>
+			</div>
+			<div class="panel-body">
+				<form class="form-horizontal">
+					<div class="form-group">
+						<label for="filter-text" class="col-sm-2 control-label">Filter text:</label>
+						<div class="input-group col-sm-4">
+							<input type="text" class="form-control" id="filter-text" />
+							<span class="input-group-addon"><input type="checkbox" id="filter-text-on" /></span>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="filter-date-on" class="col-sm-2 control-label">On date:</label>
+						<div class="input-group col-sm-4">
+							<input type="text" class="form-control" id="filter-date-on" />
+							<span class="input-group-addon"><input type="checkbox" id="filter-date-on-on" /></span>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="filter-date-before" class="col-sm-2 control-label">Before date:</label>
+						<div class="input-group col-sm-4">
+							<input type="text" class="form-control" id="filter-date-before" />
+							<span class="input-group-addon"><input type="checkbox" id="filter-date-before-on" /></span>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="filter-date-after" class="col-sm-2 control-label">After date:</label>
+						<div class="input-group col-sm-4">
+							<input type="text" class="form-control" id="filter-date-after" />
+							<span class="input-group-addon"><input type="checkbox" id="filter-date-after-on" /></span>
+							<!--span class="add-on"><i class="fa fa-calendar"></i></span-->
+						</div>
+					</div>
+
+					<div class="form-group">
+						<div class="col-sm-offset-2 col-sm-4">
+							<button class="btn btn-primary" type="submit" id="do-filter">Apply Filters</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<table class="table">
+		<thead>
+		<tr>
+			<th>Name</th>
+			<th>Completed</th>
+			<th>Duration</th>
+			<th>Actions</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr t:render="past_experiment">
+			<t:attr name="data-guid"><t:slot name="guid" /></t:attr>
+			<td><a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a></td>
+			<td><t:attr name="data-sort"><t:slot name="finished_date_raw" /></t:attr><t:slot name="finished_date" /></td>
+			<td><t:attr name="data-sort"><t:slot name="duration_raw" /></t:attr><t:slot name="duration" /></td>
+			<td>
+				<a class="btn btn-sm btn-default"><t:attr name="href"><t:slot name="download_url" /></t:attr>Download Data</a>
+				<form method="post">
+					<t:attr name="action"><t:slot name="delete_url" /></t:attr>
+					<button class="btn btn-sm btn-danger" type="submit">Delete</button>
+				</form>
+			</td>
+		</tr>
+		</tbody>
+		</table>
+	</div>
+	</section>
+</body>
+</html>

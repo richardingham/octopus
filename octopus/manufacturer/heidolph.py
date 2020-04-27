@@ -114,8 +114,8 @@ class HeiEnd (Machine):
 			
 			to_monitor.append(( command, interpret ))
 
-		addMonitor("IN_PV_1", lambda x: float(x) if x is not 999.9 else 0, self.heater.mediumtemp)
-		addMonitor("IN_PV_2", lambda x: float(x) if x is not 999.9 else 0, self.heater.mediumsafetytemp)
+		addMonitor("IN_PV_1", lambda x: float(x) if x != 999.9 else 0, self.heater.mediumtemp)
+		addMonitor("IN_PV_2", lambda x: float(x) if x != 999.9 else 0, self.heater.mediumsafetytemp)
 		addMonitor("IN_PV_3", float, self.heater.hotplatetemp)
 		addMonitor("IN_PV_4", float, self.heater.hotplatesafetytemp)
 		addMonitor("IN_PV_5", int, self.stirrer.speed)

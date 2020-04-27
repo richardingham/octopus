@@ -3,3 +3,9 @@ numpy
 scipy
 pyserial
 crc16
+xlsxwriter
+cryptography 
+pyasn1
+autobahn 
+wget
+

@@ -10,7 +10,7 @@ import exceptions
 import logging
 
 # Package Imports
-from ..util import AsyncQueue, AsyncQueueRetry
+from ..queue import AsyncQueue, AsyncQueueRetry
 
 
 def _IndexGenerator (max):
@@ -125,7 +125,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		return LineOnlyReceiver.dataReceived(self, b"")
 
 	def lineReceived (self, line: bytes):
-		if len(line) is 0:
+		if len(line) == 0:
 			return
 			
 		if self.debug:

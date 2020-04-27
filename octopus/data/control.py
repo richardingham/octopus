@@ -11,7 +11,7 @@ than a variable.
 """
 
 # Package Imports
-from ..util import Event
+from ..events import Event
 
 # Sibling Imports
 from . import errors

@@ -157,7 +157,7 @@ class Receiver (LineReceiver):
 			return result
 
 		def error (failure, try_again = 0):
-			if try_again is not 0:
+			if try_again != 0:
 				failure.trap(BufferedCommandFailed)
 				d = task.deferLater(reactor, 0.2, fn, id, command)
 				d.addCallbacks(next, error, errbackKeywords = { "try_again": try_again - 1 })

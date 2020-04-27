@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
 
-FROM python:3
+FROM python:3.8-buster
 
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
@@ -12,6 +12,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
+
+# Install node prereqs, nodejs and yarn
+# Ref: https://deb.nodesource.com/setup_12.x
+# Ref: https://yarnpkg.com/en/docs/install
+RUN \
+  echo "deb https://deb.nodesource.com/node_12.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
+  wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
+  echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
+  wget -qO- https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+  apt-get update && \
+  apt-get install -yqq nodejs yarn && \
+  npm i -g npm@^6 && \
+  rm -rf /var/lib/apt/lists/*
 
 # Copy requirements.txt (if found) to a temp location so we can install it. The `*`
 # is required so COPY doesn't think that part of the command should fail is nothing is
@@ -25,9 +38,6 @@ RUN apt-get update \
     #
     # Verify git, process tools, lsb-release (common in install instructions for CLIs) installed
     && apt-get -y install git procps lsb-release \
-    #
-    # Install nodejs
-    && apt-get -y install nodejs \
     #
     # Install pylint
     && pip --disable-pip-version-check --no-cache-dir install pylint \
@@ -49,7 +59,10 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
+RUN npm install -g glob rollup rollup-plugin-copy @rollup/plugin-multi-entry rollup-plugin-node-builtins
+
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
 
-RUN pip install -e /workspaces/octopus
+EXPOSE 8001
+EXPOSE 9000

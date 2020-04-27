@@ -1,0 +1,117 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<script t:render="cached_js">
+		<t:attr name="src"><t:slot name="src" /></t:attr>
+	</script>
+	<link rel="stylesheet" t:render="cached_css">
+		<t:attr name="href"><t:slot name="src" /></t:attr>
+	</link>
+
+	<script src="/resources/download.js"></script>
+
+	<title>Experiment Download</title>
+
+	<style>
+	/* <![CDATA[ */
+
+	body {
+		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+		color: #333;
+		-webkit-tap-highlight-color: rgba(0,0,0,0);
+		-webkit-touch-callout: none;
+	}
+
+	#variables-list_filter .btn {
+		margin-left: 10px;
+	}
+
+	.buttons {
+		margin-top: 30px;
+	}
+
+	.buttons .tooltip-wrapper {
+		display: inline-block;
+	}
+
+	/* ]]> */
+	</style>
+
+</head>
+<body>
+
+<div class="container">
+	<h1>Download Experiment Data</h1>
+</div>
+
+<form method="POST">
+
+<div class="container">
+	<h3>Options</h3>
+
+	<div class="form-horizontal">
+
+		<div class="form-group">
+			<label for="time_divisor_input" class="col-sm-2 control-label">Time units</label>
+			<div class="col-sm-2">
+				<select class="form-control" name="time_divisor" id="time_divisor_input">
+					<option value="1">seconds</option>
+					<option value="60">minutes</option>
+					<option value="3600">hours</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<label for="time_dp_input" class="col-sm-2 control-label">Time decimal places</label>
+			<div class="col-sm-2">
+				<input type="number" value="2" name="time_dp" id="time_dp_input" />
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="container">
+	<h3>Select Data</h3>
+
+	<table class="table" id="variables-list">
+		<thead>
+			<tr>
+				<th></th>
+				<th>Variable</th>
+				<th>Type</th>
+				<th>Unit</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr t:render="variable">
+				<t:attr name="data-key"><t:slot name="key" /></t:attr>
+				<td>
+					<input type="checkbox" name="vars">
+						<t:attr name="value"><t:slot name="key" /></t:attr>
+					</input>
+				</td>
+				<td>
+					<span data-toggle="tooltip">
+						<t:attr name="title"><t:slot name="key" /></t:attr>
+						<t:slot name="name" />
+					</span>
+				</td>
+				<td><t:slot name="type" /></td>
+				<td><t:slot name="unit" /></td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+<div class="container buttons">
+	<div class="col-sm-10">
+		<span class="tooltip-wrapper">
+			<button type="submit" class="btn btn-lg btn-primary">Download</button>
+		</span>
+	</div>
+</div>
+
+</form>
+
+</body>
+</html>
