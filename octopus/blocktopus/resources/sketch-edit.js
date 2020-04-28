@@ -171,7 +171,7 @@ jQuery(function ($) {
               block = Blockly.createBlock(workspace, data.type, data.id);
 
               for (var field in data.fields) {
-                  block.setFieldValue(data.fields[field], field);
+                  block.setFieldValue(data.fields[field].toString(), field);
               }
 
               block.initSvg();

@@ -42,14 +42,14 @@ import {numberValidator} from '../core/validators';
 var _K120_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
   { name: "power", title: "Power", type: "String", options: ['off', 'on'] },
-  { name: "target", title: "Target", type: "Number", unit: 'uL/min' },
+  { name: "target", title: "Target", type: "Number", unit: { options: [['mL/min', 1000], ['uL/min', 1]], default: 1000 } },
   { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
 ];
 var _S100_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
   { name: "power", title: "Power", type: "String", options: ['off', 'on'] },
-  { name: "target", title: "Target", type: "Number", unit: 'uL/min' },
-  { name: "pressure", title: "Pressure", type: "Number", readonly: true },
+  { name: "target", title: "Target", type: "Number", unit: { options: [['mL/min', 1000], ['uL/min', 1]], default: 1000 } },
+  { name: "pressure", title: "Pressure", type: "Number", readonly: true, unit: { options: [['mbar', 1], ['bar', 1000]], default: 1000 } },
   { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
 ];
 
@@ -342,7 +342,7 @@ Blocks['machine_wpi_aladdin'] = extend({
   machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
-    { name: "rate", title: "Flow rate", type: "Number", unit: 'uL/min' },
+    { name: "rate", title: "Flow rate", type: "Number", unit: { options: [['mL/min', 1000], ['uL/min', 1]], default: 1000 } },
     { name: "direction", title: "Direction", type: "String", options: ['infuse', 'withdraw'] },
     { name: "dispensed", title: "Dispensed volume", type: "Number", readonly: true },
     { name: "withdrawn", title: "Withdrawn volume", type: "Number", readonly: true }
@@ -403,7 +403,7 @@ Blocks['machine_harvard_phd2000'] = extend({
   machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
-    { name: "rate", title: "Flow rate", type: "Number", unit: 'uL/min' },
+    { name: "rate", title: "Flow rate", type: "Number", unit: { options: [['mL/min', 1000], ['uL/min', 1]], default: 1000 } },
     { name: "dispensed", title: "Dispensed volume", type: "Number", readonly: true },
     { name: "target_volume", title: "Target volume", type: "Number", unit: 'mL' }
   ],

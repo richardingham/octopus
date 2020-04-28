@@ -188,6 +188,11 @@ class lexical_variable_set_to (lexical_variable_set):
 	@defer.inlineCallbacks
 	def _run (self):
 		result = self.getFieldValue('VALUE')
+		unit = self.getFieldValue('UNIT', None)
+		
+		if isinstance(unit, (int, float)):
+			result *= unit
+
 		variable = self._getVariable()
 		yield self._setVariable(variable, result)
 
@@ -196,8 +201,7 @@ class lexical_variable_get (lexical_variable):
 	def eval (self):
 		try:
 			variable = self._getVariable()
-			self.outputType = variable.type
-			return defer.succeed(variable.value)
+
 		except (AttributeError):
 			self.emitLogMessage(
 				"Unknown variable: " + str(self.getFieldValue('VAR')),
@@ -205,12 +209,26 @@ class lexical_variable_get (lexical_variable):
 			)
 
 			return defer.succeed(None)
+		
+		unit = self.getFieldValue('UNIT', None)
+		result = variable.value
+		self.outputType = variable.type
+
+		if isinstance(unit, (int, float)):
+			result /= unit
+
+		return defer.succeed(result)
 
 
 class math_change (lexical_variable_set):
 	def _run (self):
 		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1
 		variable = self._getVariable()
+		unit = self.getFieldValue('UNIT', None)
+
+		if isinstance(unit, (int, float)):
+			add *= unit
+
 		return self._setVariable(variable, variable.value + add)
 
 

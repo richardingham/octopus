@@ -4,6 +4,8 @@ import Blocks from '../core/blocks';
 import Mutator from '../core/mutator';
 import Names from '../core/names';
 import {GlobalScope} from '../core/variables';
+import FieldDropdown from '../core/field_dropdown';
+import FieldTextInput from '../core/field_textinput';
 
 export function extend (defaults, options) {
     var extended = {};
@@ -136,6 +138,88 @@ export function withVariableDropdown (field, fieldName) {
       field.setValue(variable);
     }
   };
+}
+
+export function addUnitDropdown (block, input, variable, currentUnitSelection) {
+  // Unit
+  if (variable.flags.unit) {
+    if (typeof variable.flags.unit === 'object') {
+      var unitOptions = variable.flags.unit.options.map(o => o[1]);
+
+      input.appendField(new FieldDropdown(variable.flags.unit.options), 'UNIT');
+
+      if (currentUnitSelection && unitOptions.indexOf(currentUnitSelection) !== -1) {
+        block.setFieldValue(currentUnitSelection, 'UNIT');
+      } else if (variable.flags.unit.default) {
+        block.setFieldValue(variable.flags.unit.default, 'UNIT');
+      }
+    } else {
+      input.appendField(variable.flags.unit, 'UNIT');
+    }
+  }
+}
+
+export function withMagicVariableValue (callAlso) {
+  this.variableChanged_ = function (variable) {
+    var input = this.getInput('INPUT');
+    var value = this.getFieldValue('VALUE');
+    var type = variable.getType();
+    var field, options;
+
+    var currentUnitSelection = this.getFieldValue('UNIT');
+
+    this.removeInput('BLANK', true);
+    input.removeField('VALUE', true);
+    input.removeField('UNIT', true);
+
+    // Drop-down menu
+    if (variable.flags.options) {
+      options = [];
+      for (var i = 0; i < variable.flags.options.length; i++) {
+        options.push([variable.flags.options[i], variable.flags.options[i]]);
+      }
+
+      field = input.appendField(new FieldDropdown(options), 'VALUE');
+
+      if (variable.flags.options.indexOf(value) >= 0) {
+        this.setFieldValue(value, 'VALUE');
+      }
+
+    // Number field
+    } else if (type == "Number") {
+      value = parseFloat(value);
+      field = input.appendField(new FieldTextInput(
+        isNaN(value) ? '0' : String(value),
+        FieldTextInput.numberValidator
+      ), 'VALUE');
+
+    // Boolean field
+    } else if (type == "Boolean") {
+      options = [
+        [Msg.LOGIC_BOOLEAN_TRUE, 'TRUE'],
+        [Msg.LOGIC_BOOLEAN_FALSE, 'FALSE']
+      ];
+
+      field = input.appendField(new FieldDropdown(options), 'VALUE');
+
+      if (value) {
+        this.setFieldValue('TRUE', 'VALUE');
+      }
+
+    // Text field
+    } else {
+      field = input.appendField(new FieldTextInput(
+        String(value)
+      ), 'VALUE');
+    }
+
+    // Unit
+    addUnitDropdown(this, input, variable, currentUnitSelection);
+
+    if (callAlso) {
+      callAlso(variable);
+    }
+  }
 }
 
 export function withMutation (mutationOptions) {
