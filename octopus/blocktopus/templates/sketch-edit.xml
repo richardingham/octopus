@@ -68,6 +68,9 @@
 <div id="menu-container"></div>
 <xml id="toolbox-categories" style="display: none">
 	<category name="Machines" icon="bolt">
+		<block t:render="plugin_machines">
+			<t:attr name="type"><t:slot name="type"/></t:attr>
+		</block>
 		<block type="machine_knauer_K120"></block>
 		<block type="machine_knauer_S100"></block>
 		<block type="machine_vici_multivalve"></block>
@@ -78,9 +81,6 @@
 		<block type="machine_harvard_phd2000"></block>
 		<block type="machine_mt_sics_balance"></block>
 		<block type="machine_startech_powerremotecontrol"></block>
-		<block t:render="plugin_machines">
-			<t:attr name="type"><t:slot name="type"/></t:attr>
-		</block>
 		<block type="connection_tcp"></block>
 		<block type="connection_serial"></block>
 		<block type="connection_phidget"></block>
