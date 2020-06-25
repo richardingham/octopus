@@ -1,22 +1,7 @@
 import numpy
 import typing
 
-class Image:
-    data = None
-    size: int = 0
-    channels: int = 0
-    colorspace = None
-
-    def __init__ (self, data: numpy.ndarray, colorspace):
-        self.data = data
-        self.height = data.shape[0]
-        self.width = data.shape[1]
-        self.colorspace = colorspace
-
-        try:
-            self.channels = data.shape[2]
-        except IndexError:
-            self.channels = 1
+from .data import image
 
 
 def empty_like (image: Image, channels = 3):
@@ -176,26 +161,26 @@ def erode(image: Image, iterations: Int = 1, kernelsize: Int = 3):
     return Image(eroded, colorspace = image.colorspace)
 
 
-def dilate(image: Image, iterations: Int = 1, kernelsize: Int = 3):
+def dilate(image: Image, iterations: Int = 1, kernelsize: Int = 3) -> Image:
     kernel = np.ones((kernelsize, kernelsize), numpy.uint8)
     dilated = cv2.dilate(image.data, kernel, iterations)
     return Image(dilated, colorspace = image.colorspace)
 
 
-def invert(self):
-        """
-        **SUMMARY**
-        Invert (negative) the image note that this can also be done with the
-        unary minus (-) operator. For binary image this turns black into white and white into black (i.e. white is the new black).
-        **RETURNS**
-        The opposite of the current image.
-        **EXAMPLE**
-        >>> img  = Image("polar_bear_in_the_snow.png")
-        >>> img.invert().save("black_bear_at_night.png")
-        **SEE ALSO**
-        :py:meth:`binarize`
-        """
-        return -self
+def invert(image: Image) -> Image:
+    """
+    **SUMMARY**
+    Invert (negative) the image note that this can also be done with the
+    unary minus (-) operator. For binary image this turns black into white and white into black (i.e. white is the new black).
+    **RETURNS**
+    The opposite of the current image.
+    **EXAMPLE**
+    >>> img  = Image("polar_bear_in_the_snow.png")
+    >>> img.invert().save("black_bear_at_night.png")
+    **SEE ALSO**
+    :py:meth:`binarize`
+    """
+    return Image(-image.data, image.colorspace)
 
 def colorDistance(self, color = Color.BLACK):
         """
