@@ -91,8 +91,7 @@ class global_declaration (Block):
 			resultType = type(result)
 
 		# Special handling if the variable is an image.
-		if resultType.__name__ == "instance" \
-		and result.__class__ is Image:
+		if resultType is Image:
 			variable = DerivedImageProperty()
 		else:
 			variable = data.Variable(resultType)
