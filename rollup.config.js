@@ -1,5 +1,5 @@
 import builtins from 'rollup-plugin-node-builtins';
-import multiEntry from 'rollup-plugin-multi-entry';
+import multiEntry from '@rollup/plugin-multi-entry';
 
 export default [{
   // core input options
