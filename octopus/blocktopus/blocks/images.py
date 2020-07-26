@@ -11,10 +11,12 @@ from octopus.data.errors import Immutable
 from octopus.data.data import BaseVariable
 from octopus.constants import State
 import octopus.transport.basic
+from octopus.image.data import Image
 from octopus.image import octopuscv
 
 # Python Imports
 from time import time as now
+from typing import Tuple
 import os
 
 # Numpy
@@ -39,9 +41,9 @@ class _image_block (Block):
 
 class image_findcolour (_image_block):
 	_map = {
-		"RED": lambda r, g, b: r - g,
-		"GREEN": lambda r, g, b: g - r,
-		"BLUE": lambda r, g, b: b - r,
+		"RED": lambda r, g, b: octopuscv.__sub__(r, g),
+		"GREEN": lambda r, g, b: octopuscv.__sub__(g, r),
+		"BLUE": lambda r, g, b: octopuscv.__sub__(b, r),
 	}
 
 	def _calculate (self, result: Image) -> Image:
@@ -92,7 +94,7 @@ class image_colourdistance (Block):
 
 class image_huedistance (image_colourdistance):
 	def _calculate (self, input, colour):
-		return input.hueDistance(colour)
+		return octopuscv.hueDistance(input, colour)
 
 
 class image_crop (_image_block):

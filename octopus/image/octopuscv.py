@@ -1,11 +1,16 @@
 import numpy
 import typing
+import cv2
+import colorsys
+import scipy.spatial.distance as spsd
 
-from .data import image
+from .data import Image, ColorSpace
+
+BLACK = (0, 0, 0)
 
 
 def empty_like (image: Image, channels = 3):
-    return np.zeros((image.height, image.width, channels), np.uint8)
+    return numpy.zeros((image.height, image.width, channels), numpy.uint8)
 
 
 def findBlobs(self, threshval = -1, minsize=10, maxsize=0, threshblocksize=0, threshconstant=5,appx_level=3):
@@ -88,16 +93,16 @@ def splitChannels(image: Image, grayscale: bool = True) -> typing.Tuple[Image, I
     :py:meth:`mergeChannels`
     """
 
-    r, g, b = cv2.split(image)
+    r, g, b = cv2.split(image.data)
 
     if (grayscale):
-        red = cv2.merge(r, r, r)
-        green = cv2.merge(g, g, g)
-        blue = cv2.merge(b, b, b)
+        red = cv2.merge((r, r, r))
+        green = cv2.merge((g, g, g))
+        blue = cv2.merge((b, b, b))
     else:
-        red = cv.merge(None, None, r, None)
-        green = cv.merge(None, g, None, None)
-        blue = cv.merge(b, None, None, None)
+        red = cv2.merge((None, None, r))
+        green = cv2.merge((None, g, None))
+        blue = cv2.merge((b, None, None))
 
     return (
         Image(red, colorspace = ColorSpace.BGR), 
@@ -124,10 +129,10 @@ def threshold(image: Image, value: int) -> Image:
     :py:meth:`binarize`
     """
     gray = _getGrayscaleBitmap(image)
-    retval, result = cv.threshold(gray, value, 255, cv2.THRESH_BINARY)
+    retval, result = cv2.threshold(gray, value, 255, cv2.THRESH_BINARY)
     return Image(result, colorspace = ColorSpace.GRAY)
 
-def erode(image: Image, iterations: Int = 1, kernelsize: Int = 3):
+def erode(image: Image, iterations: int = 1, kernelsize: int = 3):
     """
     **SUMMARY**
     Apply a morphological erosion. An erosion has the effect of removing small bits of noise
@@ -137,7 +142,7 @@ def erode(image: Image, iterations: Int = 1, kernelsize: Int = 3):
     takes the minimum value inside the kernel.
     iterations - this parameters is the number of times to apply/reapply the operation
     * See: http://en.wikipedia.org/wiki/Erosion_(morphology).
-    * See: http://opencv.willowgarage.com/documentation/cpp/image_filtering.html#cv-erode
+    * See: http://opencv2.willowgarage.com/documentation/cpp/image_filtering.html#cv-erode
     * Example Use: A threshold/blob image has 'salt and pepper' noise.
     * Example Code: /examples/MorphologyExample.py
     **PARAMETERS**
@@ -156,13 +161,13 @@ def erode(image: Image, iterations: Int = 1, kernelsize: Int = 3):
     :py:meth:`morphGradient`
     :py:meth:`findBlobsFromMask`
     """
-    kernel = np.ones((kernelsize, kernelsize), numpy.uint8)
+    kernel = numpy.ones((kernelsize, kernelsize), numpy.uint8)
     eroded = cv2.erode(image.data, kernel, iterations)
     return Image(eroded, colorspace = image.colorspace)
 
 
-def dilate(image: Image, iterations: Int = 1, kernelsize: Int = 3) -> Image:
-    kernel = np.ones((kernelsize, kernelsize), numpy.uint8)
+def dilate(image: Image, iterations: int = 1, kernelsize: int = 3) -> Image:
+    kernel = numpy.ones((kernelsize, kernelsize), numpy.uint8)
     dilated = cv2.dilate(image.data, kernel, iterations)
     return Image(dilated, colorspace = image.colorspace)
 
@@ -182,83 +187,84 @@ def invert(image: Image) -> Image:
     """
     return Image(-image.data, image.colorspace)
 
-def colorDistance(self, color = Color.BLACK):
-        """
-        **SUMMARY**
-        Returns an image representing the distance of each pixel from a given color
-        tuple, scaled between 0 (the given color) and 255.  Pixels distant from the
-        given tuple will appear as brighter and pixels closest to the target color
-        will be darker.
-        By default this will give image intensity (distance from pure black)
-        **PARAMETERS**
-        * *color*  - Color object or Color Tuple
-        **RETURNS**
-        A SimpleCV Image.
-        **EXAMPLE**
-        >>> img = Image("logo")
-        >>> img2 = img.colorDistance(color=Color.BLACK)
-        >>> img2.show()
-        **SEE ALSO**
-        :py:meth:`binarize`
-        :py:meth:`hueDistance`
-        :py:meth:`findBlobsFromMask`
-        """
-        pixels = np.array(self.getNumpy()).reshape(-1, 3)   #reshape our matrix to 1xN
-        distances = spsd.cdist(pixels, [color]) #calculate the distance each pixel is
-        distances *= (255.0/distances.max()) #normalize to 0 - 255
-        return Image(distances.reshape(self.width, self.height)) #return an Image
+def colorDistance(image: Image, color = BLACK) -> Image:
+    """
+    **SUMMARY**
+    Returns an image representing the distance of each pixel from a given color
+    tuple, scaled between 0 (the given color) and 255.  Pixels distant from the
+    given tuple will appear as brighter and pixels closest to the target color
+    will be darker.
+    By default this will give image intensity (distance from pure black)
+    **PARAMETERS**
+    * *color*  - Color object or Color Tuple
+    **RETURNS**
+    A SimpleCV Image.
+    **EXAMPLE**
+    >>> img = Image("logo")
+    >>> img2 = img.colorDistance(color=Color.BLACK)
+    >>> img2.show()
+    **SEE ALSO**
+    :py:meth:`binarize`
+    :py:meth:`hueDistance`
+    :py:meth:`findBlobsFromMask`
+    """
+    pixels = image.data.reshape((-1, 3))   #reshape our matrix to 1xN
+    distances = spsd.cdist(pixels, [color]) #calculate the distance each pixel is
+    distances *= (255.0 / distances.max()) #normalize to 0 - 255
+    return Image(distances.reshape((image.width, image.height)), colorspace = image.colorspace) #return an Image
 
-    def hueDistance(self, color = Color.BLACK, minsaturation = 20, minvalue = 20, maxvalue=255):
-        """
-        **SUMMARY**
-        Returns an image representing the distance of each pixel from the given hue
-        of a specific color.  The hue is "wrapped" at 180, so we have to take the shorter
-        of the distances between them -- this gives a hue distance of max 90, which we'll
-        scale into a 0-255 grayscale image.
-        The minsaturation and minvalue are optional parameters to weed out very weak hue
-        signals in the picture, they will be pushed to max distance [255]
-        **PARAMETERS**
-        * *color* - Color object or Color Tuple.
-        * *minsaturation*  - the minimum saturation value for color (from 0 to 255).
-        * *minvalue*  - the minimum hue value for the color (from 0 to 255).
-        **RETURNS**
-        A simpleCV image.
-        **EXAMPLE**
-        >>> img = Image("logo")
-        >>> img2 = img.hueDistance(color=Color.BLACK)
-        >>> img2.show()
-        **SEE ALSO**
-        :py:meth:`binarize`
-        :py:meth:`hueDistance`
-        :py:meth:`morphOpen`
-        :py:meth:`morphClose`
-        :py:meth:`morphGradient`
-        :py:meth:`findBlobsFromMask`
-        """
-        if isinstance(color,  (float,int,long,complex)):
-            color_hue = color
-        else:
-            color_hue = Color.hsv(color)[0]
+def hueDistance(image: Image, color = BLACK, minsaturation = 20, minvalue = 20, maxvalue = 255) -> Image:
+    """
+    **SUMMARY**
+    Returns an image representing the distance of each pixel from the given hue
+    of a specific color.  The hue is "wrapped" at 180, so we have to take the shorter
+    of the distances between them -- this gives a hue distance of max 90, which we'll
+    scale into a 0-255 grayscale image.
+    The minsaturation and minvalue are optional parameters to weed out very weak hue
+    signals in the picture, they will be pushed to max distance [255]
+    **PARAMETERS**
+    * *color* - Color object or Color Tuple.
+    * *minsaturation*  - the minimum saturation value for color (from 0 to 255).
+    * *minvalue*  - the minimum hue value for the color (from 0 to 255).
+    **RETURNS**
+    A simpleCV image.
+    **EXAMPLE**
+    >>> img = Image("logo")
+    >>> img2 = img.hueDistance(color=Color.BLACK)
+    >>> img2.show()
+    **SEE ALSO**
+    :py:meth:`binarize`
+    :py:meth:`hueDistance`
+    :py:meth:`morphOpen`
+    :py:meth:`morphClose`
+    :py:meth:`morphGradient`
+    :py:meth:`findBlobsFromMask`
+    """
+    if isinstance(color,  (float,int)):
+        color_hue = color
+    else:
+        hsv_float = colorsys.rgb_to_hsv(*color)
+        color_hue = hsv_float[0] * 180
 
-        vsh_matrix = self.toHSV().getNumpy().reshape(-1,3) #again, gets transposed to vsh
-        hue_channel = np.cast['int'](vsh_matrix[:,2])
+    vsh_matrix = _getHSVBitmap(image).reshape((-1, 3)) #again, gets transposed to vsh
+    hue_channel = numpy.cast['int'](vsh_matrix[:,2])
 
-        if color_hue < 90:
-            hue_loop = 180
-        else:
-            hue_loop = -180
-        #set whether we need to move back or forward on the hue circle
+    if color_hue < 90:
+        hue_loop = 180
+    else:
+        hue_loop = -180
+    #set whether we need to move back or forward on the hue circle
 
-        distances = np.minimum( np.abs(hue_channel - color_hue), np.abs(hue_channel - (color_hue + hue_loop)))
-        #take the minimum distance for each pixel
+    distances = numpy.minimum(numpy.abs(hue_channel - color_hue), numpy.abs(hue_channel - (color_hue + hue_loop)))
+    #take the minimum distance for each pixel
 
 
-        distances = np.where(
-            np.logical_and(vsh_matrix[:,0] > minvalue, vsh_matrix[:,1] > minsaturation),
-            distances * (255.0 / 90.0), #normalize 0 - 90 -> 0 - 255
-            255.0) #use the maxvalue if it false outside of our value/saturation tolerances
+    distances = numpy.where(
+        numpy.logical_and(vsh_matrix[:,0] > minvalue, vsh_matrix[:,1] > minsaturation),
+        distances * (255.0 / 90.0), #normalize 0 - 90 -> 0 - 255
+        255.0) #use the maxvalue if it false outside of our value/saturation tolerances
 
-        return Image(distances.reshape(self.width, self.height))
+    return Image(distances.reshape((image.width, image.height)), colorspace = image.colorspace)
 
 
 def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
@@ -329,9 +335,9 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
           elif (y + h) > self.height:
             h = self.height - y
           
-        if(isinstance(x,np.ndarray)):
+        if(isinstance(x,numpy.ndarray)):
             x = x.tolist()
-        if(isinstance(y,np.ndarray)):
+        if(isinstance(y,numpy.ndarray)):
             y = y.tolist()
 
         #If it's a feature extract what we need
@@ -355,10 +361,10 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
               (len(x) == 4 and len(x[0]) == 2 ) and
               y == None and w == None and h == None):
             if (len(x[0])==2 and len(x[1])==2 and len(x[2])==2 and len(x[3])==2):
-                xmax = np.max([x[0][0],x[1][0],x[2][0],x[3][0]])
-                ymax = np.max([x[0][1],x[1][1],x[2][1],x[3][1]])
-                xmin = np.min([x[0][0],x[1][0],x[2][0],x[3][0]])
-                ymin = np.min([x[0][1],x[1][1],x[2][1],x[3][1]])
+                xmax = numpy.max([x[0][0],x[1][0],x[2][0],x[3][0]])
+                ymax = numpy.max([x[0][1],x[1][1],x[2][1],x[3][1]])
+                xmin = numpy.min([x[0][0],x[1][0],x[2][0],x[3][0]])
+                ymin = numpy.min([x[0][1],x[1][1],x[2][1],x[3][1]])
                 x = xmin
                 y = ymin
                 w = xmax-xmin
@@ -372,10 +378,10 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
              isinstance(y, (tuple,list)) and
              len(x) > 4 and len(y) > 4 ):
             if(isinstance(x[0],(int, long, float)) and isinstance(y[0],(int, long, float))):
-                xmax = np.max(x)
-                ymax = np.max(y)
-                xmin = np.min(x)
-                ymin = np.min(y)
+                xmax = numpy.max(x)
+                ymax = numpy.max(y)
+                xmin = numpy.min(x)
+                ymin = numpy.min(y)
                 x = xmin
                 y = ymin
                 w = xmax-xmin
@@ -390,10 +396,10 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
             if(isinstance(x[0][0],(int, long, float))):
                 xs = [pt[0] for pt in x]
                 ys = [pt[1] for pt in x]
-                xmax = np.max(xs)
-                ymax = np.max(ys)
-                xmin = np.min(xs)
-                ymin = np.min(ys)
+                xmax = numpy.max(xs)
+                ymax = numpy.max(ys)
+                xmin = numpy.min(xs)
+                ymin = numpy.min(ys)
                 x = xmin
                 y = ymin
                 w = xmax-xmin
@@ -405,10 +411,10 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
         # x of the form [(x,y),(x1,y1)]
         elif(isinstance(x,(list,tuple)) and len(x) == 2 and isinstance(x[0],(list,tuple)) and isinstance(x[1],(list,tuple)) and y == None and w == None and h == None):
             if (len(x[0])==2 and len(x[1])==2):
-                xt = np.min([x[0][0],x[1][0]])
-                yt = np.min([x[0][0],x[1][0]])
-                w = np.abs(x[0][0]-x[1][0])
-                h = np.abs(x[0][1]-x[1][1])
+                xt = numpy.min([x[0][0],x[1][0]])
+                yt = numpy.min([x[0][0],x[1][0]])
+                w = numpy.abs(x[0][0]-x[1][0])
+                h = numpy.abs(x[0][1]-x[1][1])
                 x = xt
                 y = yt
             else:
@@ -418,10 +424,10 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
         # x and y of the form (x,y),(x1,y2)
         elif(isinstance(x, (tuple,list)) and isinstance(y,(tuple,list)) and w == None and h == None):
             if (len(x)==2 and len(y)==2):
-                xt = np.min([x[0],y[0]])
-                yt = np.min([x[1],y[1]])
-                w = np.abs(y[0]-x[0])
-                h = np.abs(y[1]-x[1])
+                xt = numpy.min([x[0],y[0]])
+                yt = numpy.min([x[1],y[1]])
+                w = numpy.abs(y[0]-x[0])
+                h = numpy.abs(y[1]-x[1])
                 x = xt
                 y = yt
                 
@@ -432,13 +438,13 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
 
 
         if(y == None or w == None or h == None):
-            print "Please provide an x, y, width, height to function"
+            print ("Please provide an x, y, width, height to function")
 
         if( w <= 0 or h <= 0 ):
             logger.warning("Can't do a negative crop!")
             return None
 
-        retVal = cv.CreateImage((int(w),int(h)), cv.IPL_DEPTH_8U, 3)
+        retVal = cv2.CreateImage((int(w),int(h)), cv2.IPL_DEPTH_8U, 3)
         if( x < 0 or y < 0 ):
             logger.warning("Crop will try to help you, but you have a negative crop position, your width and height may not be what you want them to be.")
 
@@ -454,7 +460,7 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
             logger.warning("Hi, your crop rectangle doesn't even overlap your image. I have no choice but to return None.")
             return None
 
-        retVal = np.zeros((bottomROI[3],bottomROI[2],3),dtype='uint8')
+        retVal = numpy.zeros((bottomROI[3],bottomROI[2],3),dtype='uint8')
 
         retVal= self.getNumpyCv2()[bottomROI[1]:bottomROI[1] + bottomROI[3],bottomROI[0]:bottomROI[0] + bottomROI[2],:] 
         
@@ -465,73 +471,40 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
         img._uncroppedY = self._uncroppedY + int(y)
         return img
 
-def __sub__(self, other):
-    newbitmap = self.getEmpty()
-    if is_number(other):
-        cv.SubS(self.getBitmap(), cv.Scalar(other,other,other), newbitmap)
+
+def _image_or_number (other: typing.Union[Image, int, float]) -> typing.Union[numpy.ndarray, int, float]:
+    if isinstance(other, Image):
+        return other.data
     else:
-        cv.Sub(self.getBitmap(), other.getBitmap(), newbitmap)
-    return Image(newbitmap, colorSpace=self._colorSpace)
+        return other
 
+def __sub__(image: Image, other: typing.Union[Image, int, float]) -> Image:
+    return Image(image.data - _image_or_number(other.data), colorspace = image.colorspace)
 
-def __add__(self, other):
-    newbitmap = self.getEmpty()
-    if is_number(other):
-        cv.AddS(self.getBitmap(), cv.Scalar(other,other,other), newbitmap)
-    else:
-        cv.Add(self.getBitmap(), other.getBitmap(), newbitmap)
-    return Image(newbitmap, colorSpace=self._colorSpace)
+def __add__(image: Image, other: typing.Union[Image, int, float]) -> Image:
+    return Image(image.data + _image_or_number(other.data), colorspace = image.colorspace)
 
+def __and__(image: Image, other: typing.Union[Image, int, float]) -> Image:
+    return Image(numpy.logical_and(image.data, _image_or_number(other.data)), colorspace = image.colorspace)
 
-def __and__(self, other):
-    newbitmap = self.getEmpty()
-    if is_number(other):
-        cv.AndS(self.getBitmap(), cv.Scalar(other,other,other), newbitmap)
-    else:
-        cv.And(self.getBitmap(), other.getBitmap(), newbitmap)
-    return Image(newbitmap, colorSpace=self._colorSpace)
+def __or__(image: Image, other: typing.Union[Image, int, float]) -> Image:
+    return Image(numpy.logical_or(image.data, _image_or_number(other.data)), colorspace = image.colorspace)
 
+def __div__(image: Image, other: typing.Union[Image, int, float]) -> Image:
+    return Image(image.data / _image_or_number(other.data), colorspace = image.colorspace)
 
-def __or__(self, other):
-    newbitmap = self.getEmpty()
-    if is_number(other):
-        cv.OrS(self.getBitmap(), cv.Scalar(other,other,other), newbitmap)
-    else:
-        cv.Or(self.getBitmap(), other.getBitmap(), newbitmap)
-    return Image(newbitmap, colorSpace=self._colorSpace)
+def __mul__(image: Image, other: typing.Union[Image, int, float]) -> Image:
+    return Image(image.data * _image_or_number(other.data), colorspace = image.colorspace)
 
+def __pow__(image: Image, other: typing.Union[int, float]) -> Image:
+    return Image(numpy.power(image.data, other), colorspace = image.colorspace)
 
-def __div__(self, other):
-    newbitmap = self.getEmpty()
-    if (not is_number(other)):
-        cv.Div(self.getBitmap(), other.getBitmap(), newbitmap)
-    else:
-        cv.ConvertScale(self.getBitmap(), newbitmap, 1.0/float(other))
-    return Image(newbitmap, colorSpace=self._colorSpace)
+def __neg__(image: Image) -> Image:
+    return Image(-image.data, colorspace = image.colorspace)
 
+__invert__ = __neg__
 
-def __mul__(self, other):
-    newbitmap = self.getEmpty()
-    if (not is_number(other)):
-        cv.Mul(self.getBitmap(), other.getBitmap(), newbitmap)
-    else:
-        cv.ConvertScale(self.getBitmap(), newbitmap, float(other))
-    return Image(newbitmap, colorSpace=self._colorSpace)
-
-def __pow__(self, other):
-    newbitmap = self.getEmpty()
-    cv.Pow(self.getBitmap(), newbitmap, other)
-    return Image(newbitmap, colorSpace=self._colorSpace)
-
-def __neg__(self):
-    newbitmap = self.getEmpty()
-    cv.Not(self.getBitmap(), newbitmap)
-    return Image(newbitmap, colorSpace=self._colorSpace)
-
-def __invert__(self):
-    return self.invert()
-
-def max(self, other):
+def max(image: Image, other: typing.Union[int, Image]) -> Image:
     """
     **SUMMARY**
     The maximum value of my image, and the other image, in each channel
@@ -542,18 +515,20 @@ def max(self, other):
     A SimpelCV image.
     """
 
-    newbitmap = self.getEmpty()
-    if is_number(other):
-        cv.MaxS(self.getBitmap(), other, newbitmap)
+    if type(other) is int:
+        result = numpy.max(image.data, other)
+
     else:
-        if self.size() != other.size():
+        if (image.width, image.height) != (other.width, other.height):
             warnings.warn("Both images should have same sizes. Returning None.")
             return None
-        cv.Max(self.getBitmap(), other.getBitmap(), newbitmap)
-    return Image(newbitmap, colorSpace=self._colorSpace)
+
+        result = cv2.max(image.data, other.data)
+    
+    return Image(result, colorspace = image.colorspace)
 
 
-def min(image: Image, other: Union[int, Image]):
+def min(image: Image, other: typing.Union[int, Image]):
     """
     **SUMMARY**
     The minimum value of my image, and the other image, in each channel
@@ -572,51 +547,43 @@ def min(image: Image, other: Union[int, Image]):
             warnings.warn("Both images should have same sizes. Returning None.")
             return None
 
-        result = cv.min(image.data, other.data)
+        result = cv2.min(image.data, other.data)
     
     return Image(result, colorspace = image.colorspace)
 
 
-def getGrayNumpy(self):
-    """
-    **SUMMARY**
-    Return a grayscale Numpy array of the image.
-    **RETURNS**
-    Returns the image, converted first to grayscale and then converted to a 2D numpy array.
-    **EXAMPLE**
-    >>> img = Image("lenna")
-    >>> rawImg  = img.getGrayNumpy()
-    **SEE ALSO**
-    :py:meth:`getEmpty`
-    :py:meth:`getBitmap`
-    :py:meth:`getMatrix`
-    :py:meth:`getPIL`
-    :py:meth:`getNumpy`
-    :py:meth:`getGrayNumpy`
-    :py:meth:`getGrayscaleMatrix`
-    """
-    if( self._grayNumpy != "" ):
-        return self._grayNumpy
-    else:
-        self._grayNumpy = uint8(np.array(cv.GetMat(self._getGrayscaleBitmap())).transpose())
-
-    return self._grayNumpy
-
-
 def _getGrayscaleBitmap(image: Image) -> numpy.ndarray:
-    if (image._colorSpace == ColorSpace.BGR or
-            image._colorSpace == ColorSpace.UNKNOWN):
-        return cv.cvtColor(image.data, cv.CV_BGR2GRAY)
-    elif (self._colorSpace == ColorSpace.RGB):
-        return cv.cvtColor(image.data, cv.CV_RGB2GRAY)
-    elif (self._colorSpace == ColorSpace.HLS):
-        return cv.cvtColor(cv.cvtColor(image.data, cv.CV_HLS2RGB), cv.CV_RGB2GRAY)
-    elif (self._colorSpace == ColorSpace.HSV):
-        return cv.cvtColor(cv.cvtColor(image.data, cv.CV_HSV2RGB), cv.CV_RGB2GRAY)
-    elif (self._colorSpace == ColorSpace.XYZ):
-        return cv.cvtColor(cv.cvtColor(image.data, cv.CV_XYZ2RGB), cv.CV_RGB2GRAY)
-    elif (self._colorSpace == ColorSpace.GRAY):
-        return cv.split(image.data)[0]
+    if (image.colorspace == ColorSpace.BGR or
+            image.colorspace == ColorSpace.UNKNOWN):
+        return cv2.cvtColor(image.data, cv2.COLOR_BGR2GRAY)
+    elif (image.colorspace == ColorSpace.RGB):
+        return cv2.cvtColor(image.data, cv2.COLOR_RGB2GRAY)
+    elif (image.colorspace == ColorSpace.HLS):
+        return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_HLS2RGB), cv2.COLOR_RGB2GRAY)
+    elif (image.colorspace == ColorSpace.HSV):
+        return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_HSV2RGB), cv2.COLOR_RGB2GRAY)
+    elif (image.colorspace == ColorSpace.XYZ):
+        return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_XYZ2RGB), cv2.COLOR_RGB2GRAY)
+    elif (image.colorspace == ColorSpace.GRAY):
+        return cv2.split(image.data)[0]
     else:
         logger.warning("_getGrayscaleBitmap: There is no supported conversion to gray colorspace")
+        return None
+
+def _getHSVBitmap(image: Image) -> numpy.ndarray:
+    if (image.colorspace == ColorSpace.BGR or
+            image.colorspace == ColorSpace.UNKNOWN):
+        return cv2.cvtColor(image.data, cv2.COLOR_BGR2HSV)
+    elif (image.colorspace == ColorSpace.RGB):
+        return cv2.cvtColor(image.data, cv2.COLOR_RGB2HSV)
+    elif (image.colorspace == ColorSpace.HLS):
+        return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_HLS2RGB), cv2.COLOR_RGB2HSV)
+    elif (image.colorspace == ColorSpace.HSV):
+        return image.data
+    elif (image.colorspace == ColorSpace.XYZ):
+        return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_XYZ2RGB), cv2.COLOR_RGB2HSV)
+    elif (image.colorspace == ColorSpace.GRAY):
+        return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_GRAY2RGB), cv2.COLOR_RGB2HSV)
+    else:
+        logger.warning("_getHSVBitmap: There is no supported conversion to HSV colorspace")
         return None
