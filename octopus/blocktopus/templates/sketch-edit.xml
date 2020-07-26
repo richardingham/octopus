@@ -118,8 +118,8 @@
 	</category>
 	<category name="Images" icon="camera">
 		<block type="machine_imageprovider"></block>
-		<block type="machine_singletracker"></block>
-		<block type="machine_multitracker"></block>
+		<!--block type="machine_singletracker"></block-->
+		<!--block type="machine_multitracker"></block-->
 		<block type="connection_cvcamera"></block>
 		<block type="connection_camera_proxy"></block>
 		<block type="colour_picker"></block>
@@ -129,9 +129,9 @@
 		<block type="image_invert"></block>
 		<block type="image_colourdistance"></block>
 		<block type="image_huedistance"></block>
-		<block type="image_crop"></block>
-		<block type="image_intensityfn"></block>
-		<block type="image_tonumber"></block>
+		<!--block type="image_crop"></block-->
+		<!--block type="image_intensityfn"></block-->
+		<!--block type="image_tonumber"></block-->
 	</category>
 	<category name="Math" icon="superscript">
 		<block type="math_number"></block>
