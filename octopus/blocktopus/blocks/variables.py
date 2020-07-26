@@ -1,19 +1,11 @@
 from ..workspace import Block, Disconnected, Cancelled
 
-try:
-	import SimpleCV
-	SimpleCVImage = SimpleCV.ImageClass.Image
-except:
-	# If SimpleCV is not installed then no need
-	# to test whether variables are images.
-	SimpleCVImage = None
-
 from twisted.internet import defer
 from twisted.python import log
 
 from octopus import data
 from octopus.constants import State
-from octopus.image.data import DerivedImage
+from octopus.image.data import Image, DerivedImageProperty
 
 
 def variableName (name):
@@ -99,10 +91,8 @@ class global_declaration (Block):
 			resultType = type(result)
 
 		# Special handling if the variable is an image.
-		if SimpleCVImage is not None \
-		and resultType.__name__ == "instance" \
-		and result.__class__ is SimpleCVImage:
-			variable = DerivedImage()
+		if resultType is Image:
+			variable = DerivedImageProperty()
 		else:
 			variable = data.Variable(resultType)
 
