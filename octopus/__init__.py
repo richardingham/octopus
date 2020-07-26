@@ -24,5 +24,5 @@ def run (runnable, logging = True):
 		def _run ():
 			runnable.run().addBoth(_complete)
 
-        reactor.callWhenRunning(_run)
-        reactor.run()
+		reactor.callWhenRunning(_run)
+		reactor.run()
