@@ -12,7 +12,7 @@ from octopus.data.data import BaseVariable
 from octopus.constants import State
 import octopus.transport.basic
 from octopus.image.data import Image
-from octopus.image import octopuscv
+from octopus.image import functions as image_functions
 
 # Python Imports
 from time import time as now
@@ -41,9 +41,9 @@ class _image_block (Block):
 
 class image_findcolour (_image_block):
 	_map = {
-		"RED": lambda r, g, b: octopuscv.__sub__(r, g),
-		"GREEN": lambda r, g, b: octopuscv.__sub__(g, r),
-		"BLUE": lambda r, g, b: octopuscv.__sub__(b, r),
+		"RED": lambda r, g, b: image_functions.__sub__(r, g),
+		"GREEN": lambda r, g, b: image_functions.__sub__(g, r),
+		"BLUE": lambda r, g, b: image_functions.__sub__(b, r),
 	}
 
 	def _calculate (self, result: Image) -> Image:
@@ -51,29 +51,29 @@ class image_findcolour (_image_block):
 			return None
 
 		op = self._map[self.fields['OP']]
-		return op(*octopuscv.splitChannels(result))
+		return op(*image_functions.splitChannels(result))
 
 		# Emit a warning if bad op given
 
 
 class image_threshold (_image_block):
 	def _calculate (self, result: Image) -> Image:
-		return octopuscv.threshold(result, int(self.fields['THRESHOLD']))
+		return image_functions.threshold(result, int(self.fields['THRESHOLD']))
 
 
 class image_erode (_image_block):
 	def _calculate (self, result: Image) -> Image:
-		return octopuscv.erode(result)
+		return image_functions.erode(result)
 
 
 class image_invert (_image_block):
 	def _calculate (self, result: Image) -> Image:
-		return octopuscv.invert(result)
+		return image_functions.invert(result)
 
 
 class image_colourdistance (Block):
 	def _calculate (self, input: Image, colour: Tuple[int, int, int]) -> Image:
-		return octopuscv.colorDistance(input, color = colour)
+		return image_functions.colorDistance(input, color = colour)
 
 	def eval (self):
 		def calculate (results):
@@ -94,7 +94,7 @@ class image_colourdistance (Block):
 
 class image_huedistance (image_colourdistance):
 	def _calculate (self, input, colour):
-		return octopuscv.hueDistance(input, colour)
+		return image_functions.hueDistance(input, colour)
 
 
 class image_crop (_image_block):
@@ -125,7 +125,7 @@ class image_intensityfn (_image_block):
 			return
 
 		op = self._map[self.fields['OP']]
-		return int(op(octopuscv.getGrayNumpy(result)))
+		return int(op(image_functions.getGrayNumpy(result)))
 
 		# Emit a warning if bad op given
 
