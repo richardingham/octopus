@@ -40,16 +40,14 @@ def get_block_plugin_modules ():
 	}
 
 
-def get_block_plugin_block_names ():
-	from .blocks.machines import machine_declaration
-
+def get_block_plugin_block_names (check_subclass):
 	return [
 		name 
 		for mod in get_block_plugin_modules().values()
 		for name, cls in mod.__dict__.items() 
 		if isinstance(cls, type) 
-			and issubclass(cls, machine_declaration)
-			and cls is not machine_declaration
+			and issubclass(cls, check_subclass)
+			and cls is not check_subclass
 	]
 
 
@@ -59,6 +57,16 @@ def get_machine_js_definitions ():
 	for block_cls in _subclasses(machine_declaration):
 		try:
 			yield (block_cls.__name__, block_cls.get_interface_definition())
+		except AttributeError:
+			pass
+
+
+def get_connection_js_definitions ():
+	from octopus.blocktopus.blocks.machines import connection_declaration
+
+	for connection_cls in _subclasses(connection_declaration):
+		try:
+			yield (connection_cls.__name__, connection_cls.get_interface_definition())
 		except AttributeError:
 			pass
 

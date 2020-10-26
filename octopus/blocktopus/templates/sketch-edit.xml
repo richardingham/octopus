@@ -14,6 +14,7 @@
 	<script src="/resources/blockly/pack/blockly.js"></script>
 	<script src="/resources/blockly/pack/blockly-messages.js"></script>
 	<script src="/resources/blockly/pack/octopus-machines.js"></script>
+	<script src="/resources/blockly/pack/octopus-connections.js"></script>
 	<script src="/resources/blockly/pack/octopus-generator.js"></script>
 	<script src="/resources/prettify/prettify.js"></script>
 	<script src="/resources/contextmenu/contextmenu.js"></script>
@@ -81,6 +82,9 @@
 		<block type="machine_harvard_phd2000"></block>
 		<block type="machine_mt_sics_balance"></block>
 		<block type="machine_startech_powerremotecontrol"></block>
+		<block t:render="plugin_connections">
+			<t:attr name="type"><t:slot name="type"/></t:attr>
+		</block>
 		<block type="connection_tcp"></block>
 		<block type="connection_serial"></block>
 		<block type="connection_phidget"></block>
