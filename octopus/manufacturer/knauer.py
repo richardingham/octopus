@@ -77,7 +77,7 @@ class K120 (Machine):
 		# setup variables
 		self.status = Property(title = "Status", type = str)
 		self.power = Property(title = "Power", type = str, options = ("on", "off"), setter = set_power)
-		self.target = Property(title = "Flow rate target", type = int, unit = "uL/min", min = 0, max = 50.0, setter = set_target)
+		self.target = Property(title = "Flow rate target", type = int, unit = "uL/min", min = 0, max = 50000, setter = set_target)
 		self.rate = Stream(title = "Flow rate", type = int, unit = "uL/min")
 
 		self.ui = ui(

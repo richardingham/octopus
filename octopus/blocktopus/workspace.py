@@ -13,17 +13,69 @@ from octopus.events import EventEmitter
 # Debugging
 defer.Deferred.debug = True
 
+def _subclasses (cls):
+	return cls.__subclasses__() + [
+		g for s in cls.__subclasses__()
+		for g in _subclasses(s)
+	]
+
+def get_block_plugin_modules ():
+	# Add plugin machine blocks
+	# https://packaging.python.org/guides/creating-and-discovering-plugins/
+	import importlib
+	import pkgutil
+	import octopus.blocks
+
+	def iter_namespace(ns_pkg):
+		# Specifying the second argument (prefix) to iter_modules makes the
+		# returned name an absolute name instead of a relative one. This allows
+		# import_module to work without having to do additional modification to
+		# the name.
+		return pkgutil.walk_packages(ns_pkg.__path__, ns_pkg.__name__ + ".")
+
+	return {
+		name: importlib.import_module(name)
+		for finder, name, ispkg
+		in iter_namespace(octopus.blocks)
+	}
+
+
+def get_block_plugin_block_names (check_subclass):
+	return [
+		name 
+		for mod in get_block_plugin_modules().values()
+		for name, cls in mod.__dict__.items() 
+		if isinstance(cls, type) 
+			and issubclass(cls, check_subclass)
+			and cls is not check_subclass
+	]
+
+
+def get_machine_js_definitions ():
+	from octopus.blocktopus.blocks.machines import machine_declaration
+
+	for block_cls in _subclasses(machine_declaration):
+		try:
+			yield (block_cls.__name__, block_cls.get_interface_definition())
+		except AttributeError:
+			pass
+
+
+def get_connection_js_definitions ():
+	from octopus.blocktopus.blocks.machines import connection_declaration
+
+	for connection_cls in _subclasses(connection_declaration):
+		try:
+			yield (connection_cls.__name__, connection_cls.get_interface_definition())
+		except AttributeError:
+			pass
+
 
 def populate_blocks ():
-	def subclasses (cls):
-		return cls.__subclasses__() + [
-			g for s in cls.__subclasses__()
-			for g in subclasses(s)
-		]
-
 	from .blocks import mathematics, text, logic, controls, variables, machines, dependents, images, colour
+	get_block_plugin_modules()
 
-	Workspace.blocks = { c.__name__: c for c in subclasses(Block) }
+	Workspace.blocks = { c.__name__: c for c in _subclasses(Block) }
 
 
 class Workspace (Runnable, Pausable, Cancellable, EventEmitter):

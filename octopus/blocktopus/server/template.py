@@ -136,6 +136,26 @@ class SketchEdit (ElementWithCachedResources):
 			sketch_id = self.sketch_id
 		)
 
+	@renderer
+	def plugin_machines (self, request, tag):
+		from octopus.blocktopus.blocks.machines import machine_declaration
+		from octopus.blocktopus.workspace import get_block_plugin_block_names
+		
+		for block_name in sorted(get_block_plugin_block_names(machine_declaration)):
+			yield tag.clone().fillSlots(
+				type = block_name
+			)
+
+	@renderer
+	def plugin_connections (self, request, tag):
+		from octopus.blocktopus.blocks.machines import connection_declaration
+		from octopus.blocktopus.workspace import get_block_plugin_block_names
+		
+		for block_name in sorted(get_block_plugin_block_names(connection_declaration)):
+			yield tag.clone().fillSlots(
+				type = block_name
+			)
+
 
 class ExperimentResult (ElementWithCachedResources):
 	loader = XMLFile(templates_dir.child('experiment-result.xml'))

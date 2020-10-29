@@ -9,16 +9,66 @@ blocktopus_dir = os.path.abspath(
 )
 
 resources_dir = os.path.join(blocktopus_dir, 'resources', 'cache')
-resources_dir = os.path.join(blocktopus_dir, 'resources', 'cache')
 resources_json = os.path.join(blocktopus_dir, 'templates', 'template-resources.json')
 
-if __name__ == "__main__":
-    print ("Downloading third-party resources")
 
+def build_machine_block_definition_js (filename):
+    from octopus.blocktopus import workspace
+
+    with open(filename, 'w') as fp:
+        fp.write("// Auto-generated file\n\n")
+
+        for name, definition in workspace.get_machine_js_definitions():
+            fp.write(f"Blockly.Blocks.addMachineBlock('{name}', {json.dumps(definition)});\n")
+
+
+def build_connection_block_definition_js (filename):
+    from octopus.blocktopus import workspace
+
+    with open(filename, 'w') as fp:
+        fp.write("// Auto-generated file\n\n")
+
+        for name, definition in workspace.get_connection_js_definitions():
+            fp.write(f"Blockly.Blocks.addConnectionBlock('{name}', {json.dumps(definition)});\n")
+
+
+def fetch_resource (url, filename, allow_fail = False):
+    cache_file = os.path.join(resources_dir, filename)
+    cache_file_dir = os.path.dirname(cache_file)
+    mkpath(cache_file_dir)
+
+    if os.path.isfile(cache_file):
+        print(f"{filename} already downloaded")
+        return
+
+    print(f"Downloading {url}")
+
+    try:
+        downloaded_file = wget.download(
+            url = url, 
+            out = cache_file
+        )
+        print("\n")
+    except HTTPError:
+        if allow_fail:
+            print("  [Not found]")
+        else:
+            raise
+
+
+if __name__ == "__main__":
     try:
         os.mkdir(resources_dir)
     except FileExistsError:
         pass
+
+    print ("Building machine blocks definition JS")
+    build_machine_block_definition_js(os.path.join(blocktopus_dir, 'resources', 'blockly', 'pack', 'octopus-machines.js'))
+
+    print ("Building connection blocks definition JS")
+    build_connection_block_definition_js(os.path.join(blocktopus_dir, 'resources', 'blockly', 'pack', 'octopus-connections.js'))
+
+    print ("Downloading third-party resources")
 
     with open(resources_json) as templates_file:
         resources = {}
@@ -43,29 +93,6 @@ if __name__ == "__main__":
 
                 for ext in ('.eot', '.woff', '.woff2', '.svg'):
                     extra_resources[base_filename + ext] = base_url + ext
-
-        def fetch_resource (url, filename, allow_fail = False):
-            cache_file = os.path.join(resources_dir, filename)
-            cache_file_dir = os.path.dirname(cache_file)
-            mkpath(cache_file_dir)
-
-            if os.path.isfile(cache_file):
-                print(f"{filename} already downloaded")
-                return
-
-            print(f"Downloading {url}")
-
-            try:
-                downloaded_file = wget.download(
-                    url = url, 
-                    out = cache_file
-                )
-                print("\n")
-            except HTTPError:
-                if allow_fail:
-                    print("  [Not found]")
-                else:
-                    raise
 
         for cache_filename, resource_url in resources.items():
             fetch_resource(resource_url, cache_filename)

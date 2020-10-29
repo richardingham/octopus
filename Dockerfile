@@ -43,6 +43,8 @@ RUN apk add --no-cache libffi-dev openssl-dev
 RUN pip install --no-cache-dir --disable-pip-version-check autobahn
 RUN pip install --no-cache-dir --disable-pip-version-check wget
 
+RUN apk add --no-cache dos2unix
+
 RUN echo "/src/octopus" >> /usr/lib/python3.8/site-packages/octopus.pth
 
 WORKDIR /src/octopus
@@ -55,13 +57,15 @@ COPY rollup.config.js .
 COPY octopus/ ./octopus/
 RUN ./node_modules/.bin/rollup -c
 
-COPY override_manufacturer/* .devcontainer/noop.txt ./octopus/manufacturer/
-
+COPY plugins/ .devcontainer/noop.txt /src/octopus-plugins/
 COPY tools/ ./tools/
+
+RUN python tools/install_plugins.py /src/octopus-plugins /usr/lib/python3.8/site-packages
 RUN python tools/build.py
 
 WORKDIR /app
 COPY start.sh .
+RUN dos2unix start.sh
 RUN ["chmod", "+x", "start.sh"]
 
 CMD ./start.sh

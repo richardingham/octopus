@@ -39,43 +39,6 @@ import {MACHINES_CATEGORY_HUE} from '../colourscheme';
 import {_extend as extend} from '../core/utils';
 import {numberValidator} from '../core/validators';
 
-var _R2R4_vars = [{
-  name: "status", title: "Status", type: "String", readonly: true
-}, {
-  name: "power", title: "Power", type: "String", options: ['off', 'on']
-}, {
-  name: "loop1", title: "Loop A", type: "String", options: ['load', 'inject']
-}, {
-  name: "loop2", title: "Loop B", type: "String", options: ['load', 'inject']
-}, {
-  name: "pressure_limit", title: "Pressure Limit", type: "Number", unit: { options: [['mbar', 1], ['bar', 1000]], default: 1 }
-}, {
-  name: "pressure", title: "System Pressure", type: "Number", readonly: true, unit: { options: [['mbar', 1], ['bar', 1000]], default: 1 }
-}, {
-  name: "output", title: "Output", type: "String", options: ['waste', 'collect']
-}]
-for (var i = 1; i < 3; i++) {
-  _R2R4_vars.push({
-    name: "pump" + i, title: "Pump " + String.fromCharCode(64 + i), parts: [
-      { name: "target", title: "Target", type: "Number", unit: { options: [['mL/min', 1000], ['uL/min', 1]], default: 1000 }},
-      { name: "rate", title: "Flow Rate", type: "Number", readonly: true, unit: { options: [['mL/min', 1000], ['uL/min', 1]], default: 1000 } },
-      { name: "pressure", title: "Pressure", type: "Number", readonly: true, unit: { options: [['mbar', 1], ['bar', 1000]], default: 1000 } },
-      { name: "input", title: "Input", type: "String", options: ['solvent', 'reagent'] },
-      { name: "airlock", title: "Airlock", type: "Number", readonly: true }
-    ]
-  });
-}
-for (var i = 1; i < 5; i++) {
-  _R2R4_vars.push({
-    name: "heater" + i, title: "Heater " + String.fromCharCode(64 + i), parts: [
-      { name: "target", title: "Target", type: "Number", unit: 'C' },
-      { name: "temp", title: "Temperature", type: "Number", readonly: true, unit: 'C' },
-      { name: "mode", title: "Mode", type: "Number", readonly: true },
-      { name: "power", title: "Power", type: "Number", readonly: true, unit: 'W' }
-    ]
-  });
-}
-
 var _K120_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
   { name: "power", title: "Power", type: "String", options: ['off', 'on'] },
@@ -348,12 +311,6 @@ Blocks['machine_quark_argument'] = {
   }
 };
 
-Blocks['machine_vapourtec_R2R4'] = extend({
-  machineTitle: "Vapourtec R2+/R4",
-  machineVars: _R2R4_vars,
-  machineVarFlags: { providesGSIOC: true }
-}, machineBlock);
-
 Blocks['machine_knauer_K120'] = extend({
   machineTitle: "Knauer K120",
   machineDefaultName: "pump",
@@ -489,3 +446,7 @@ Blocks['machine_gilson_FractionCollector203B'] = extend({
   ],
   machineConnectionType: "GSIOCConnection"
 }, machineBlock);
+
+Blocks.addMachineBlock = function(name, definition) {
+  Blocks[name] = extend(definition, machineBlock);
+};
