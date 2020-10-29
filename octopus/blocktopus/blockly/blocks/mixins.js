@@ -156,6 +156,8 @@ export function addUnitDropdown (block, input, variable, currentUnitSelection) {
     } else {
       input.appendField(variable.flags.unit, 'UNIT');
     }
+  } else {
+    input.appendField('', 'UNIT');
   }
 }
 
