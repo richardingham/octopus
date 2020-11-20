@@ -203,6 +203,7 @@ class Machine (Component):
 
 			self.protocol = protocol
 			self.protocol.connection_name = connection_name
+			self.protocol.machine_alias = alias
 
 			started = defer.maybeDeferred(self.start)
 			started.addCallbacks(self.ready.callback, startError)
