@@ -160,7 +160,7 @@ class ExperimentProtocol (object):
 			"data": [
 				{
 					"name": name,
-					"data": map(_compress, variables[name].get(start, interval))
+					"data": list(map(_compress, variables[name].get(start, interval)))
 				}
 				for name in streams
 			]
