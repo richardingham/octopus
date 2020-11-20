@@ -2,7 +2,8 @@
 from twisted.internet import reactor, defer, task
 from twisted.internet.error import TimeoutError, AlreadyCalled, AlreadyCancelled
 from twisted.protocols.basic import LineOnlyReceiver
-from twisted.python import log, failure
+from twisted.python import failure
+from twisted.logger import Logger
 
 # System Imports
 from collections import deque
@@ -34,10 +35,11 @@ class QueuedLineReceiver (LineOnlyReceiver):
 	timeout = 1
 	character_delay = 0
 	max_command_length = 1000
-	debug = False
+	log = Logger()
 
 	def __init__ (self):
 		self.connection_name = "disconnected"
+		self.machine_alias = "machine"
 
 		self.queue = AsyncQueue(self._advance, paused = True)
 		self.index = _IndexGenerator(2 ** 16)
@@ -52,15 +54,6 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 	def connectionLost (self, reason):
 		self.queue.pause()
-
-	def _log (self, msg, level = None):
-		log.msg(
-			"QueuedLineReceiver [{!s}]: {!s}".format(
-				self.connection_name,
-				msg
-			),
-			logLevel = level
-		)
 
 	def write (self, line, expectReply = True, wait = 0):
 		d = defer.Deferred()
@@ -81,14 +74,24 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		)
 		self.queue.append(command)
 
+		self.log.debug(
+			"{log_source.machine_alias!s} [{log_source.connection_name!s}] queued command ({command.index}) {command.line!r}",
+			action = 'queue',
+			command = command,
+			queue_len = len(self.queue)
+		)
+
 		return d
 
 	def _advance (self, command: _Command):
 		self._current = command
 		self._queue_d = defer.Deferred()
-
-		if self.debug:
-			log.msg('Send: ' + repr(command.line.encode('ascii') + self.delimiter))
+		
+		self.log.debug(
+			"{log_source.machine_alias!s} [{log_source.connection_name!s}] sent command ({command.index}) {command.line!r}",
+			action = 'send',
+			command = command
+		)
 
 		if self.character_delay > 0:
 			self.sendLine(command.line.encode('ascii') + self.delimiter)
@@ -127,21 +130,29 @@ class QueuedLineReceiver (LineOnlyReceiver):
 	def lineReceived (self, line: bytes):
 		if len(line) == 0:
 			return
-			
-		if self.debug:
-			log.msg('Recv: ' + repr(line))
 
 		try:
 			self._timeout.cancel()
 
 			command = self._current
+
+			self.log.debug(
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received response ({command.index}) {response!r}",
+				action = 'receive',
+				command = command,
+				response = line
+			)
+
 			reactor.callLater(command.wait, command.d.callback, self.processLine(line.decode('ascii')))
 			reactor.callLater(command.wait, self._queue_d.callback, None)
 
 		except (AttributeError, AlreadyCalled, AlreadyCancelled):
 			# Either a late response or an unexpected Message
-			if self.debug:
-				log.msg('  (Unexpected)')
+			self.log.debug(
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received unexpected response {response!r}",
+				action = 'unexpected',
+				response = line
+			)
 
 			return self.unexpectedMessage(line.decode('ascii'))
 
@@ -158,7 +169,11 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 	def _timeoutCurrent (self):
 		try:
-			self._log("Timed Out: {!s}".format(self._current.line), logging.ERROR)
+			self.log.error(
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] command timed out ({command.index}) {command.line!r}",
+				action = 'timeout',
+				command = self._current
+			)
 			self._current.d.errback(TimeoutError(self._current.line))
 			self._queue_d.errback(TimeoutError(self._current.line))
 
@@ -224,15 +239,22 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 	def dataReceived (self, data: bytes):
 		current = self._current
 
-		if self.debug:
-			log.msg('Data: ' + repr(data))
-
 		if current is None:
-			if self.debug:
-				log.msg('  (Unexpected)')
+			self.log.debug(
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received unexpected data {response!r}",
+				action = 'unexpected',
+				response = data
+			)
 
 			self.unexpectedMessage(data)
 			return
+		
+		self.log.debug(
+			"{log_source.machine_alias!s} [{log_source.connection_name!s}] received data ({command.index}) {response!r}",
+			action = 'receive',
+			command = current,
+			response = data
+		)
 
 		self._buffer += data
 
@@ -241,15 +263,25 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 			try:
 				idx = self._buffer.index(current.startDelimiter)
 				if idx > 0:
-					if self.debug:
-						log.msg('  Discard before start delim:' + repr(self._buffer[:idx]))
+					self.log.debug(
+						"{log_source.machine_alias!s} [{log_source.connection_name!s}] discard {discard!r} before start delimiter {command.startDelimiter!r}",
+						action = 'discard',
+						command = current,
+						discard = self._buffer[:idx],
+						buffer = self._buffer
+					)
 
 					self._buffer = self._buffer[idx:]
 
 			except ValueError:
 				# Haven't received a start delimiter yet
-				if self.debug:
-					log.msg('  Discard before start delim:' + repr(self._buffer))
+				self.log.debug(
+					"{log_source.machine_alias!s} [{log_source.connection_name!s}] discard {discard!r} before start delimiter {command.startDelimiter!r}",
+					action = 'discard',
+					command = current,
+					discard = self._buffer,
+					buffer = self._buffer
+				)
 
 				self._buffer = ''
 				return
@@ -279,8 +311,13 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 				# Discard the first character in the buffer and start again
 				if current.endDelimiter is not None \
 				and self._buffer[end:end + current.endDelimiterLength] != current.endDelimiter:
-					if self.debug:
-						log.msg('  Wrong end delimiter. Discarding first char of: ' + repr(self._buffer))
+					self.log.debug(
+						"{log_source.machine_alias!s} [{log_source.connection_name!s}] Wrong end delimiter. Discard first char of {buffer!r}",
+						action = 'discard',
+						command = current,
+						discard = self._buffer[0],
+						buffer = self._buffer
+					)
 
 					self._buffer = self._buffer[1:]
 
@@ -290,11 +327,23 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 
 				# Remove the message from the buffer and return it.
 				else:
+					self.log.debug(
+						"{log_source.machine_alias!s} [{log_source.connection_name!s}] received ({command.index}) {line!r}",
+						action = 'receive',
+						command = current,
+						response = line
+					)
+
 					self._buffer = self._buffer[end + current.endDelimiterLength:]
 					self.lineReceived(line.decode('ascii'))
 
 			elif self.debug:
-				log.msg('  Waiting for length ' + repr(current.length))
+				self.log.debug(
+					"{log_source.machine_alias!s} [{log_source.connection_name!s}] waiting for length {command.length!r}",
+					action = 'waiting',
+					command = current,
+					buffer = self._buffer
+				)
 
 
 		# If no length was specified, look for the end delimiter
@@ -306,13 +355,22 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 
 			except ValueError:
 				# Haven't received an end delimiter yet
-				if self.debug:
-					log.msg('  Waiting for end delimiter: ' + repr(current.endDelimiter))
-
+				self.log.debug(
+					"{log_source.machine_alias!s} [{log_source.connection_name!s}] waiting for end delimiter {command.endDelimiter!r}",
+					command = current,
+					buffer = self._buffer
+				)
+				
 				return
 
 			line = self._buffer[current.startDelimiterLength:idx]
 			self._buffer = self._buffer[idx + current.endDelimiterLength:]
+
+			self.log.debug(
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received ({command.index}) {line!r}",
+				command = current,
+				response = line
+			)
 
 			self.lineReceived(line.decode('ascii'))
 
