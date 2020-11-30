@@ -476,7 +476,7 @@ class DownloadExperimentData (resource.Resource):
 
 			yield expt.load()
 
-			variables = request.args['vars']
+			variables = request.args[b'vars']
 			time_divisor = _getArg(request, b'time_divisor', int, None)
 			time_dp = _getArg(request, b'time_dp', int, None)
 			filename = '.'.join([

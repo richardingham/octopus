@@ -3,6 +3,7 @@ numpy
 scipy
 pyserial
 crc16
+pandas
 xlsxwriter
 cryptography 
 pyasn1
