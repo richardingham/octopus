@@ -257,7 +257,7 @@ class CopySketch (resource.Resource):
 			yield s.copyFrom(self._id)
 			yield s.close()
 
-			url = request.URLPath().parent().sibling(id)
+			url = request.URLPath().parent().sibling(id.encode('ascii'))
 			_redirectOrJSON(None, request, url, {"created": id})
 
 		sketch.Sketch.createId()\

@@ -130,10 +130,10 @@ class Sketch (EventEmitter):
 
 			if max_snap > 0:
 				snapshot = yield threads.deferToThread(snapFile.getContent)
-				events = map(
+				events = list(map(
 					json.loads,
 					filter(lambda e: e.strip() != b"", snapshot.split(b"\n"))
-				)
+				))
 				self.workspace.fromEvents(events)
 
 			if copy:
