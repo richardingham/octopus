@@ -554,10 +554,11 @@ class CompletedExperiment (object):
 			with dataFile.open() as fp:
 				for line in fp:
 					# Skip comments
-					if line[0] == '#':
+					if line[0] == 35:  
+						# b'#' == 35
 						continue
 
-					time, value = line.split(',')
+					time, value = line.split(b',')
 					time = float(time)
 
 					if start is not None:
@@ -566,7 +567,7 @@ class CompletedExperiment (object):
 						if time > end:
 							break
 
-					data.append((time, cast(value)))
+					data.append((time, cast(value.decode())))
 
 			return data
 

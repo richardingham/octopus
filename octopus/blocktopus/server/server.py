@@ -407,12 +407,12 @@ class GetExperimentData (resource.Resource):
 
 	def render_GET (self, request):
 		try:
-			variables = request.args['var[]']
+			variables = list(map(lambda v: v.decode(), request.args[b'var[]']))
 		except KeyError:
 			variables = []
 
-		start = _getArg(request, 'start', float)
-		end = _getArg(request, 'end', float)
+		start = _getArg(request, b'start', float)
+		end = _getArg(request, b'end', float)
 
 		expt = experiment.CompletedExperiment(self._id)
 		expt.loadData(variables, start, end)\
@@ -477,8 +477,8 @@ class DownloadExperimentData (resource.Resource):
 			yield expt.load()
 
 			variables = request.args['vars']
-			time_divisor = _getArg(request, 'time_divisor', int, None)
-			time_dp = _getArg(request, 'time_dp', int, None)
+			time_divisor = _getArg(request, b'time_divisor', int, None)
+			time_dp = _getArg(request, b'time_dp', int, None)
 			filename = '.'.join([
 				re.sub(r'[^a-zA-Z0-9]+', '_', expt.title).strip('_'),
 				time.strftime(
