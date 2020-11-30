@@ -8,4 +8,4 @@ cryptography
 pyasn1
 autobahn 
 wget
-
+opencv-python
