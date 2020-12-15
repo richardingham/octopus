@@ -42,6 +42,9 @@ RUN apt-get update \
     # Install pylint
     && pip --disable-pip-version-check --no-cache-dir install pylint \
     #
+    # Install LibGL for opencv
+    && apt-get -y install libgl1-mesa-glx \
+    #
     # Update Python environment based on requirements.txt (if presenet)
     && if [ -f "/tmp/pip-tmp/requirements.txt" ]; then pip --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt; fi \
     && rm -rf /tmp/pip-tmp \
