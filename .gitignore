@@ -60,6 +60,7 @@ data/*
 
 # Twisted log / PID
 child.log
+twistd.log
 twistd.pid
 
 # Eclipse IDE
