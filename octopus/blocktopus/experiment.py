@@ -12,6 +12,7 @@ now = time.time # shortcut
 from twisted.internet import defer, threads, task
 from twisted.python import log
 from twisted.python.filepath import FilePath
+from twisted.logger import Logger
 
 # Octopus Imports
 from octopus.sequence.error import AlreadyRunning, NotRunning
@@ -27,6 +28,7 @@ class Experiment (EventEmitter):
 
 	db = None
 	dataDir = None
+	log = Logger()
 
 	@classmethod
 	def exists (cls, id):
@@ -49,6 +51,10 @@ class Experiment (EventEmitter):
 		self.id = id
 		self.sketch = sketch
 		self.logMessages = []
+
+		self.log.debug(
+			"Creating experiment {log_source.id!s} for Sketch {log_source.sketch.id!s}"
+		)
 
 	@defer.inlineCallbacks
 	def run (self):
@@ -80,12 +86,17 @@ class Experiment (EventEmitter):
 		sketch_id = sketch.id
 		workspace = sketch.workspace
 
+		self.log.debug(
+			"Running experiment {log_source.id!s}",
+		)
+
 		# If the workspace is already running, we can't run another
 		# experiment on top of it. No experiment entry in the database
 		# will be created.
 		try:
 			yield workspace.reset()
 		except AlreadyRunning:
+			self.log.debug("Experiment {log_source.id!s} was already running. Abort & reset...")
 			yield workspace.abort()
 			yield workspace.reset()
 
@@ -99,6 +110,7 @@ class Experiment (EventEmitter):
 			""",
 			(id, sketch_id, sketch.title, 1, self.startTime)
 		)
+		self.log.debug("Experiment {log_source.id!s} inserted into database.")
 
 		# Create a directory to store the experiment logs and data.
 		stime = time.gmtime(self.startTime)
@@ -108,6 +120,11 @@ class Experiment (EventEmitter):
 			self._experimentDir = self._experimentDir.child(str(segment))
 			if not self._experimentDir.exists():
 				self._experimentDir.createDirectory()
+		
+		self.log.debug(
+			"Experiment {log_source.id!s} directory {dir!s} created.",
+			dir = self._experimentDir
+		)
 
 		# Create files for the sketch logs, snapshot, variables etc.
 		eventFile = self._experimentDir.child("events.log").create()
@@ -117,9 +134,18 @@ class Experiment (EventEmitter):
 		openFiles = { "_events": eventFile, "_sketch": sketchFile }
 		usedFiles = {}
 
+		self.log.debug(
+			"Experiment {log_source.id!s} log files created."
+		)
+
 		# Write a snapshot of the sketch.
 		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())).encode('utf-8'))
+		
+		self.log.debug(
+			"Experiment {log_source.id!s} snapshot created in {file!s}.",
+			file = snapFile
+		)
 
 		# Log events emitted by the sketch (block changes, etc.)
 		# The idea is that with the snapshot and change log, the
@@ -127,6 +153,13 @@ class Experiment (EventEmitter):
 		# of the experiment.
 		def onSketchEvent (protocol, topic, data):
 			print ("Sketch event: %s %s %s" % (protocol, topic, data))
+
+			self.log.debug(
+				"Experiment {log_source.id!s}: sketch event: {protocol}, {topic}, {data}",
+				protocol = protocol,
+				topic = topic,
+				data = data
+			)
 
 			# Don't log block state events to the sketch log
 			# (there will be lots, and they are not relevant to the
