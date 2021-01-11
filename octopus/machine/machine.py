@@ -184,16 +184,27 @@ class Machine (Component):
 			self.protocol.transport.loseConnection()
 		except AttributeError:
 			pass
+	
+	def waitUntilReady (self):
+		if self.connected:
+			return defer.succeed(True)
+		elif self._startError is not None:
+			return defer.fail(self._startError)
+		
+		d = defer.Deferred()
+		self._connectedWaits.append(d)
+		return d
 
 	def __init__(self, endpoint, alias = None, **kwargs):
 
 		self._ticks = []
+		self._connectedWaits = []
+		self._startError = None
 
 		if alias is None:
 			Machine._machine_count += 1
 			alias = self.__class__.__name__ + "_" + str(Machine._machine_count)
 
-		self.ready = defer.Deferred()
 		self.setup(**kwargs)
 
 		# Must be called after setup() as this assignment
@@ -202,6 +213,16 @@ class Machine (Component):
 
 		connection_name = ""
 
+		def callbackReady (_):
+			for d in self._connectedWaits:
+				d.callback(True)
+		
+		def errbackReady (failure):
+			self._startError = failure
+
+			for d in self._connectedWaits:
+				d.errback(failure)
+
 		def startError (failure):
 			self.log.error(
 				"Machine: {log_source.alias!s} - error during start",
@@ -209,8 +230,7 @@ class Machine (Component):
 			)
 
 			self.disconnect()
-			log.err(failure)
-			self.ready.errback(failure)
+			errbackReady(failure)
 
 		def connected (protocol):
 			self.log.debug(
@@ -223,7 +243,7 @@ class Machine (Component):
 			self.protocol.machine_alias = alias
 
 			started = defer.maybeDeferred(self.start)
-			started.addCallbacks(self.ready.callback, startError)
+			started.addCallbacks(callbackReady, startError)
 
 		def disconnected (reason):
 			self.log.debug(
@@ -243,7 +263,7 @@ class Machine (Component):
 			)
 
 			d = defer.maybeDeferred(endpoint.connect, self.protocolFactory)
-			d.addCallbacks(connected, self.ready.errback)
+			d.addCallbacks(connected, errbackReady)
 
 		self.log.debug(
 			"Machine: {log_source.alias!s} - waiting for endpoint",
