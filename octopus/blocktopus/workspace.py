@@ -1,6 +1,7 @@
 # Twisted Imports
 from twisted.internet import reactor, defer, task
 from twisted.python import log
+from twisted.logger import Logger
 
 # Octopus Imports
 from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
@@ -80,6 +81,8 @@ def populate_blocks ():
 
 class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 	blocks = {}
+	
+	log = Logger()
 
 	def __init__ (self):
 		self.state = State.READY
@@ -89,10 +92,16 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		self.variables = Variables()
 
 	def addBlock (self, id, type, fields = None, x = 0, y = 0):
+		self.log.debug(
+			"Add block to workspace. ID: {block_id} type: {block_type}, fields: {fields}",
+			block_id = id, block_type = type, fields = fields
+		)
+
 		try:
 			blockType = type
 			blockClass = self.blocks[blockType]
 		except KeyError:
+			self.log.warn("Unknown block type {block_type} requested", block_type = blockType)
 			raise Exception("Unknown Block: %s" %  blockType)
 
 		block = blockClass(self, id)
@@ -102,6 +111,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			for field, value in fields.items():
 				block.fields[field] = value
 		except AttributeError:
+			self.log.warn("Block type {block_type} has no fields", block_type = blockType)
 			pass
 
 		block.created()
