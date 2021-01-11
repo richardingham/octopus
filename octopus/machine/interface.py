@@ -48,7 +48,7 @@ def _trace (t):
 		r["max"] = round(interval, 1)
 		r["data"] = map(compress, t.get(-interval))
 		if colours is not None:
-			r["colour"] = colours.next()
+			r["colour"] = next(colours)
 
 		return r
 

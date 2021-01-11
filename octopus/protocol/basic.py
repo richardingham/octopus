@@ -7,7 +7,6 @@ from twisted.logger import Logger
 
 # System Imports
 from collections import deque
-import exceptions
 import logging
 
 # Package Imports
@@ -66,7 +65,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 			)
 
 		command = self.Command(
-			index = self.index.next(),
+			index = next(self.index),
 			line = line,
 			expectReply = expectReply,
 			wait = float(wait),
@@ -83,7 +82,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 
 		return d
 
-	def _advance (self, command: _Command):
+	def _advance (self, command):
 		self._current = command
 		self._queue_d = defer.Deferred()
 		
@@ -220,7 +219,7 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 
 		d = defer.Deferred()
 		command = self.Command(
-			index = self.index.next(),
+			index = next(self.index),
 			line = line,
 			expectReply = expect_reply,
 			wait = float(wait),
