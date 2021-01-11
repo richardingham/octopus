@@ -49,11 +49,12 @@ class Experiment (EventEmitter):
 		id = str(uuid.uuid4())
 
 		self.id = id
+		self.short_id = id.split('-')[0]
 		self.sketch = sketch
 		self.logMessages = []
 
 		self.log.debug(
-			"Creating experiment {log_source.id!s} for Sketch {log_source.sketch.id!s}"
+			"Creating experiment {log_source.short_id!s} for Sketch {log_source.sketch.id!s}"
 		)
 
 	@defer.inlineCallbacks
@@ -96,7 +97,7 @@ class Experiment (EventEmitter):
 		try:
 			yield workspace.reset()
 		except AlreadyRunning:
-			self.log.debug("Experiment {log_source.id!s} was already running. Abort & reset...")
+			self.log.debug("Experiment {log_source.short_id!s} was already running. Abort & reset...")
 			yield workspace.abort()
 			yield workspace.reset()
 
@@ -110,7 +111,7 @@ class Experiment (EventEmitter):
 			""",
 			(id, sketch_id, sketch.title, 1, self.startTime)
 		)
-		self.log.debug("Experiment {log_source.id!s} inserted into database.")
+		self.log.debug("Experiment {log_source.short_id!s} inserted into database.")
 
 		# Create a directory to store the experiment logs and data.
 		stime = time.gmtime(self.startTime)
@@ -122,7 +123,7 @@ class Experiment (EventEmitter):
 				self._experimentDir.createDirectory()
 		
 		self.log.debug(
-			"Experiment {log_source.id!s} directory {dir!s} created.",
+			"Experiment {log_source.short_id!s} directory {dir!s} created.",
 			dir = self._experimentDir
 		)
 
@@ -135,7 +136,7 @@ class Experiment (EventEmitter):
 		usedFiles = {}
 
 		self.log.debug(
-			"Experiment {log_source.id!s} log files created."
+			"Experiment {log_source.short_id!s} log files created."
 		)
 
 		# Write a snapshot of the sketch.
@@ -143,7 +144,7 @@ class Experiment (EventEmitter):
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())).encode('utf-8'))
 		
 		self.log.debug(
-			"Experiment {log_source.id!s} snapshot created in {file!s}.",
+			"Experiment {log_source.short_id!s} snapshot created in {file!s}.",
 			file = snapFile
 		)
 
@@ -152,10 +153,8 @@ class Experiment (EventEmitter):
 		# layout of the sketch could be replayed over the period
 		# of the experiment.
 		def onSketchEvent (protocol, topic, data):
-			print ("Sketch event: %s %s %s" % (protocol, topic, data))
-
 			self.log.debug(
-				"Experiment {log_source.id!s}: sketch event: {protocol}, {topic}, {data}",
+				"Experiment {log_source.short_id!s}: sketch event: {protocol}, {topic}, {data}",
 				protocol = protocol,
 				topic = topic,
 				data = data
@@ -196,6 +195,12 @@ class Experiment (EventEmitter):
 		# the events log.
 		@workspace.on("block-state")
 		def onBlockStateChange (data):
+			self.log.debug(
+				"Experiment {log_source.short_id!s}: block {block_id} state -> {state}",
+				block_id = data['block'],
+				state = data['state']
+			)
+
 			writeEvent(eventFile, "block", "state", data)
 
 			data['sketch'] = sketch_id
@@ -207,6 +212,11 @@ class Experiment (EventEmitter):
 		# of events so that new clients can get a historical log.
 		@workspace.on("log-message")
 		def onLogMessage (data):
+			self.log.debug(
+				"Experiment {log_source.short_id!s}: log message: {message}",
+				message = data['message']
+			)
+
 			writeEvent(eventFile, "experiment", "log", data)
 
 			data['sketch'] = sketch_id
@@ -224,6 +234,12 @@ class Experiment (EventEmitter):
 		# time can be calculated using the start time at the top of the file.
 		@workspace.variables.on("variable-changed")
 		def onVarChanged (data):
+			self.log.debug(
+				"Experiment {log_source.short_id!s}: variable {variable_name} value -> {value}",
+				variable_name = data['name'],
+				value = data['value']
+			)
+
 			try:
 				logFile = openFiles[data['name']]
 			except KeyError:
@@ -246,6 +262,12 @@ class Experiment (EventEmitter):
 		# disallow renaming during runtime.
 		@workspace.variables.on("variable-renamed")
 		def onVarRenamed (data):
+			self.log.debug(
+				"Experiment {log_source.short_id!s}: variable {old_name} renamed -> {new_name}",
+				old_name = data['oldName'],
+				new_name = data['newName']
+			)
+
 			openFiles[data['newName']] = openFiles[data['oldName']]
 			del openFiles[data['oldName']]
 			addUsedFile(data['newName'], "", data['variable'])
@@ -298,7 +320,9 @@ class Experiment (EventEmitter):
 		# Attempt to run the experiment. Make sure that eveything is
 		# cleaned up after the experiment, even in the event of an error.
 		try:
+			self.log.debug("Experiment {log_source.short_id!s}: Running workspace")
 			yield workspace.run()
+			self.log.debug("Experiment {log_source.short_id!s}: Workspace completed")
 		finally:
 			# Remove event handlers
 			sketch.unsubscribe(self)
@@ -323,6 +347,8 @@ class Experiment (EventEmitter):
 			self.db.runOperation("""
 				UPDATE experiments SET finished_date = ? WHERE guid = ?
 			""", (now(), id)).addErrback(log.err)
+
+			self.log.debug("Experiment {log_source.short_id!s}: Set completed in database")
 
 	def pause (self):
 		"""Pause the experiment if it is running.
