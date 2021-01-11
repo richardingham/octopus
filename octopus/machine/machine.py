@@ -1,5 +1,5 @@
 # Twisted Imports
-from twisted.internet import defer, task
+from twisted.internet import reactor, defer, task
 from twisted.python import failure, log
 from twisted.logger import Logger
 
@@ -185,6 +185,8 @@ class Machine (Component):
 		except AttributeError:
 			pass
 	
+		self.protocol = None
+	
 	def waitUntilReady (self):
 		if self.connected:
 			return defer.succeed(True)
@@ -211,8 +213,6 @@ class Machine (Component):
 		# propagates the alias to all of the variables.
 		self.alias = alias
 
-		connection_name = ""
-
 		def callbackReady (_):
 			for d in self._connectedWaits:
 				d.callback(True)
@@ -223,18 +223,38 @@ class Machine (Component):
 			for d in self._connectedWaits:
 				d.errback(failure)
 
-		def startError (failure):
-			self.log.error(
-				"Machine: {log_source.alias!s} - error during start",
-				failure = failure
+		@defer.inlineCallbacks
+		def connect ():
+			if isinstance(endpoint, defer.Deferred):
+				self.log.debug(
+					"Machine: {log_source.alias!s} - waiting for endpoint",
+					state = 'awaiting endpoint'
+				)
+
+				connected_endpoint = yield connected_endpoint
+
+			else:
+				connected_endpoint = endpoint
+
+			# Endpoint is ready
+			connection_name = connected_endpoint.name
+
+			self.log.debug(
+				"Machine: {log_source.alias!s} - connecting to endpoint {endpoint.name}",
+				state = 'connecting to endpoint',
+				endpoint = connected_endpoint
 			)
 
-			self.disconnect()
-			errbackReady(failure)
+			try:
+				protocol = yield defer.maybeDeferred(connected_endpoint.connect, self.protocolFactory)
+			except Exception as e:
+				errbackReady(e)
+				raise
 
-		def connected (protocol):
+			# Connection made
 			self.log.debug(
 				"Machine: {log_source.alias!s} - connected to endpoint {protocol.connection_name}",
+				state = 'connected',
 				protocol = protocol
 			)
 
@@ -242,35 +262,31 @@ class Machine (Component):
 			self.protocol.connection_name = connection_name
 			self.protocol.machine_alias = alias
 
-			started = defer.maybeDeferred(self.start)
-			started.addCallbacks(callbackReady, startError)
+			try:
+				start_result = yield defer.maybeDeferred(self.start)
+				callbackReady(start_result)
 
-		def disconnected (reason):
-			self.log.debug(
-				"Machine: {log_source.alias!s} - disconnected {reason}",
-				reason = reason
-			)
+			except Exception as e:
+				self.log.error(
+					"Machine: {log_source.alias!s} - error during start",
+					state = 'error start',
+					failure = failure
+				)
 
-			self.stop()
-			del self.protocol
+				self.disconnect()
+				errbackReady(e)
+				raise
 
-		def endpointReady (endpoint):
-			connection_name = endpoint.name
+		# def disconnected (reason):
+		# 	self.log.debug(
+		# 		"Machine: {log_source.alias!s} - disconnected {reason}",
+		# 		reason = reason
+		# 	)
 
-			self.log.debug(
-				"Machine: {log_source.alias!s} - connecting to endpoint {endpoint.name}",
-				endpoint = endpoint
-			)
-
-			d = defer.maybeDeferred(endpoint.connect, self.protocolFactory)
-			d.addCallbacks(connected, errbackReady)
-
-		self.log.debug(
-			"Machine: {log_source.alias!s} - waiting for endpoint",
-		)
-
-		# If transport is a Deferred, wait for it to be ready
-		defer.maybeDeferred(lambda x: x, endpoint).addCallback(endpointReady)
+		# 	self.stop()
+		# 	del self.protocol
+		
+		connect().addErrback(log.err)
 
 	def setup (self, **kwargs):
 		pass
