@@ -44,7 +44,7 @@ class machine_declaration (Block):
 			self.workspace.variables.add(self._varName(), self.machine)
 
 			try:
-				result = yield self.machine.ready
+				result = yield self.machine.waitUntilReady()
 			except Exception as e:
 				print ("Machine connection error: " + str(e))
 				raise e

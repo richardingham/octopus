@@ -176,7 +176,7 @@ class Experiment (object):
 			self._log("Waiting for machines")
 			try:
 				result = yield defer.gatherResults(
-					[m.ready for m in self._machines]
+					[m.waitUntilReady() for m in self._machines]
 				)
 			except:
 				self._log("Error")
