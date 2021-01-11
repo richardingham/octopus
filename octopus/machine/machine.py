@@ -163,7 +163,7 @@ class Machine (Component):
 	protocolFactory  = None
 	protocol         = None
 	ui               = InterfaceSection()
-	_ticks           = []
+	_ticks           = None
 
 	log = Logger()
 
@@ -187,6 +187,7 @@ class Machine (Component):
 
 	def __init__(self, endpoint, alias = None, **kwargs):
 
+		self._ticks = []
 
 		if alias is None:
 			Machine._machine_count += 1
