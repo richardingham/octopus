@@ -1,6 +1,7 @@
 # Twisted Imports
 from twisted.internet import defer, task
 from twisted.python import failure, log
+from twisted.logger import Logger
 
 # System Imports
 import logging
@@ -164,6 +165,8 @@ class Machine (Component):
 	ui               = InterfaceSection()
 	_ticks           = []
 
+	log = Logger()
+
 	@property
 	def connected (self):
 		try:
@@ -172,6 +175,10 @@ class Machine (Component):
 			return False
 
 	def disconnect (self):
+		self.log.debug(
+			"Machine: {log_source.alias!s} - disconnect()"
+		)
+
 		self.stop()
 		try:
 			self.protocol.transport.loseConnection()
@@ -179,6 +186,7 @@ class Machine (Component):
 			pass
 
 	def __init__(self, endpoint, alias = None, **kwargs):
+
 
 		if alias is None:
 			Machine._machine_count += 1
@@ -194,12 +202,20 @@ class Machine (Component):
 		connection_name = ""
 
 		def startError (failure):
+			self.log.error(
+				"Machine: {log_source.alias!s} - error during start",
+				failure = failure
+			)
+
 			self.disconnect()
 			log.err(failure)
 			self.ready.errback(failure)
 
 		def connected (protocol):
-			log.msg("Connected to endpoint", level = logging.DEBUG)
+			self.log.debug(
+				"Machine: {log_source.alias!s} - connected to endpoint {protocol.connection_name}",
+				protocol = protocol
+			)
 
 			self.protocol = protocol
 			self.protocol.connection_name = connection_name
@@ -209,16 +225,28 @@ class Machine (Component):
 			started.addCallbacks(self.ready.callback, startError)
 
 		def disconnected (reason):
+			self.log.debug(
+				"Machine: {log_source.alias!s} - disconnected {reason}",
+				reason = reason
+			)
+
 			self.stop()
 			del self.protocol
 
 		def endpointReady (endpoint):
 			connection_name = endpoint.name
 
-			log.msg("Connecting to endpoint %s" % connection_name, level = logging.DEBUG)
+			self.log.debug(
+				"Machine: {log_source.alias!s} - connecting to endpoint {endpoint.name}",
+				endpoint = endpoint
+			)
 
 			d = defer.maybeDeferred(endpoint.connect, self.protocolFactory)
 			d.addCallbacks(connected, self.ready.errback)
+
+		self.log.debug(
+			"Machine: {log_source.alias!s} - waiting for endpoint",
+		)
 
 		# If transport is a Deferred, wait for it to be ready
 		defer.maybeDeferred(lambda x: x, endpoint).addCallback(endpointReady)
