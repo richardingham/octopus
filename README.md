@@ -80,16 +80,16 @@ visit [aperiodic.net](http://aperiodic.net/screen/start).
 Available Machine Interfaces
 ============================
 
- *  [Gilson](doc/Manufacturer - Gilson.md) - 506C Control Module, 
+ *  [Gilson](doc/Manufacturer%20-%20Gilson.md) - 506C Control Module, 
     233XL Sample Injector, 402 Syringe Pump, 151 UV/Vis.
- *  [Heidolph](doc/Manufacturer - Heidolph.md) - Hei-End Hotplate.
- *  [Kern](doc/Manufacturer - Kern.md) - PCB Balance
- *  [Knauer](doc/Manufacturer - Knauer.md) - K-120, S-100 HPLC pump.
- *  [Mettler Toledo](doc/Manufacturer - Mettler Toledo.md) - Balance, iC IR connector.
- *  [ThalesNano](doc/Manufacturer - ThalesNano.md) - H-Cube.
- *  [Vapourtec](doc/Manufacturer - Vapourtec.md) - R2+/R4.
- *  [VICI](doc/Manufacturer - Vici.md) - Multi-Position Valve.
- *  [World Precision Instruments](doc/Manufacturer - WPI.md) - Aladdin Syringe Pump.
+ *  [Heidolph](doc/Manufacturer%20-%20Heidolph.md) - Hei-End Hotplate.
+ *  [Kern](doc/Manufacturer%20-%20Kern.md) - PCB Balance
+ *  [Knauer](doc/Manufacturer%20-%20Knauer.md) - K-120, S-100 HPLC pump.
+ *  [Mettler Toledo](doc/Manufacturer%20-%20Mettler Toledo.md) - Balance, iC IR connector.
+ *  [ThalesNano](doc/Manufacturer%20-%20ThalesNano.md) - H-Cube.
+ *  [Vapourtec](doc/Manufacturer%20-%20Vapourtec.md) - R2+/R4.
+ *  [VICI](doc/Manufacturer%20-%20Vici.md) - Multi-Position Valve.
+ *  [World Precision Instruments](doc/Manufacturer%20-%20WPI.md) - Aladdin Syringe Pump.
 
 Using Phidgets
 ==============
