@@ -9,9 +9,10 @@ from twisted.python import log
 # Package Imports
 from ..machine import Machine, Property, Stream, ui
 from ..util import now, AsyncQueue, AsyncQueueRetry
+from ..protocol.crc16 import crc16xmodem
 
 # System Imports
-import crc16, struct, logging
+import struct, logging
 
 __all__ = ["Aladdin"]
 
@@ -39,7 +40,7 @@ def format_command (address, command):
 	if length > 255:
 		raise SyntaxError("Command too long: %s" % command)
 
-	crc = struct.pack(">H", crc16.crc16xmodem(command))
+	crc = struct.pack(">H", crc16xmodem(command))
 	return "{:c}{:s}{:s}".format(length, command, crc)
 
 
@@ -72,10 +73,10 @@ def interpret_response (response, basic = False):
 		crc = struct.unpack(">H", response[-2:])[0]
 
 		# Check that the checksum is as expected
-		if crc != crc16.crc16xmodem(msg):
+		if crc != crc16xmodem(msg):
 			raise SyntaxError(
 				"CRC does not match: %s, expected %s." % 
-				(crc, crc16.crc16xmodem(msg))
+				(crc, crc16xmodem(msg))
 			)
 
 		address = int(msg[0:2])
