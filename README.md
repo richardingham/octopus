@@ -52,7 +52,7 @@ Running the Control Software
 ============================
 
 ```
-$ python -m octopus
+$ python -m octopus.console
 ```
 
 ```python
