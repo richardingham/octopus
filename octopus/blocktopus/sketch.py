@@ -9,6 +9,7 @@ from time import time as now
 from twisted.internet import defer, threads
 from twisted.python import log
 from twisted.python.filepath import FilePath
+from twisted.logger import Logger
 
 # Octopus Imports
 from octopus.sequence.error import NotRunning
@@ -28,6 +29,7 @@ class Sketch (EventEmitter):
 
 	db = None
 	dataDir = None
+	log = Logger()
 
 	@classmethod
 	def createId (cls):
@@ -86,6 +88,10 @@ class Sketch (EventEmitter):
 
 		self._eventsLog = eventFile.open('a')
 
+		self.log.info(
+			"Initialising sketch {log_source.id!s} with data dir {log_source._sketchDir!s}"
+		)
+
 	def load (self):
 		return self._loadFrom(self.id)
 
@@ -115,11 +121,9 @@ class Sketch (EventEmitter):
 				sketchDir.globChildren('snapshot.*.log')
 			))
 
-			log.msg(
-				"Found snapshot {:d} for sketch {:s}".format(
-					max_snap,
-					id
-				)
+			self.log.debug(
+				"Found latest snapshot {snapshot_id} for sketch {log_source.id!s}",
+				snapshot_id = max_snap
 			)
 
 		except ValueError:
@@ -136,6 +140,11 @@ class Sketch (EventEmitter):
 				))
 				self.workspace.fromEvents(events)
 
+				self.log.info(
+					"Loaded from snapshot {snapshot_id} for sketch {log_source.id!s}",
+					snapshot_id = max_snap
+				)
+
 			if copy:
 				self._eventIndex = len(events)
 				self._snapEventIndex = 0
@@ -148,7 +157,9 @@ class Sketch (EventEmitter):
 			self.rename(self.title + " Copy")
 
 	def close (self):
-		log.msg("Closing sketch {:s}".format(self.id))
+		self.log.info(
+			"Closing sketch {log_source.id!s}",
+		)
 
 		# If anything has changed...
 		if self._eventIndex > self._snapEventIndex:
@@ -159,6 +170,11 @@ class Sketch (EventEmitter):
 
 			with snapFile.open('w') as fp:
 				fp.write("\n".join(map(json.dumps, self.workspace.toEvents())).encode('utf-8'))
+			
+			self.log.debug(
+				"Written snapshot file {snap_file} sketch {log_source.id!s}",
+				snap_file = snapFile
+			)
 
 		# Set the modified date
 		self.db.runOperation('''
@@ -204,6 +220,10 @@ class Sketch (EventEmitter):
 		if self.experiment is not None:
 			raise ExperimentAlreadyRunning
 
+		self.log.info(
+			"Creating experiment for sketch {log_source.id!s}",
+		)
+
 		self.experiment = Experiment(self)
 
 		self.notifySubscribers("experiment", "state-started", {
@@ -219,6 +239,11 @@ class Sketch (EventEmitter):
 
 			self.experiment = None
 
+			self.log.info(
+				"Closing experiment for sketch {log_source.id!s} ({result})",
+				result = result
+			)
+
 		def _cancelled (failure):
 			f = failure.trap(Aborted, Cancelled)
 
@@ -228,8 +253,10 @@ class Sketch (EventEmitter):
 				_error(Aborted("Manual stop"))
 
 		def _error (failure):
-			log.err("Sketch.runExperiment: Received error message")
-			log.err(failure)
+			self.log.error(
+				"Ended experiment for sketch {log_source.id!s} due to error ({error})",
+				error = failure
+			)
 
 			try:
 				errorMessage = failure.getErrorMessage()
@@ -251,6 +278,10 @@ class Sketch (EventEmitter):
 	def pauseExperiment (self, context):
 		if self.experiment is None:
 			raise NoExperimentRunning
+	
+		self.log.info(
+			"Pausing experiment for sketch {log_source.id!s}"
+		)
 
 		def _notify (result):
 			self.notifySubscribers("experiment", "state-paused", {
@@ -270,6 +301,10 @@ class Sketch (EventEmitter):
 	def resumeExperiment (self, context):
 		if self.experiment is None:
 			raise NoExperimentRunning
+	
+		self.log.info(
+			"Resuming experiment for sketch {log_source.id!s}"
+		)
 
 		def _notify (result):
 			self.notifySubscribers("experiment", "state-resumed", {
@@ -289,6 +324,10 @@ class Sketch (EventEmitter):
 	def stopExperiment (self, context):
 		if self.experiment is None:
 			raise NoExperimentRunning
+
+		self.log.info(
+			"Stopping experiment for sketch {log_source.id!s}"
+		)
 
 		self.experiment.stop()
 

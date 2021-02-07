@@ -273,7 +273,11 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 			# If any one step fails, cancel the rest.
 			if not _blockError.called:
-				log.msg("Received error %s from block %s. Aborting." % (failure, block.id))
+				self.log.error(
+					"Received error {error} from block {block.id}. Aborting.",
+					error = failure,
+					block = block.id,
+				)
 
 				def _errback (error):
 					# Pass the error if this is called as errback, or else
@@ -342,12 +346,12 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		# If there are no more running blocks, stop running.
 		def _checkFinished (error = None):
-			log.msg("Finished?: Waiting for %s blocks" % len(runningBlocks))
+			self.log.debug("Finished?: Waiting for {count} blocks", count = len(runningBlocks))
 
 			if len(runningBlocks) > 0:
 				return
 
-			log.msg("Skipped blocks:" + str(dependencyGraph))
+			self.log.warn("Skipped blocks:" + str(dependencyGraph))
 
 			if not (_blockError.called or self._complete.called):
 				_externalStop()
