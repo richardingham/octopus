@@ -337,21 +337,6 @@ Blocks['machine_mt_icir'] = extend({
   machineOptions: _iCIR_options,
 }, machineBlock);
 
-Blocks['machine_wpi_aladdin'] = extend({
-  machineTitle: "WPI Aladdin syringe pump",
-  machineDefaultName: "pump",
-  machineVars: [
-    { name: "status", title: "Status", type: "String", readonly: true },
-    { name: "rate", title: "Flow rate", type: "Number", unit: { options: [['mL/min', 1000], ['uL/min', 1]], default: 1000 } },
-    { name: "direction", title: "Direction", type: "String", options: ['infuse', 'withdraw'] },
-    { name: "dispensed", title: "Dispensed volume", type: "Number", readonly: true },
-    { name: "withdrawn", title: "Withdrawn volume", type: "Number", readonly: true }
-  ],
-  machineOptions: [
-    { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
-  ]
-}, machineBlock);
-
 Blocks['machine_phidgets_phsensor'] = extend({
   machineTitle: "Phidgets pH Sensor",
   machineDefaultName: "phsensor",
