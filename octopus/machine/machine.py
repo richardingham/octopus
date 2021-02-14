@@ -3,9 +3,6 @@ from twisted.internet import reactor, defer, task
 from twisted.python import failure, log
 from twisted.logger import Logger
 
-# System Imports
-import logging
-
 # Package Imports
 from .. import util, data
 from ..data.data import BaseVariable
@@ -187,11 +184,11 @@ class Machine (Component):
 	
 		self.protocol = None
 	
-	def waitUntilReady (self):
+	async def waitUntilReady (self):
 		if self.connected:
-			return defer.succeed(True)
+			return True
 		elif self._startError is not None:
-			return defer.fail(self._startError)
+			raise Exception(self._startError)
 		
 		d = defer.Deferred()
 		self._connectedWaits.append(d)
@@ -223,15 +220,14 @@ class Machine (Component):
 			for d in self._connectedWaits:
 				d.errback(failure)
 
-		@defer.inlineCallbacks
-		def connect ():
 			if isinstance(endpoint, defer.Deferred):
+		async def connect ():
 				self.log.debug(
 					"Machine: {log_source.alias!s} - waiting for endpoint",
 					state = 'awaiting endpoint'
 				)
 
-				connected_endpoint = yield connected_endpoint
+				connected_endpoint = await endpoint
 
 			else:
 				connected_endpoint = endpoint
@@ -286,25 +282,28 @@ class Machine (Component):
 		# 	self.stop()
 		# 	del self.protocol
 		
-		connect().addErrback(log.err)
+		try:
+			connect()
+		except Exception as e:
+			self.log.error("Failed to make connection to machine {log_source.alias}. {error}", error = e)
 
 	def setup (self, **kwargs):
 		pass
 
-	def start (self):
+	async def start (self):
 		pass
 
-	def stop (self):
+	async def stop (self):
 		pass
 
-	def reset (self):
-		return defer.succeed(None)
+	async def reset (self):
+		pass
 
-	def pause (self):
-		return defer.succeed(None)
+	async def pause (self):
+		pass
 
-	def resume (self):
-		return defer.succeed(None)
+	async def resume (self):
+		pass
 
 	def _tick (self, fn, interval):
 		c = task.LoopingCall(fn)
@@ -365,14 +364,14 @@ class Property (Stream):
 		self._length = None
 		self._archive.threshold_factor = None
 
-	def set (self, value):
+	async def set (self, value):
 		if self._setter is None:
-			return defer.fail(data.errors.Immutable())
+			raise data.errors.Immutable()
 
 		try:
 			value = self._type(value)
 		except ValueError:
-			return defer.fail(data.errors.InvalidType(f"{self.alias}: Unable to convert {value!r} into {self._type}."))
+			raise data.errors.InvalidType(f"{self.alias}: Unable to convert {value!r} into {self._type}.")
 
 		try:
 			self.check(value)
