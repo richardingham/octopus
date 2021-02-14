@@ -1,3 +1,6 @@
+# System Imports
+import asyncio
+
 # Zope Imports
 from zope.interface import implementer
 
@@ -6,6 +9,22 @@ from twisted.internet import reactor, defer, serialport
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IAddress
 from twisted.python.util import FancyEqMixin
+
+class TCPConnection ():
+	def __init__ (self, host: str, port: int):
+		self.host = host
+		self.port = port
+		self.name  = f"tcp({host!s}, {port!s})"
+	
+	async def connect (self, protocol_factory):
+		loop = asyncio.get_running_loop()
+		self.transport, self.protocol = await loop.create_connection(
+			protocol_factory = protocol_factory,
+			host = host,
+			port = port
+		)
+
+
 
 #
 # Transports have a connect() function, taking a protocolFactory
