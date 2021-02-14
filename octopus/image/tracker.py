@@ -1,5 +1,4 @@
 # Twisted Imports
-from twisted.internet import defer
 from twisted.internet.protocol import Factory
 
 # System Imports

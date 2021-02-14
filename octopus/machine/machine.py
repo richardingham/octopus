@@ -1,6 +1,6 @@
+import asyncio
+
 # Twisted Imports
-from twisted.internet import reactor, defer, task
-from twisted.python import failure, log
 from twisted.logger import Logger
 
 # Package Imports
@@ -12,6 +12,28 @@ from ..image.data import Image
 from .interface import InterfaceSection
 
 __all__ = ["Machine", "Component", "ComponentList", "Stream", "Property"]
+
+async def maybeFuture(f, *args, **kw):
+	"""
+	Invoke a function that may or may not return a L{Future}.
+	Call the given function with the given arguments.  If the returned
+	object is a L{Future}, return it. Otherwise, return the result as a L{Future}.
+	@type f: Any callable
+	@param f: The callable to invoke
+	@param args: The arguments to pass to C{f}
+	@param kw: The keyword arguments to pass to C{f}
+	@rtype: L{Future}
+	@return: The result of the function call, wrapped in a L{Future} if
+	necessary.
+	"""
+	result = f(*args, **kw)
+
+	if asyncio.isfuture(result):
+		return result
+	else:
+		f = asyncio.Future()
+		f.set_result(result)
+		return f
 
 class Component (object):
 	"""
@@ -190,7 +212,7 @@ class Machine (Component):
 		elif self._startError is not None:
 			raise Exception(self._startError)
 		
-		d = defer.Deferred()
+		d = asyncio.Future()
 		self._connectedWaits.append(d)
 		return d
 
@@ -218,10 +240,10 @@ class Machine (Component):
 			self._startError = failure
 
 			for d in self._connectedWaits:
-				d.errback(failure)
+				d.set_exception(failure)
 
-			if isinstance(endpoint, defer.Deferred):
 		async def connect ():
+			if asyncio.isfuture(endpoint):
 				self.log.debug(
 					"Machine: {log_source.alias!s} - waiting for endpoint",
 					state = 'awaiting endpoint'
@@ -242,7 +264,7 @@ class Machine (Component):
 			)
 
 			try:
-				protocol = yield defer.maybeDeferred(connected_endpoint.connect, self.protocolFactory)
+				protocol = await maybeFuture(connected_endpoint.connect, self.protocolFactory)
 			except Exception as e:
 				errbackReady(e)
 				raise
@@ -259,7 +281,7 @@ class Machine (Component):
 			self.protocol.machine_alias = alias
 
 			try:
-				start_result = yield defer.maybeDeferred(self.start)
+				start_result = await maybeFuture(self.start)
 				callbackReady(start_result)
 
 			except Exception as e:
@@ -306,16 +328,21 @@ class Machine (Component):
 		pass
 
 	def _tick (self, fn, interval):
-		c = task.LoopingCall(fn)
-		c.start(interval, now = True)
+		async def repeat():
+			while True:
+				await asyncio.gather(
+					fn(),
+					asyncio.sleep(interval),
+				)
+
+		c = asyncio.ensure_future(repeat())
 		self._ticks.append(c)
 
 		return c
 
 	def _stopTicks (self):
 		for t in self._ticks:
-			if t.running:
-				t.stop()
+			t.cancel()
 
 	def __str__ (self):
 		return "<%s at %s (%s)>" % (
@@ -373,11 +400,8 @@ class Property (Stream):
 		except ValueError:
 			raise data.errors.InvalidType(f"{self.alias}: Unable to convert {value!r} into {self._type}.")
 
-		try:
-			self.check(value)
-			return defer.maybeDeferred(self._setter, value)
-		except Exception as err:
-			return defer.fail(err)
+		self.check(value)
+		return maybeFuture(self._setter, value)
 
 	def _push (self, value, time = None):
 		if type(value) != self.type:

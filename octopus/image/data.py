@@ -1,4 +1,5 @@
 # System Imports
+import asyncio
 from io import BytesIO
 from time import time as now
 import base64
@@ -7,9 +8,6 @@ from urllib.parse import quote
 # Library Imports
 import cv2
 import numpy
-
-# Twisted Imports
-from twisted.internet import defer
 
 # Package Imports
 from ..data.errors import Immutable
@@ -114,9 +112,14 @@ class ImageProperty (BaseImageProperty):
         self._image_fn = fn
         self._value = None
 
-    @defer.inlineCallbacks
-    def refresh (self):
-        self._value = yield defer.maybeDeferred(self._image_fn)
+    async def refresh (self):
+        new_value = self._image_fn()
+
+        if asyncio.isfuture(new_value):
+            self._value = await new_value
+        else:
+            self._value = new_value
+
         self.emit("change", value = None, time = now())
 
     def set (self, value):

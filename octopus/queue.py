@@ -1,7 +1,5 @@
-# Twisted Imports
-from twisted.internet import reactor, defer
-
 # System Imports
+import asyncio
 from collections import deque
 import functools
 
@@ -38,45 +36,39 @@ class AsyncQueue (object):
 	def append (self, data):
 		task = _AsyncQueueTask(data)
 		self._tasks.append(task)
-		reactor.callLater(0, self._process)
+		asyncio.create_task(self._process)
 		return task.d
 
 	def appendleft (self, data):
 		task = _AsyncQueueTask(data)
 		self._tasks.appendleft(task)
-		reactor.callLater(0, self._process)
+		asyncio.create_task(self._process)
 		return task.d
 
-	def _process (self):
+	async def _process (self):
 		if not self._paused and self._workers < self._concurrency:
-			def run (task):
-				worker_d = defer.maybeDeferred(self._worker, task.data)
-				worker_d.addCallbacks(success, error)
-
-			def success (result):
-				task.d.callback(result)
-				next()
-
-			def error (reason):
-				if reason.type is AsyncQueueRetry:
-					run(task)
-				else:
-					task.d.errback(reason)
-					next()
-
-			def next ():
-				self._workers -= 1
-				self._current.discard(task)
-				reactor.callLater(0, self._process)
-
 			try:
 				task = self._tasks.popleft()
 			except IndexError:
 				self.drained()
-			else:
-				self._workers += 1
-				self._current.add(task)
-				run(task)
+				return
+
+			self._workers += 1
+			self._current.add(task)
+			
+			try:
+				result = self._worker(task.data)
+				if asyncio.isfuture(result):
+					task.d.set_result(await result)
+				else:
+					task.d.set_result(result)
+			except Exception as err:
+				task.d.set_exception(err)
+			
+			self._workers -= 1
+			self._current.discard(task)
+
+			asyncio.create_task(self._process)
 
 	def __len__ (self):
 		return len(self._tasks)
@@ -87,6 +79,6 @@ class AsyncQueueRetry (Exception):
 
 
 class _AsyncQueueTask (object):
-	def __init__ (self, data, deferred = None):
+	def __init__ (self, data, future = None):
 		self.data = data
-		self.d = deferred or defer.Deferred()
+		self.d = future or asyncio.Future()
