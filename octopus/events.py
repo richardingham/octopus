@@ -2,8 +2,9 @@
 import functools
 
 # Twisted Imports
-from twisted.python import log
+from twisted.logger import Logger
 
+log = Logger()
 
 class Event (object):
 	def __init__(self):
@@ -113,7 +114,7 @@ class EventEmitter (object):
 				try:
 					function(data)
 				except:
-					log.err()
+					log.failure()
 
 		try:
 			events = self._events["all"][:]
@@ -126,6 +127,6 @@ class EventEmitter (object):
 				try:
 					function(_event, data)
 				except:
-					log.err()
+					log.failure()
 
 		return handled
