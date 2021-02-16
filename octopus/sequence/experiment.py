@@ -38,7 +38,7 @@ class LogFile(object):
 
     def write(self, time, value):
         self.f.write(
-            "{:.2f},{:.2f},{}\n".format(time, time - self.time_zero, value).encode()
+            "{:.2f},{:.2f},{}\n".format(time, time - self.time_zero, value)
         )
 
     def close(self):
