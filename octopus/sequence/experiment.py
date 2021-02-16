@@ -353,7 +353,7 @@ class Experiment(object):
 
             self._log_variables.update(self.interface.properties)
 
-        items = self._log_variables.iteritems()
+        items = self._log_variables.items()
 
         for key, var in items:
             try:
