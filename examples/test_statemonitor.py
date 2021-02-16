@@ -7,27 +7,17 @@ test = (((v >= 4) & (v <= 6)) | ((v >= 9) & (v <= 14))) == False
 d = StateMonitor()
 d.add(test)
 d.trigger_step = sequence(
-	log("Triggered"),
-	wait(4),
-	log("Still Triggered"),
+    log("Triggered"),
+    wait(4),
+    log("Still Triggered"),
 )
-d.reset_step = sequence(
-	log("Reset"),
-	wait(4),
-	log("... not triggered again")
-)
+d.reset_step = sequence(log("Reset"), wait(4), log("... not triggered again"))
 
 s = sequence(
-	log("Running"),
-	loop_while(v < 20, [
-		increment(v),
-		wait(1),
-		log("v = " + v)
-	]),
-	log("Stopping experiment")
+    log("Running"),
+    loop_while(v < 20, [increment(v), wait(1), log("v = " + v)]),
+    log("Stopping experiment"),
 )
 s.dependents.add(d)
 
 run(s)
-
-

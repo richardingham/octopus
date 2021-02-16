@@ -1,22 +1,22 @@
-class Error (Exception):
-	pass
+class Error(Exception):
+    pass
 
 
-class InvalidType (Error):
-	pass
+class InvalidType(Error):
+    pass
 
 
-class Immutable (Error):
-	pass
+class Immutable(Error):
+    pass
 
 
-class InvalidValue (Error):
-	pass
+class InvalidValue(Error):
+    pass
 
 
-class ValueTooSmall (Error):
-	pass
+class ValueTooSmall(Error):
+    pass
 
 
-class ValueTooLarge (Error):
-	pass
+class ValueTooLarge(Error):
+    pass
