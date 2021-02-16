@@ -12,8 +12,8 @@ import numpy
 from twisted.internet import defer
 
 # Package Imports
-from ..data.errors import Immutable
-from ..data.data import BaseVariable
+from octopus.data.errors import Immutable
+from octopus.data.data import BaseVariable
 
 
 class ColorSpace:

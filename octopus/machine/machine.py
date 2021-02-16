@@ -7,12 +7,12 @@ from twisted.logger import Logger
 import logging
 
 # Package Imports
-from .. import util, data
-from ..data.data import BaseVariable
-from ..image.data import Image
+from octopus import util, data
+from octopus.data.data import BaseVariable
+from octopus.image.data import Image
 
 # Sibling Imports
-from .interface import InterfaceSection
+from octopus.machine.interface import InterfaceSection
 
 __all__ = ["Machine", "Component", "ComponentList", "Stream", "Property"]
 

@@ -1,4 +1,4 @@
-from ..workspace import Block
+from octopus.blocktopus.workspace import Block
 from twisted.internet import defer
 
 

@@ -4,9 +4,9 @@ from twisted.internet.protocol import Factory
 from twisted.python import log
 
 # Package Imports
-from ..machine import Machine, Stream, Property, ui
-from ..util import now
-from ..protocol.basic import VaryingDelimiterQueuedLineReceiver
+from octopus.machine import Machine, Stream, Property, ui
+from octopus.util import now
+from octopus.protocol.basic import VaryingDelimiterQueuedLineReceiver
 
 # Python Imports
 import re

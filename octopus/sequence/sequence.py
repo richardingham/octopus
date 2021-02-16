@@ -11,14 +11,14 @@ import twisted.internet.error
 import re
 
 # Sibling Imports
-from .error import Error, NotRunning, AlreadyRunning, NotPaused, Stopped
-from . import util
+from octopus.sequence.error import Error, NotRunning, AlreadyRunning, NotPaused, Stopped
+from octopus.sequence import util
 
 # Package Imports
-from ..util import now
-from ..events import EventEmitter
-from ..constants import State
-from ..data.data import BaseVariable, Variable, Constant
+from octopus.util import now
+from octopus.events import EventEmitter
+from octopus.constants import State
+from octopus.data.data import BaseVariable, Variable, Constant
 
 
 __all__ = [

@@ -6,10 +6,10 @@ from twisted.internet.protocol import Factory
 from time import time as now
 
 # Sibling Imports
-from .data import ImageProperty, DerivedImageProperty
+from octopus.image.data import ImageProperty, DerivedImageProperty
 
 # Package Imports
-from ..machine import Machine, Property, Stream, ui
+from octopus.machine import Machine, Property, Stream, ui
 
 
 def _get_centroids(count):

@@ -1,15 +1,15 @@
 # System Imports
 import os
 
-# Twised Imports
+# Twisted Imports
 from twisted.internet import reactor, defer
 
 # Sibling Imports
-from .sequence import Step
-from .. import data
-from . import experiment
-from ..machine import Machine
-from .shortcuts import *
+from octopus.sequence.sequence import Step
+from octopus import data
+from octopus.sequence import experiment
+from octopus.machine import Machine
+from octopus.sequence.shortcuts import *
 
 _experiment = experiment.Experiment()
 

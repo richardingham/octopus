@@ -12,7 +12,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IAddress
 
 # Package Imports
-from .data import Image, ColorSpace
+from octopus.image.data import Image, ColorSpace
 
 
 class cv_webcam(object):

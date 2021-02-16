@@ -1,14 +1,16 @@
 # Twisted Imports
 from twisted.python import log
 from twisted.internet.defer import maybeDeferred
+from twisted.internet import defer
 
 # Package Imports
-from ..constants import State
-from ..util import now
+from octopus.constants import State
+from octopus.util import now
 
 # Sibling Imports
-from .util import Looping, Dependent
-from . import error
+from octopus.sequence.util import Looping, Dependent
+import octopus.sequence.util as util
+from octopus.sequence import error
 
 
 class Bind(Dependent):

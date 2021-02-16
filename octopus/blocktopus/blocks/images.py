@@ -1,6 +1,6 @@
 # Package Imports
-from ..workspace import Block, Disconnected, Cancelled
-from .machines import machine_declaration
+from octopus.blocktopus.workspace import Block, Disconnected, Cancelled
+from octopus.blocktopus.blocks.machines import machine_declaration
 
 # Twisted Imports
 from twisted.internet import reactor, defer, task

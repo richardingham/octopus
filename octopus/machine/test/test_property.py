@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import random
 
-from .. import machine
-from ... import data
+from octopus.machine import machine
+from octopus import data
 
 
 # NB the assertFailure() calls here only work because set() returns an immediate value.

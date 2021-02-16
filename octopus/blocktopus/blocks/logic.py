@@ -1,6 +1,6 @@
-from ..workspace import Block
+from octopus.blocktopus.workspace import Block
 from twisted.internet import defer
-from .variables import lexical_variable
+from octopus.blocktopus.blocks.variables import lexical_variable
 
 import operator
 

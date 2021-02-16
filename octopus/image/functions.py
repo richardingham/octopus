@@ -4,7 +4,7 @@ import cv2
 import colorsys
 import scipy.spatial.distance as spsd
 
-from .data import Image, ColorSpace
+from octopus.image.data import Image, ColorSpace
 
 BLACK = (0, 0, 0)
 

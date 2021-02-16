@@ -3,8 +3,8 @@ from twisted.trial import unittest
 
 from unittest.mock import Mock
 
-from .. import sequence
-from ...data import data
+from octopus.sequence import sequence
+from octopus.data import data
 
 
 class SequenceTestCase(unittest.TestCase):

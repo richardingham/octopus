@@ -8,7 +8,7 @@ with open("requirements.txt") as f:
 
 setuptools.setup(
     name="octopus",
-    version="0.3",
+    version="0.3.1",
     author="Richard Ingham",
     description="Real-time laboratory automation and monitoring in Python.",
     long_description=long_description,

@@ -1,5 +1,5 @@
 # Package Imports
-from ..workspace import Block, Disconnected, Cancelled
+from octopus.blocktopus.workspace import Block, Disconnected, Cancelled
 
 # Twisted Imports
 from twisted.internet import reactor, defer, task

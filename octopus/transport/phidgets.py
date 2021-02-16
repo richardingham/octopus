@@ -13,9 +13,6 @@ from Phidgets.PhidgetException import PhidgetErrorCodes, PhidgetException
 import time
 import logging
 
-# Compatibility Imports
-from __future__ import print_function
-
 
 @implementer(IAddress)
 class PhidgetAddress(object):

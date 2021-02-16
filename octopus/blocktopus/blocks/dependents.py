@@ -1,6 +1,6 @@
 # Package Imports
-from ..workspace import Block, Disconnected, Cancelled
-from .variables import lexical_variable
+from octopus.blocktopus.workspace import Block, Disconnected, Cancelled
+from octopus.blocktopus.blocks.variables import lexical_variable
 
 # Octopus Imports
 from octopus.constants import State

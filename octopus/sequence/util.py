@@ -6,8 +6,8 @@ from twisted.python import log, failure
 from .error import NotRunning, AlreadyRunning, NotPaused, Stopped
 
 # Package Imports
-from ..constants import State
-from ..events import EventEmitter
+from octopus.constants import State
+from octopus.events import EventEmitter
 
 
 def init_child(parent, child):
