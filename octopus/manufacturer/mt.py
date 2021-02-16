@@ -3,8 +3,8 @@ from twisted.internet import defer
 from twisted.internet.protocol import Factory
 
 # Package Imports
-from ..machine import Machine, Stream, Property, ui
-from ..protocol.basic import QueuedLineReceiver
+from octopus.machine import Machine, Stream, Property, ui
+from octopus.protocol.basic import QueuedLineReceiver
 
 # System Imports
 import json, re

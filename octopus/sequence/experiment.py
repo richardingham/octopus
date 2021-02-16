@@ -9,12 +9,12 @@ import logging
 from collections import deque
 
 # Sibling Imports
-from ..data import Variable as data_Variable
-from ..util import now, Event
-from ..events import Event
-from ..machine import Machine, Component
-from ..machine.interface import InterfaceSection, InterfaceSectionSet
-from ..constants import Event as EventType, State
+from octopus.data import Variable as data_Variable
+from octopus.util import now
+from octopus.events import Event
+from octopus.machine import Machine, Component
+from octopus.machine.interface import InterfaceSection, InterfaceSectionSet
+from octopus.constants import Event as EventType, State
 
 
 class LogFile(object):

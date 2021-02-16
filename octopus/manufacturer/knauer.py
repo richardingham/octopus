@@ -6,8 +6,8 @@ from twisted.internet.protocol import Factory
 from time import time as now
 
 # Package Imports
-from ..machine import Machine, Property, Stream, ui
-from ..protocol.basic import QueuedLineReceiver
+from octopus.machine import Machine, Property, Stream, ui
+from octopus.protocol.basic import QueuedLineReceiver
 
 __all__ = ["K120", "S100"]
 

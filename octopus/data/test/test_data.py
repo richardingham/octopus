@@ -3,7 +3,7 @@ from twisted.trial import unittest
 
 from unittest.mock import Mock
 
-from .. import data
+from octopus.data import data
 
 
 class UtilsTestCase(unittest.TestCase):

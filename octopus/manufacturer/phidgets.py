@@ -10,7 +10,7 @@ from Phidgets.Devices import PHSensor as ph
 from Phidgets.Devices import InterfaceKit as ifk
 
 # Package Imports
-from ..machine import Machine, Component, ComponentList, Stream, Property, ui
+from octopus.machine import Machine, Component, ComponentList, Stream, Property, ui
 
 __all__ = ["InterfaceKit", "TemperatureSensor", "PHSensor"]
 

@@ -7,9 +7,9 @@ from twisted.internet import defer
 from twisted.internet.protocol import Factory
 
 # Package Imports
-from ..machine import Machine, Property, ui
-from ..protocol.basic import QueuedLineReceiver
-from ..util import now
+from octopus.machine import Machine, Property, ui
+from octopus.protocol.basic import QueuedLineReceiver
+from octopus.util import now
 
 __all__ = ["MultiValve"]
 

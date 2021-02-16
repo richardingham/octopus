@@ -9,3 +9,5 @@ pyasn1
 autobahn 
 wget
 opencv-python
+Phidgets
+SimpleCV

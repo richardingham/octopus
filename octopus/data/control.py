@@ -11,10 +11,10 @@ than a variable.
 """
 
 # Package Imports
-from ..events import Event
+from octopus.events import Event
 
 # Sibling Imports
-from . import errors
+from octopus.data import errors
 
 
 class Control(object):

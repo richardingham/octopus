@@ -1,8 +1,8 @@
 # Sibling Imports
-from .data import ImageProperty
+from octopus.image.data import ImageProperty
 
 # Package Imports
-from ..machine import Machine
+from octopus.machine import Machine
 
 
 class ImageProvider(Machine):

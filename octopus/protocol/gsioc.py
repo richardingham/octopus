@@ -11,8 +11,8 @@ from math import floor
 import logging
 
 # Package Imports
-from ..machine import Stream
-from ..transport.gsioc import Slave
+from octopus.machine import Stream
+from octopus.transport.gsioc import Slave
 
 
 __all__ = [

@@ -3,9 +3,9 @@ from twisted.internet import defer
 from twisted.internet.protocol import Factory
 
 # Package Imports
-from ..util import now
-from ..machine import Machine, Component, Stream, Property
-from ..protocol.basic import QueuedLineReceiver as _qlr
+from octopus.util import now
+from octopus.machine import Machine, Component, Stream, Property
+from octopus.protocol.basic import QueuedLineReceiver as _qlr
 
 __all__ = ["Dummy"]
 

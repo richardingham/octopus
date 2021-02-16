@@ -1,5 +1,5 @@
 # Package imports
-from ..workspace import Block, Disconnected, Cancelled, Aborted, anyOfStackIs
+from octopus.blocktopus.workspace import Block, Disconnected, Cancelled, Aborted, anyOfStackIs
 
 # Octopus Imports
 from octopus.constants import State

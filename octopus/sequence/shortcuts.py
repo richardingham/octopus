@@ -5,8 +5,8 @@ import os
 from twisted.internet import reactor, defer
 
 # Sibling Imports
-from . import sequence as s
-from ..data import Variable
+from octopus.sequence import sequence as s
+from octopus.data import Variable
 
 # To implement:
 # with(sets, stmt)

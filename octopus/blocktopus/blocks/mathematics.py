@@ -1,5 +1,5 @@
 # Package Imports
-from ..workspace import Block
+from octopus.blocktopus.workspace import Block
 
 # Twisted Imports
 from twisted.internet import defer

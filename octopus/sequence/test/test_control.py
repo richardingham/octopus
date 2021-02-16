@@ -3,9 +3,9 @@ from twisted.trial import unittest
 
 from unittest.mock import Mock
 
-from .. import sequence
-from .. import control
-from ...data import data
+from octopus.sequence import sequence
+from octopus.sequence import control
+from octopus.data import data
 
 
 class BindTestCase(unittest.TestCase):

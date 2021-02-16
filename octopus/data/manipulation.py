@@ -2,7 +2,7 @@
 import math
 
 # Sibling Imports
-from . import data
+from octopus.data import data
 
 # NumPy
 import numpy as np

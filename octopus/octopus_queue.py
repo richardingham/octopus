@@ -6,7 +6,7 @@ from collections import deque
 import functools
 
 # Sibling Imports
-from .events import Event
+from octopus.events import Event
 
 
 class AsyncQueue(object):

@@ -2,10 +2,10 @@ import random
 
 from twisted.trial import unittest
 
-from .. import logic
-from .. import mathematics
-from ...workspace import Workspace, Block
-from .... import data
+from octopus.blocktopus.blocks import logic
+from octopus.blocktopus.blocks import mathematics
+from octopus.blocktopus.workspace import Workspace, Block
+from octopus import data
 
 
 class CompareBlockTestCase(unittest.TestCase):

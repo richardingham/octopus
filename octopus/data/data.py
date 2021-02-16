@@ -3,11 +3,11 @@ from math import ceil
 import operator
 
 # Package Imports
-from ..util import now, timerange
-from ..events import EventEmitter
+from octopus.util import now, timerange
+from octopus.events import EventEmitter
 
 # Sibling Imports
-from . import errors
+from octopus.data import errors
 
 
 def _upper_bound(list, time):
