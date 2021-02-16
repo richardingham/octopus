@@ -9,5 +9,5 @@ for plugin_name in os.listdir(plugins_dir):
 
     print(f"{plugin_path} >> {os.path.join(packages_dir, plugin_name + '.pth')}")
 
-    with open(os.path.join(packages_dir, plugin_name + '.pth'), 'w') as fp:
+    with open(os.path.join(packages_dir, plugin_name + ".pth"), "w") as fp:
         fp.write(plugin_path)

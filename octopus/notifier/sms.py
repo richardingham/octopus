@@ -7,65 +7,70 @@ from twisted.python import log
 
 # System Imports
 try:
-	from urllib.parse import urlencode
+    from urllib.parse import urlencode
 except ImportError:
-	from urllib import urlencode
+    from urllib import urlencode
 
 # Sibling Imports
 import util as notifier_util
 
+
 class WebClientContextFactory(ClientContextFactory):
-	def getContext(self, hostname, port):
-		return ClientContextFactory.getContext(self)
+    def getContext(self, hostname, port):
+        return ClientContextFactory.getContext(self)
 
-class _Receiver (protocol.Protocol):
-	def __init__ (self, d):
-		self.buf = ''
-		self.d = d
 
-	def dataReceived (self, data):
-		self.buf += data
+class _Receiver(protocol.Protocol):
+    def __init__(self, d):
+        self.buf = ""
+        self.d = d
 
-	def connectionLost (self, reason):
-		# TODO: test if reason is twisted.web.client.ResponseDone, if not, do an errback
-		self.d.callback(self.buf)
+    def dataReceived(self, data):
+        self.buf += data
 
-class ClockworkSMS (object):
-	def __init__ (self, api_key):
-		contextFactory = WebClientContextFactory()
-		self.agent = Agent(reactor, contextFactory)
-		self._api_key = api_key
+    def connectionLost(self, reason):
+        # TODO: test if reason is twisted.web.client.ResponseDone, if not, do an errback
+        self.d.callback(self.buf)
 
-	def notify (self, destination, message):
 
-		destinations = destination.split(",")
+class ClockworkSMS(object):
+    def __init__(self, api_key):
+        contextFactory = WebClientContextFactory()
+        self.agent = Agent(reactor, contextFactory)
+        self._api_key = api_key
 
-		if len(destinations) > 50:
-			log.msg("Max 50 SMS recipients allowed") 
+    def notify(self, destination, message):
 
-		params = {
-			"key": self._api_key,
-			"to": destination,
-			"content": message.encode("utf_8", "replace")
-		}
+        destinations = destination.split(",")
 
-		uri = "https://api.clockworksms.com/http/send.aspx?{:s}"
+        if len(destinations) > 50:
+            log.msg("Max 50 SMS recipients allowed")
 
-		d = self.agent.request(
-			"GET",
-			uri.format(urlencode(params)),
-			Headers({
-				'User-Agent': ['octopus'],
-			}),
-			None
-		)
+        params = {
+            "key": self._api_key,
+            "to": destination,
+            "content": message.encode("utf_8", "replace"),
+        }
 
-		def handle_response (response):
-			d = defer.Deferred()
-			response.deliverBody(_Receiver(d))
+        uri = "https://api.clockworksms.com/http/send.aspx?{:s}"
 
-			return d
+        d = self.agent.request(
+            "GET",
+            uri.format(urlencode(params)),
+            Headers(
+                {
+                    "User-Agent": ["octopus"],
+                }
+            ),
+            None,
+        )
 
-		d.addCallback(handle_response)
+        def handle_response(response):
+            d = defer.Deferred()
+            response.deliverBody(_Receiver(d))
 
-		return d
+            return d
+
+        d.addCallback(handle_response)
+
+        return d

@@ -12,8 +12,8 @@ from .data import ImageProperty, DerivedImageProperty
 from ..machine import Machine, Property, Stream, ui
 
 
-def _get_centroids (count):
-    def get_centroids (processed_img, min_size):
+def _get_centroids(count):
+    def get_centroids(processed_img, min_size):
         blobs = processed_img.findBlobs(min_size)
 
         if blobs is not None:
@@ -26,18 +26,18 @@ def _get_centroids (count):
     return get_centroids
 
 
-class SingleBlobTracker (Machine):
+class SingleBlobTracker(Machine):
 
     protocolFactory = None
     name = "Follow Green Blob on a webcam"
     update_frequency = 1
 
-    def setup (self, fn = None):
+    def setup(self, fn=None):
         # setup variables
-        self.height = Stream(title = "Height", type = int)
-        self.status = Property(title = "Status", type = str)
-        self.image = ImageProperty(title = "Tracked", fn = self._get_image)
-        self.visualisation = DerivedImageProperty(title = "Visualisation")
+        self.height = Stream(title="Height", type=int)
+        self.status = Property(title="Status", type=str)
+        self.image = ImageProperty(title="Tracked", fn=self._get_image)
+        self.visualisation = DerivedImageProperty(title="Visualisation")
 
         if fn is None:
             self.process_fn = lambda r, g, b: (g - r).threshold(30).erode()
@@ -48,16 +48,16 @@ class SingleBlobTracker (Machine):
         self._get_centroids = _get_centroids(1)
 
         self.ui = ui(
-            properties = [self.status, self.height, self.image, self.visualisation]
+            properties=[self.status, self.height, self.image, self.visualisation]
         )
 
-    def start (self):
+    def start(self):
         self._tick(self.image.refresh, self.update_frequency)
 
     # def show (self):
     # 	self.image.value.show()
 
-    def _get_image (self):
+    def _get_image(self):
         img = self.protocol.image()
 
         if img is None:
@@ -70,7 +70,7 @@ class SingleBlobTracker (Machine):
 
         if pos is not None:
             x, y = pos[0]
-            img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width = 6)
+            img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width=6)
 
             self.height._push(img.height - pos[0][1])
             self.status._push("ok")
@@ -79,10 +79,10 @@ class SingleBlobTracker (Machine):
 
         return img
 
-    def stop (self):
+    def stop(self):
         self._stopTicks()
 
-    def disconnect (self):
+    def disconnect(self):
         self.stop()
 
         try:
@@ -91,7 +91,7 @@ class SingleBlobTracker (Machine):
             pass
 
 
-class MultiBlobTracker (Machine):
+class MultiBlobTracker(Machine):
 
     protocolFactory = None
     name = "Follow Blobs on a webcam"
@@ -100,7 +100,7 @@ class MultiBlobTracker (Machine):
 
     update_frequency = 1
 
-    def setup (self, count = 1, fn = None):
+    def setup(self, count=1, fn=None):
 
         self._count = count
         self._heights = []
@@ -115,19 +115,19 @@ class MultiBlobTracker (Machine):
 
         # setup variables
         for i in range(count):
-            stream = Stream(title = "Height %s" % (i + 1), type = int)
+            stream = Stream(title="Height %s" % (i + 1), type=int)
             setattr(self, "height%s" % (i + 1), stream)
             self._heights.append(stream)
 
-        self.image = Image(title = "Tracked", fn = self._get_image)
-        self.visualisation = DerivedImage(title = "Visualisation")
-        self.status = Property(title = "Status", type = str)
+        self.image = Image(title="Tracked", fn=self._get_image)
+        self.visualisation = DerivedImage(title="Visualisation")
+        self.status = Property(title="Status", type=str)
 
         self.ui = ui(
-            properties = [self.status, self.image, self.visualisation] + self._heights
+            properties=[self.status, self.image, self.visualisation] + self._heights
         )
 
-    def start (self):
+    def start(self):
         img = self.protocol.image()
         img = self.process_fn(*img.splitChannels())
         pos = self._get_centroids(img, self.blob_size)
@@ -144,7 +144,7 @@ class MultiBlobTracker (Machine):
     # def show (self):
     # 	self.image.value.show()
 
-    def _get_image (self):
+    def _get_image(self):
         img = self.protocol.image()
 
         if img is None:
@@ -157,7 +157,7 @@ class MultiBlobTracker (Machine):
 
         if pos is not None:
             for x, y in pos:
-                img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width = 6)
+                img.drawRectangle(x - 10, y - 10, 20, 20, (255,) * 3, width=6)
 
             found = 0
 
@@ -178,14 +178,13 @@ class MultiBlobTracker (Machine):
 
         return img
 
-    def stop (self):
+    def stop(self):
         self._stopTicks()
 
-    def disconnect (self):
+    def disconnect(self):
         self.stop()
 
         try:
             self.protocol.disconnect()
         except AttributeError:
             pass
-

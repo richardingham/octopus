@@ -12,28 +12,31 @@ from twisted.python import log
 
 # Package Imports
 from octopus.transport import basic
+
 # from octopus.sequence import shortcuts
 
-def run ():
-	log.startLogging(open('child.log', 'w'))
-	fd = sys.__stdin__.fileno()
-	oldSettings = termios.tcgetattr(fd)
-	tty.setraw(fd)
 
-	try:
-		locals = {
-			"tcp": basic.tcp,
-			"serial": basic.serial,
-			# "s": shortcuts
-		}
+def run():
+    log.startLogging(open("child.log", "w"))
+    fd = sys.__stdin__.fileno()
+    oldSettings = termios.tcgetattr(fd)
+    tty.setraw(fd)
 
-		p = ServerProtocol(ConsoleManhole, namespace = locals)
-		stdio.StandardIO(p)
-		reactor.run()
+    try:
+        locals = {
+            "tcp": basic.tcp,
+            "serial": basic.serial,
+            # "s": shortcuts
+        }
 
-	finally:
-		termios.tcsetattr(fd, termios.TCSANOW, oldSettings)
-		os.write(fd, "\r\x1bc\r")
+        p = ServerProtocol(ConsoleManhole, namespace=locals)
+        stdio.StandardIO(p)
+        reactor.run()
 
-if __name__ == '__main__':
-	run()
+    finally:
+        termios.tcsetattr(fd, termios.TCSANOW, oldSettings)
+        os.write(fd, "\r\x1bc\r")
+
+
+if __name__ == "__main__":
+    run()

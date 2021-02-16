@@ -23,15 +23,16 @@ class ColorSpace:
     This class acts like C/C++ style enumerated type.
     See: http://stackoverflow.com/questions/2122706/detect-color-space-with-opencv
     """
+
     UNKNOWN = 0
     BGR = 1
     GRAY = 2
     RGB = 3
     HLS = 4
     HSV = 5
-    XYZ  = 6
+    XYZ = 6
     YCrCb = 7
-    
+
 
 class Image:
     data = None
@@ -39,7 +40,7 @@ class Image:
     channels: int = 0
     colorspace = None
 
-    def __init__ (self, data: numpy.ndarray, colorspace):
+    def __init__(self, data: numpy.ndarray, colorspace):
         self.data = data
         self.height = data.shape[0]
         self.width = data.shape[1]
@@ -51,41 +52,40 @@ class Image:
             self.channels = 1
 
 
-class BaseImageProperty (BaseVariable):
-
+class BaseImageProperty(BaseVariable):
     @property
-    def value (self):
+    def value(self):
         return self._value
 
-    def get_value (self):
+    def get_value(self):
         return self._value
 
     @property
-    def type (self):
+    def type(self):
         return Image
 
-    def serialize (self):
+    def serialize(self):
         if self.alias is None:
             return "[Image]"
         else:
             return str(self.alias)
 
-    def __init__ (self):
+    def __init__(self):
         self.alias = None
         self.title = ""
         self._value = None
 
-    def setLogFile (self, logFile):
+    def setLogFile(self, logFile):
         pass
 
-    def stopLogging (self):
+    def stopLogging(self):
         pass
 
-    def __str__ (self):
+    def __str__(self):
         img = self.get_value()
 
         if img is None:
-            return ''
+            return ""
 
         scaled_x = int(img.width / 4)
         scaled_y = int(img.height / 4)
@@ -95,43 +95,39 @@ class BaseImageProperty (BaseVariable):
         is_success, buffer = cv2.imencode(".png", scaled)
         io_buf = BytesIO(buffer)
 
-        encoded = "data:image/png;base64," + quote(base64.b64encode(io_buf.getvalue()).decode())
+        encoded = "data:image/png;base64," + quote(
+            base64.b64encode(io_buf.getvalue()).decode()
+        )
 
         return encoded
 
-    def __repr__ (self):
-        return "<%s at %s>" % (
-            self.__class__.__name__, 
-            hex(id(self))
-        )
+    def __repr__(self):
+        return "<%s at %s>" % (self.__class__.__name__, hex(id(self)))
 
 
-class ImageProperty (BaseImageProperty):
-
-    def __init__ (self, title, fn):
+class ImageProperty(BaseImageProperty):
+    def __init__(self, title, fn):
         self.alias = None
         self.title = title
         self._image_fn = fn
         self._value = None
 
     @defer.inlineCallbacks
-    def refresh (self):
+    def refresh(self):
         self._value = yield defer.maybeDeferred(self._image_fn)
-        self.emit("change", value = None, time = now())
+        self.emit("change", value=None, time=now())
 
-    def set (self, value):
+    def set(self, value):
         raise Immutable
 
 
-class DerivedImageProperty (BaseImageProperty):
-
-    def __init__ (self):
+class DerivedImageProperty(BaseImageProperty):
+    def __init__(self):
         self.alias = None
         self._value = None
 
-    def set (self, value):
+    def set(self, value):
         self._value = value
-        self.emit("change", value = None, time = now())
+        self.emit("change", value=None, time=now())
 
     _push = set
-
