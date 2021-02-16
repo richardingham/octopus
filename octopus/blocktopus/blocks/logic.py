@@ -5,147 +5,148 @@ from .variables import lexical_variable
 import operator
 
 
-class logic_null (Block):
-	def eval (self):
-		return defer.succeed(None)
+class logic_null(Block):
+    def eval(self):
+        return defer.succeed(None)
 
 
-class logic_boolean (Block):
-	def eval (self):
-		return defer.succeed(self.fields['BOOL'] == 'TRUE')
+class logic_boolean(Block):
+    def eval(self):
+        return defer.succeed(self.fields["BOOL"] == "TRUE")
 
 
-class logic_negate (Block):
-	outputType = bool
+class logic_negate(Block):
+    outputType = bool
 
-	def eval (self):
-		def negate (result):
-			if result is None:
-				return None
+    def eval(self):
+        def negate(result):
+            if result is None:
+                return None
 
-			return result == False
+            return result == False
 
-		self._complete = self.getInputValue('BOOL').addCallback(negate)
-		return self._complete
+        self._complete = self.getInputValue("BOOL").addCallback(negate)
+        return self._complete
 
 
 _operators_map = {
-	"EQ": operator.eq,
-	"NEQ": operator.ne,
-	"LT": operator.lt,
-	"LTE": operator.le,
-	"GT": operator.gt,
-	"GTE": operator.ge
+    "EQ": operator.eq,
+    "NEQ": operator.ne,
+    "LT": operator.lt,
+    "LTE": operator.le,
+    "GT": operator.gt,
+    "GTE": operator.ge,
 }
 
-def _compare (lhs, rhs, op_id):
-	if lhs is None or rhs is None:
-		return None
 
-	op = _operators_map[op_id]
-	return op(lhs, rhs)
+def _compare(lhs, rhs, op_id):
+    if lhs is None or rhs is None:
+        return None
 
-	# Emit a warning if bad op given
+    op = _operators_map[op_id]
+    return op(lhs, rhs)
 
-class logic_compare (Block):
-	outputType = bool
-
-	def eval (self):
-		lhs = self.getInputValue('A')
-		rhs = self.getInputValue('B')
-		op_id = self.fields['OP']
-
-		def _eval (results):
-			lhs, rhs = results
-			return _compare(lhs, rhs, op_id)
-
-		self._complete = defer.gatherResults([lhs, rhs]).addCallback(_eval)
-		return self._complete
+    # Emit a warning if bad op given
 
 
-class lexical_variable_compare (lexical_variable):
-	outputType = bool
+class logic_compare(Block):
+    outputType = bool
 
-	def eval (self):
-		variable = self._getVariable()
+    def eval(self):
+        lhs = self.getInputValue("A")
+        rhs = self.getInputValue("B")
+        op_id = self.fields["OP"]
 
-		if variable is None:
-			self.emitLogMessage(
-				"Unknown variable: " + str(self.getFieldValue('VAR')),
-				"error"
-			)
+        def _eval(results):
+            lhs, rhs = results
+            return _compare(lhs, rhs, op_id)
 
-			return defer.succeed(None)
-
-		value = self.getFieldValue('VALUE')
-		op_id = self.getFieldValue('OP')
-
-		unit = self.getFieldValue('UNIT', None)
-		
-		if isinstance(unit, (int, float)):
-			value *= unit
-		
-		return defer.succeed(_compare(variable.value, value, op_id))
+        self._complete = defer.gatherResults([lhs, rhs]).addCallback(_eval)
+        return self._complete
 
 
-class logic_operation (Block):
-	outputType = bool
+class lexical_variable_compare(lexical_variable):
+    outputType = bool
 
-	def eval (self):
-		@defer.inlineCallbacks
-		def _run ():
-			op = self.fields['OP']
-			lhs = yield self.getInputValue('A')
+    def eval(self):
+        variable = self._getVariable()
 
-			if lhs is None:
-				return
+        if variable is None:
+            self.emitLogMessage(
+                "Unknown variable: " + str(self.getFieldValue("VAR")), "error"
+            )
 
-			if op == "AND":
-				if bool(lhs):
-					rhs = yield self.getInputValue('B')
+            return defer.succeed(None)
 
-					if rhs is None:
-						return
+        value = self.getFieldValue("VALUE")
+        op_id = self.getFieldValue("OP")
 
-					defer.returnValue(bool(rhs))
-				else:
-					defer.returnValue(False)
-			elif op == "OR":
-				if bool(lhs):
-					defer.returnValue(True)
-				else:
-					rhs = yield self.getInputValue('B')
+        unit = self.getFieldValue("UNIT", None)
 
-					if rhs is None:
-						return
+        if isinstance(unit, (int, float)):
+            value *= unit
 
-					defer.returnValue(bool(rhs))
-
-			# Emit a warning
-			return
-
-		self._complete = _run()
-		return self._complete
+        return defer.succeed(_compare(variable.value, value, op_id))
 
 
-class logic_ternary (Block):
-	# TODO: outputType of then and else should be the same.
-	# this is then the outputType of the logic_ternary block.
-	
-	def eval (self):
-		@defer.inlineCallbacks
-		def _run ():
-			test = yield self.getInputValue('IF')
+class logic_operation(Block):
+    outputType = bool
 
-			if test is None:
-				return
+    def eval(self):
+        @defer.inlineCallbacks
+        def _run():
+            op = self.fields["OP"]
+            lhs = yield self.getInputValue("A")
 
-			if bool(test):
-				result = yield self.getInputValue('THEN')
-				defer.returnValue(result)
-			else:
-				result = yield self.getInputValue('ELSE')
-				defer.returnValue(result)
+            if lhs is None:
+                return
 
-		self._complete = _run()
-		return self._complete
+            if op == "AND":
+                if bool(lhs):
+                    rhs = yield self.getInputValue("B")
+
+                    if rhs is None:
+                        return
+
+                    defer.returnValue(bool(rhs))
+                else:
+                    defer.returnValue(False)
+            elif op == "OR":
+                if bool(lhs):
+                    defer.returnValue(True)
+                else:
+                    rhs = yield self.getInputValue("B")
+
+                    if rhs is None:
+                        return
+
+                    defer.returnValue(bool(rhs))
+
+            # Emit a warning
+            return
+
+        self._complete = _run()
+        return self._complete
+
+
+class logic_ternary(Block):
+    # TODO: outputType of then and else should be the same.
+    # this is then the outputType of the logic_ternary block.
+
+    def eval(self):
+        @defer.inlineCallbacks
+        def _run():
+            test = yield self.getInputValue("IF")
+
+            if test is None:
+                return
+
+            if bool(test):
+                result = yield self.getInputValue("THEN")
+                defer.returnValue(result)
+            else:
+                result = yield self.getInputValue("ELSE")
+                defer.returnValue(result)
+
+        self._complete = _run()
+        return self._complete

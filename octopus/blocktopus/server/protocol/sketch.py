@@ -4,88 +4,89 @@ from twisted.internet import reactor
 
 from octopus.constants import State
 
-class SketchProtocol (object):
-	def __init__ (self, transport):
-		self.transport = transport
 
-	def send (self, topic, payload, context):
-		self.transport.send('sketch', topic, payload, context)
+class SketchProtocol(object):
+    def __init__(self, transport):
+        self.transport = transport
 
-	def receive (self, topic, payload, sketch, context):
-		try:
-			if topic == 'load':
-				return self.loadSketch(payload, context)
+    def send(self, topic, payload, context):
+        self.transport.send("sketch", topic, payload, context)
 
-			if sketch is None:
-				raise Error("[%s:%s] No Sketch specified" % ('sketch', topic))
+    def receive(self, topic, payload, sketch, context):
+        try:
+            if topic == "load":
+                return self.loadSketch(payload, context)
 
-			if topic == 'rename':
-				return sketch.renameSketch({ 'title': payload['title'] }, context)
+            if sketch is None:
+                raise Error("[%s:%s] No Sketch specified" % ("sketch", topic))
 
-		except Error as e:
-			return self.send('error', e, context)
+            if topic == "rename":
+                return sketch.renameSketch({"title": payload["title"]}, context)
 
-	def loadSketch (self, payload, context):
-		if "sketch" not in payload:
-			raise Error('No sketch ID provided')
+        except Error as e:
+            return self.send("error", e, context)
 
-		id = payload["sketch"]
+    def loadSketch(self, payload, context):
+        if "sketch" not in payload:
+            raise Error("No sketch ID provided")
 
-		def _onEvent (protocol, topic, payload):
-			# is id already in the data?
-			payload['sketch'] = id
-			self.transport.send(protocol, topic, payload, context)
+        id = payload["sketch"]
 
-		def _sendData (sketch):
-			blockStates = {
-				block.id: block.state.name.lower()
-				for block in sketch.workspace.allBlocks.values()
-				if block.state is not State.READY
-			}
+        def _onEvent(protocol, topic, payload):
+            # is id already in the data?
+            payload["sketch"] = id
+            self.transport.send(protocol, topic, payload, context)
 
-			sketchData = {
-				"sketch": sketch.id,
-				"title": sketch.title,
-				"events": sketch.workspace.toEvents(),
-				"state": sketch.workspace.state.name.lower(),
-				"block-states": blockStates
-			}
+        def _sendData(sketch):
+            blockStates = {
+                block.id: block.state.name.lower()
+                for block in sketch.workspace.allBlocks.values()
+                if block.state is not State.READY
+            }
 
-			if sketch.experiment is not None:
-				sketchData['experiment'] = sketch.experiment.id
-				sketchData['log-messages'] = sketch.experiment.logMessages
+            sketchData = {
+                "sketch": sketch.id,
+                "title": sketch.title,
+                "events": sketch.workspace.toEvents(),
+                "state": sketch.workspace.state.name.lower(),
+                "block-states": blockStates,
+            }
 
-			self.send('load', sketchData, context)
+            if sketch.experiment is not None:
+                sketchData["experiment"] = sketch.experiment.id
+                sketchData["log-messages"] = sketch.experiment.logMessages
 
-		try:
-			sketch = self.transport.sketches[id]
-		except KeyError:
-			pass
-		else:
-			sketch.subscribe(context, _onEvent)
-			return _sendData(sketch)
+            self.send("load", sketchData, context)
 
-		def _done (data):
-			self.transport.sketches[id] = sketch
-			sketch.subscribe(context, _onEvent)
-			return _sendData(sketch)
+        try:
+            sketch = self.transport.sketches[id]
+        except KeyError:
+            pass
+        else:
+            sketch.subscribe(context, _onEvent)
+            return _sendData(sketch)
 
-		def _error (failure):
-			self.send('error', str(failure), context)
+        def _done(data):
+            self.transport.sketches[id] = sketch
+            sketch.subscribe(context, _onEvent)
+            return _sendData(sketch)
 
-		sketch = Sketch(id)
+        def _error(failure):
+            self.send("error", str(failure), context)
 
-		@sketch.on("closed")
-		def onSketchClosed (data):
-			# This must be performed later to avoid an exception
-			# in sketches.items() in disconnected()
-			def _del ():
-				del self.transport.sketches[id]
+        sketch = Sketch(id)
 
-			reactor.callLater(0, _del)
+        @sketch.on("closed")
+        def onSketchClosed(data):
+            # This must be performed later to avoid an exception
+            # in sketches.items() in disconnected()
+            def _del():
+                del self.transport.sketches[id]
 
-		return sketch.load().addCallbacks(_done, _error)
+            reactor.callLater(0, _del)
+
+        return sketch.load().addCallbacks(_done, _error)
 
 
-class Error (Exception):
-	pass
+class Error(Exception):
+    pass
