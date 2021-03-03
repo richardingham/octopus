@@ -10,7 +10,7 @@ from collections import deque
 import logging
 
 # Package Imports
-from octopus.queue import AsyncQueue, AsyncQueueRetry
+from octopus.octopus_queue import AsyncQueue, AsyncQueueRetry
 
 
 def _IndexGenerator(max):
