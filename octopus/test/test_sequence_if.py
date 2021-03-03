@@ -4,7 +4,8 @@ from twisted.trial import unittest
 from unittest.mock import Mock
 
 from octopus.constants import State
-from octopus.sequence import Step, IfStep
+from octopus.sequence.sequence import Step, IfStep
+
 from octopus.sequence.error import NotRunning, NotPaused, AlreadyRunning
 
 
