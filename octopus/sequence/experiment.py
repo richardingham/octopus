@@ -10,6 +10,7 @@ from collections import deque
 
 # Sibling Imports
 from octopus.data import Variable as data_Variable
+from octopus.sequence.error import Error
 from octopus.util import now
 from octopus.events import Event
 from octopus.machine import Machine, Component
@@ -380,7 +381,7 @@ class Experiment(object):
     def stop_logging(self):
         self._logging = False
 
-        items = self._log_variables.iteritems()
+        items = self._log_variables.items()
 
         for key, var in items:
             try:
