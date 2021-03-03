@@ -11,19 +11,19 @@ defining parameters to set for each virtual instrument interface, rather than by
 defining methods to be called.
 
 
-Installation
+Installation on Linux
 ============
 
 Install the dependencies
 ------------------------
 
-```
+```console
 $ sudo apt-get install python-setuptools
 $ sudo apt-get install python-pip
 $ sudo apt-get install python-dev
 ```
 
-```
+```console
 $ sudo pip install twisted
 $ sudo pip install pyserial
 $ sudo pip install crc16
@@ -46,6 +46,18 @@ substitute `/home/pi` for `/home/[your user]`.
      containing the contents `/home/pi/lib/python` (or whichever path you have chosen).
 
 Source: [darmawan-salihun.blogspot.co.uk](http://darmawan-salihun.blogspot.co.uk/2012/12/adding-new-path-to-pythonpath.html)
+
+
+Installation on Windows
+============
+
+Assuming conda is installed, run the following from octopus main dir.
+```console
+conda create --name octopus python=3.8
+conda activate octopus
+conda install twisted
+pip install .
+```
 
 
 Running the Control Software
