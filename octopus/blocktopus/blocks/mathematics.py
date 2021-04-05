@@ -1,5 +1,5 @@
 # Package Imports
-from ..workspace import Block
+from octopus.blocktopus.workspace import Block
 
 # Twisted Imports
 from twisted.internet import defer
@@ -14,333 +14,330 @@ now = time.time
 import numpy
 
 
-class math_number (Block):
-	def eval (self):
-		number = float(self.fields['NUM'])
-		if '.' not in str(self.fields['NUM']):
-			number = int(number)
+class math_number(Block):
+    def eval(self):
+        number = float(self.fields["NUM"])
+        if "." not in str(self.fields["NUM"]):
+            number = int(number)
 
-		return defer.succeed(number)
+        return defer.succeed(number)
 
 
-class math_constant (Block):
-	_map = {
-		"PI": math.pi,
-		"E": math.e,
-		"GOLDEN_RATIO": (1 + math.sqrt(5)) / 2,
-		"SQRT2": math.sqrt(2),
-		"SQRT1_2": math.sqrt(0.5),
-		"INFINITY": float('inf')
-	}
+class math_constant(Block):
+    _map = {
+        "PI": math.pi,
+        "E": math.e,
+        "GOLDEN_RATIO": (1 + math.sqrt(5)) / 2,
+        "SQRT2": math.sqrt(2),
+        "SQRT1_2": math.sqrt(0.5),
+        "INFINITY": float("inf"),
+    }
 
-	def eval (self):
-		return defer.succeed(self._map[self.fields['CONSTANT']])
+    def eval(self):
+        return defer.succeed(self._map[self.fields["CONSTANT"]])
 
-		# Emit a warning if bad op given
+        # Emit a warning if bad op given
 
 
-class math_single (Block):
-	outputType = float
+class math_single(Block):
+    outputType = float
 
-	_map = {
-		"ROOT": math.sqrt,
-		"ABS": math.fabs,
-		"NEG": lambda x: -x,
-		"LN": math.log,
-		"LOG10": math.log10,
-		"EXP": math.exp,
-		"POW10": lambda x: math.pow(10, x)
-	}
+    _map = {
+        "ROOT": math.sqrt,
+        "ABS": math.fabs,
+        "NEG": lambda x: -x,
+        "LN": math.log,
+        "LOG10": math.log10,
+        "EXP": math.exp,
+        "POW10": lambda x: math.pow(10, x),
+    }
 
-	def eval (self):
-		def calculate (result):
-			if result is None:
-				return None
+    def eval(self):
+        def calculate(result):
+            if result is None:
+                return None
 
-			op = self._map[self.fields['OP']]
-			return op(result)
+            op = self._map[self.fields["OP"]]
+            return op(result)
 
-			# Emit a warning if bad op given
+            # Emit a warning if bad op given
 
-		self._complete = self.getInputValue('NUM').addCallback(calculate)
-		return self._complete
+        self._complete = self.getInputValue("NUM").addCallback(calculate)
+        return self._complete
 
 
-class math_trig (math_single):
-	_map = {
-		"SIN": lambda x: math.sin(x / 180.0 * math.pi),
-		"COS": lambda x: math.cos(x / 180.0 * math.pi),
-		"TAN": lambda x: math.tan(x / 180.0 * math.pi),
-		"ASIN": lambda x: math.asin(x) / 180.0 * math.pi,
-		"ACOS": lambda x: math.acos(x) / 180.0 * math.pi,
-		"ATAN": lambda x: math.atan(x) / 180.0 * math.pi
-	}
+class math_trig(math_single):
+    _map = {
+        "SIN": lambda x: math.sin(x / 180.0 * math.pi),
+        "COS": lambda x: math.cos(x / 180.0 * math.pi),
+        "TAN": lambda x: math.tan(x / 180.0 * math.pi),
+        "ASIN": lambda x: math.asin(x) / 180.0 * math.pi,
+        "ACOS": lambda x: math.acos(x) / 180.0 * math.pi,
+        "ATAN": lambda x: math.atan(x) / 180.0 * math.pi,
+    }
 
 
-class math_round (math_single):
-	_map = {
-		"ROUND": round,
-		"ROUNDUP": math.ceil,
-		"ROUNDDOWN": math.floor
-	}
+class math_round(math_single):
+    _map = {"ROUND": round, "ROUNDUP": math.ceil, "ROUNDDOWN": math.floor}
 
 
-class math_arithmetic (Block):
-	# TODO: int if lhs and rhs are ints.
-	outputType = float
+class math_arithmetic(Block):
+    # TODO: int if lhs and rhs are ints.
+    outputType = float
 
-	_map = {
-		"ADD": operator.add,
-		"MINUS": operator.sub,
-		"MULTIPLY": operator.mul,
-		"DIVIDE": operator.truediv,
-		"POWER": math.pow
-	}
+    _map = {
+        "ADD": operator.add,
+        "MINUS": operator.sub,
+        "MULTIPLY": operator.mul,
+        "DIVIDE": operator.truediv,
+        "POWER": math.pow,
+    }
 
-	def eval (self):
-		def calculate (results):
-			lhs, rhs = results
+    def eval(self):
+        def calculate(results):
+            lhs, rhs = results
 
-			if lhs is None or rhs is None:
-				return None
+            if lhs is None or rhs is None:
+                return None
 
-			op = self._map[self.fields['OP']]
-			return op(lhs, rhs)
+            op = self._map[self.fields["OP"]]
+            return op(lhs, rhs)
 
-			# Emit a warning if bad op given
+            # Emit a warning if bad op given
 
-		lhs = self.getInputValue('A')
-		rhs = self.getInputValue('B')
+        lhs = self.getInputValue("A")
+        rhs = self.getInputValue("B")
 
-		self._complete = defer.gatherResults([lhs, rhs]).addCallback(calculate)
-		return self._complete
+        self._complete = defer.gatherResults([lhs, rhs]).addCallback(calculate)
+        return self._complete
 
 
-class math_number_property (Block):
-	_map = {
-		"EVEN": lambda x: x % 2 == 0,
-		"ODD": lambda x: x % 2 == 1,
-		"WHOLE": lambda x: x % 1 == 0,
-		"POSITIVE": lambda x: x > 0,
-		"NEGATIVE": lambda x: x < 0,
-	}
+class math_number_property(Block):
+    _map = {
+        "EVEN": lambda x: x % 2 == 0,
+        "ODD": lambda x: x % 2 == 1,
+        "WHOLE": lambda x: x % 1 == 0,
+        "POSITIVE": lambda x: x > 0,
+        "NEGATIVE": lambda x: x < 0,
+    }
 
-	def eval (self):
-		if self.fields['PROPERTY'] == "DIVISIBLE_BY":
-			def calculatedivby (results):
-				lhs, rhs = results
+    def eval(self):
+        if self.fields["PROPERTY"] == "DIVISIBLE_BY":
 
-				return float(lhs) % float(rhs) == 0
+            def calculatedivby(results):
+                lhs, rhs = results
 
-			lhs = self.getInputValue('NUMBER_TO_CHECK')
-			rhs = self.getInputValue('DIVISOR')
+                return float(lhs) % float(rhs) == 0
 
-			self._complete = defer.gatherResults([lhs, rhs]).addCallback(calculatedivby)
+            lhs = self.getInputValue("NUMBER_TO_CHECK")
+            rhs = self.getInputValue("DIVISOR")
 
-			return self._complete
+            self._complete = defer.gatherResults([lhs, rhs]).addCallback(calculatedivby)
 
-		def calculate (result):
-			op = self._map[self.fields['PROPERTY']]
-			return op(float(result))
+            return self._complete
 
-			# Emit a warning if bad op given
+        def calculate(result):
+            op = self._map[self.fields["PROPERTY"]]
+            return op(float(result))
 
-		self._complete = self.getInputValue('NUMBER_TO_CHECK').addCallback(calculate)
-		return self._complete
+            # Emit a warning if bad op given
 
+        self._complete = self.getInputValue("NUMBER_TO_CHECK").addCallback(calculate)
+        return self._complete
 
-class math_modulo (Block):
-	# TODO: int if a and b are ints.
-	outputType = float
 
-	def eval (self):
-		def calculate (results):
-			a, b = results
+class math_modulo(Block):
+    # TODO: int if a and b are ints.
+    outputType = float
 
-			if a is None or b is None:
-				return None
+    def eval(self):
+        def calculate(results):
+            a, b = results
 
-			return operator.mod(a, b)
+            if a is None or b is None:
+                return None
 
-		self._complete = defer.gatherResults([
-			self.getInputValue('DIVIDEND'),
-			self.getInputValue('DIVISOR')
-		]).addCallback(calculate)
+            return operator.mod(a, b)
 
-		return self._complete
+        self._complete = defer.gatherResults(
+            [self.getInputValue("DIVIDEND"), self.getInputValue("DIVISOR")]
+        ).addCallback(calculate)
 
+        return self._complete
 
-class math_constrain (Block):
-	# TODO: int if val, low and high are all ints.
-	outputType = float
 
-	def eval (self):
-		def calculate (results):
-			val, low, high = results
+class math_constrain(Block):
+    # TODO: int if val, low and high are all ints.
+    outputType = float
 
-			if val is None or low is None or high is None:
-				return None
+    def eval(self):
+        def calculate(results):
+            val, low, high = results
 
-			return min(max(val, low), high)
+            if val is None or low is None or high is None:
+                return None
 
-		self._complete = defer.gatherResults([
-			self.getInputValue('VALUE'),
-			self.getInputValue('LOW'),
-			self.getInputValue('HIGH')
-		]).addCallback(calculate)
+            return min(max(val, low), high)
 
-		return self._complete
+        self._complete = defer.gatherResults(
+            [
+                self.getInputValue("VALUE"),
+                self.getInputValue("LOW"),
+                self.getInputValue("HIGH"),
+            ]
+        ).addCallback(calculate)
 
+        return self._complete
 
-class math_random_int (Block):
-	outputType = int
 
-	def eval (self):
-		def calculate (results):
-			low, high = results
+class math_random_int(Block):
+    outputType = int
 
-			if low is None or high is None:
-				return None
+    def eval(self):
+        def calculate(results):
+            low, high = results
 
-			return random.randint(low, high)
+            if low is None or high is None:
+                return None
 
-		self._complete = defer.gatherResults([
-			self.getInputValue('FROM'),
-			self.getInputValue('TO')
-		]).addCallback(calculate)
+            return random.randint(low, high)
 
-		return self._complete
+        self._complete = defer.gatherResults(
+            [self.getInputValue("FROM"), self.getInputValue("TO")]
+        ).addCallback(calculate)
 
+        return self._complete
 
-class math_random_float (Block):
-	def eval (self):
-		return defer.succeed(random.random())
 
+class math_random_float(Block):
+    def eval(self):
+        return defer.succeed(random.random())
 
-class math_framed (Block):
-	outputType = float
 
-	_map = {
-		"MAX": lambda x, y: max(y),
-		"MIN": lambda x, y: min(y),
-		"AVERAGE": lambda x, y: numpy.mean(y),
-		"CHANGE": lambda x, y: numpy.polyfit(x, y, 1)[0],
-	}
+class math_framed(Block):
+    outputType = float
 
-	def created (self):
-		self.on("connectivity-changed", self._onChange)
-		self.on("value-changed", self._onChange)
+    _map = {
+        "MAX": lambda x, y: max(y),
+        "MIN": lambda x, y: min(y),
+        "AVERAGE": lambda x, y: numpy.mean(y),
+        "CHANGE": lambda x, y: numpy.polyfit(x, y, 1)[0],
+    }
 
-		self._x = []
-		self._y = []
+    def created(self):
+        self.on("connectivity-changed", self._onChange)
+        self.on("value-changed", self._onChange)
 
-	def disposed (self):
-		self.off("connectivity-changed", self._onChange)
-		self.off("value-changed", self._onChange)
+        self._x = []
+        self._y = []
 
-	def _onChange (self, data = None):
-		# Do nothing if only the frame length has changed.
-		if 'block' in data and data['block'] is self:
-			return
+    def disposed(self):
+        self.off("connectivity-changed", self._onChange)
+        self.off("value-changed", self._onChange)
 
-		self._x = []
-		self._y = []
-		self.eval()
+    def _onChange(self, data=None):
+        # Do nothing if only the frame length has changed.
+        if "block" in data and data["block"] is self:
+            return
 
-	@defer.inlineCallbacks
-	def eval (self):
-		try:
-			frameLength = float(self.fields['TIME'])
-			value = yield self.getInputValue("INPUT")
-			time = now()
-			op = self._map[self.fields['OP']]
+        self._x = []
+        self._y = []
+        self.eval()
 
-			if value is not None:
-				self._x.append(time)
-				self._y.append(float(value))
+    @defer.inlineCallbacks
+    def eval(self):
+        try:
+            frameLength = float(self.fields["TIME"])
+            value = yield self.getInputValue("INPUT")
+            time = now()
+            op = self._map[self.fields["OP"]]
 
-				# Don't return a value until there is at least
-				# one frame length worth of data
-				if (time - self._x[0]) < frameLength:
-					return
+            if value is not None:
+                self._x.append(time)
+                self._y.append(float(value))
 
-				# Truncate if necessary
-				min_time = time - frameLength
-				if self._x[0] < min_time:
-					self._x = [x for x in self._x if x > min_time]
-					self._y = self._y[-len(self._x):]
+                # Don't return a value until there is at least
+                # one frame length worth of data
+                if (time - self._x[0]) < frameLength:
+                    return
 
-			try:
-				framedValue = float(op(self._x, self._y))
-			except:
-				# Emit a warning
-				framedValue = None
-		except:
-			log.err()
-		else:
-			defer.returnValue(framedValue)
+                # Truncate if necessary
+                min_time = time - frameLength
+                if self._x[0] < min_time:
+                    self._x = [x for x in self._x if x > min_time]
+                    self._y = self._y[-len(self._x) :]
 
+            try:
+                framedValue = float(op(self._x, self._y))
+            except:
+                # Emit a warning
+                framedValue = None
+        except:
+            log.err()
+        else:
+            defer.returnValue(framedValue)
 
-class math_throttle (Block):
-	outputType = float
 
-	_map = {
-		"MAX": lambda x, y: max(y),
-		"MIN": lambda x, y: min(y),
-		"AVERAGE": lambda x, y: numpy.mean(y),
-		"LATEST": lambda x, y: y[-1]
-	}
+class math_throttle(Block):
+    outputType = float
 
-	def created (self):
-		self.on("connectivity-changed", self._onChange)
-		self.on("value-changed", self._onChange)
+    _map = {
+        "MAX": lambda x, y: max(y),
+        "MIN": lambda x, y: min(y),
+        "AVERAGE": lambda x, y: numpy.mean(y),
+        "LATEST": lambda x, y: y[-1],
+    }
 
-		self._x = []
-		self._y = []
-		self._prevValue = None
+    def created(self):
+        self.on("connectivity-changed", self._onChange)
+        self.on("value-changed", self._onChange)
 
-	def disposed (self):
-		self.off("connectivity-changed", self._onChange)
-		self.off("value-changed", self._onChange)
+        self._x = []
+        self._y = []
+        self._prevValue = None
 
-	def _onChange (self, data = None):
-		# Do nothing if only the frame length has changed.
-		if 'block' in data and data['block'] is self:
-			return
+    def disposed(self):
+        self.off("connectivity-changed", self._onChange)
+        self.off("value-changed", self._onChange)
 
-		self._x = []
-		self._y = []
-		self.eval()
+    def _onChange(self, data=None):
+        # Do nothing if only the frame length has changed.
+        if "block" in data and data["block"] is self:
+            return
 
-	@defer.inlineCallbacks
-	def eval (self):
-		try:
-			frameLength = float(self.fields['TIME'])
-			value = yield self.getInputValue("INPUT")
-			time = now()
-			op = self._map[self.fields['OP']]
+        self._x = []
+        self._y = []
+        self.eval()
 
-			if value is None:
-				return
+    @defer.inlineCallbacks
+    def eval(self):
+        try:
+            frameLength = float(self.fields["TIME"])
+            value = yield self.getInputValue("INPUT")
+            time = now()
+            op = self._map[self.fields["OP"]]
 
-			self._x.append(time)
-			self._y.append(float(value))
+            if value is None:
+                return
 
-			# Don't return a value until there is at least
-			# one frame length worth of data
-			if (time - self._x[0]) < frameLength:
-				framedValue = self._prevValue
+            self._x.append(time)
+            self._y.append(float(value))
 
-			else:
-				framedValue = float(op(self._x, self._y))
-				self._prevValue = framedValue
+            # Don't return a value until there is at least
+            # one frame length worth of data
+            if (time - self._x[0]) < frameLength:
+                framedValue = self._prevValue
 
-				# Truncate
-				self._x = []
-				self._y = []
+            else:
+                framedValue = float(op(self._x, self._y))
+                self._prevValue = framedValue
 
-		except Exception:
-			log.err()
-			framedValue = None
-		else:
-			defer.returnValue(framedValue)
+                # Truncate
+                self._x = []
+                self._y = []
+
+        except Exception:
+            log.err()
+            framedValue = None
+        else:
+            defer.returnValue(framedValue)

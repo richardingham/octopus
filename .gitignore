@@ -67,3 +67,5 @@ twistd.pid
 .metadata/
 
 .DS_Store
+/octopus/manufacturer/vapourtec.py
+/octopus/blocktopus/blocks/vapourtec.py

@@ -3,18 +3,18 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open('requirements.txt') as f:
+with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
 setuptools.setup(
     name="octopus",
-    version="0.3",
+    version="0.3.1",
     author="Richard Ingham",
     description="Real-time laboratory automation and monitoring in Python.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/richardingham/octopus",
-    packages=['octopus', 'octopus.manufacturer', 'octopus.blocks'],
+    packages=["octopus", "octopus.manufacturer", "octopus.blocks"],
     install_requires=requirements,
     include_package_data=True,
     classifiers=[

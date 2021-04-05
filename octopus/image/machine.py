@@ -1,21 +1,21 @@
 # Sibling Imports
-from .data import ImageProperty
+from octopus.image.data import ImageProperty
 
 # Package Imports
-from ..machine import Machine
+from octopus.machine import Machine
 
 
-class CameraViewer (Machine):
+class CameraViewer(Machine):
 
     protocolFactory = None
     name = "Monitor a webcam"
 
-    def setup (self):
+    def setup(self):
         # setup variables
-        self.image = ImageProperty(title = "Image", fn = self._get_image)
+        self.image = ImageProperty(title="Image", fn=self._get_image)
 
     # def show (self):
     #     self._get_image().show()
 
-    def _get_image (self):
+    def _get_image(self):
         return self.protocol.image()

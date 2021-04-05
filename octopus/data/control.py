@@ -11,178 +11,186 @@ than a variable.
 """
 
 # Package Imports
-from ..events import Event
+from octopus.events import Event
 
 # Sibling Imports
-from . import errors
+from octopus.data import errors
 
-class Control (object):
-	_counter = 0
 
-	type = "control"
+class Control(object):
+    _counter = 0
 
-	def __init__ (self, variable = None):
-		Control._counter += 1
-		self.alias = "control_" + str(Control._counter)
+    type = "control"
 
-		self._variable = variable
-		self._disabled = False
+    def __init__(self, variable=None):
+        Control._counter += 1
+        self.alias = "control_" + str(Control._counter)
 
-		self.event = Event()
+        self._variable = variable
+        self._disabled = False
 
-	@property
-	def title (self):
-		try:
-			return self._title
-		except AttributeError:
-			pass
+        self.event = Event()
 
-		try:
-			return self._variable.title
-		except AttributeError:
-			return ""
+    @property
+    def title(self):
+        try:
+            return self._title
+        except AttributeError:
+            pass
 
-	@title.setter
-	def title (self, value):
-		self._title = value
+        try:
+            return self._variable.title
+        except AttributeError:
+            return ""
 
-	@property
-	def unit (self):
-		try:
-			return self._variable.unit
-		except AttributeError:
-			return None
+    @title.setter
+    def title(self, value):
+        self._title = value
 
-	@property
-	def var_alias (self):
-		try:
-			return self._variable.alias
-		except AttributeError:
-			return None
+    @property
+    def unit(self):
+        try:
+            return self._variable.unit
+        except AttributeError:
+            return None
 
-	@property
-	def value (self):
-		try:
-			return self._variable.value
-		except AttributeError:
-			return None
+    @property
+    def var_alias(self):
+        try:
+            return self._variable.alias
+        except AttributeError:
+            return None
 
-	def update (self, value):
-		"""Called when a remote client operates the control."""
+    @property
+    def value(self):
+        try:
+            return self._variable.value
+        except AttributeError:
+            return None
 
-		try:
-			if not self._disabled:
-				return self._variable.set(value)
+    def update(self, value):
+        """Called when a remote client operates the control."""
 
-		except errors.Error:
-			raise
+        try:
+            if not self._disabled:
+                return self._variable.set(value)
 
-	def disable (self):
-		self._disabled = True
-		self.event(item = self, disabled = True)
+        except errors.Error:
+            raise
 
-	def enable (self):
-		self._disabled = False
-		self.event(item = self, disabled = False)
+    def disable(self):
+        self._disabled = True
+        self.event(item=self, disabled=True)
 
-class Button (Control):
-	"""A push button control (not associated with a variable)."""
+    def enable(self):
+        self._disabled = False
+        self.event(item=self, disabled=False)
 
-	type = "button"
 
-	action = None
-	"""A function to perform when the button is pressed."""
+class Button(Control):
+    """A push button control (not associated with a variable)."""
 
-	args = []
-	"""Arguments to be passed to the action function when it is called."""
+    type = "button"
 
-	kwargs = {}
-	"""Keywords to be passed to the action function when it is called."""
+    action = None
+    """A function to perform when the button is pressed."""
 
-	def __init__ (self, title, action = None, *args, **kwargs):
-		Control.__init__ (self, None)
-		self._title = title
-		self.action = action
-		self.args = args
-		self.kwargs = kwargs
+    args = []
+    """Arguments to be passed to the action function when it is called."""
 
-	def update (self, value):
-		try:
-			if not self._disabled:
-				return self.action(*self.args, **self.kwargs)
-		except TypeError:
-			pass
+    kwargs = {}
+    """Keywords to be passed to the action function when it is called."""
 
-class Text (Control):
-	type = "text"
+    def __init__(self, title, action=None, *args, **kwargs):
+        Control.__init__(self, None)
+        self._title = title
+        self.action = action
+        self.args = args
+        self.kwargs = kwargs
 
-class Switch (Control):
-	"""
-	An on/off switch.
-	
-	The options property should be set with a tuple, where the
-	first item is the value when false, and the second the
-	value when true.
-	"""
+    def update(self, value):
+        try:
+            if not self._disabled:
+                return self.action(*self.args, **self.kwargs)
+        except TypeError:
+            pass
 
-	type = "switch"
-	options = (False, True)
 
-class Select (Control):
-	"""
-	A multi-select control.
-	
-	The options property should contain a dictionary containing
-	value => title pairs. A default set of options is created
-	from the variable's options property, if it exists.
-	"""
-	
-	type = "select"
-	_options = None
+class Text(Control):
+    type = "text"
 
-	@property
-	def options (self):
-		if self._options is not None:
-			return self._options
 
-		if hasattr("options", self._variable):
-			return dict(zip(
-				self._variable.options,
-				[s.capitalize() for s in self._variable.options]
-			))
+class Switch(Control):
+    """
+    An on/off switch.
 
-	@options.setter
-	def options (self, value):
-		self._options = value
+    The options property should be set with a tuple, where the
+    first item is the value when false, and the second the
+    value when true.
+    """
 
-class Number (Control):
-	type = "number"
+    type = "switch"
+    options = (False, True)
 
-	_min = None
-	_max = None
 
-	@property
-	def min (self):
-		if self._min is not None:
-			return self._min
-		elif hasattr("min", self._variable):
-			return self._variable.min
-		else:
-			return None
+class Select(Control):
+    """
+    A multi-select control.
 
-	@min.setter
-	def min (self, value):
-		self._min = value
+    The options property should contain a dictionary containing
+    value => title pairs. A default set of options is created
+    from the variable's options property, if it exists.
+    """
 
-	@property
-	def max (self):
-		if self._max is not None:
-			return self._max
-		elif hasattr("max", self._variable):
-			return self._variable.max
-		else:
-			return None
+    type = "select"
+    _options = None
 
-	@max.setter
-	def min (self, value):
-		self._max = value
+    @property
+    def options(self):
+        if self._options is not None:
+            return self._options
+
+        if hasattr("options", self._variable):
+            return dict(
+                zip(
+                    self._variable.options,
+                    [s.capitalize() for s in self._variable.options],
+                )
+            )
+
+    @options.setter
+    def options(self, value):
+        self._options = value
+
+
+class Number(Control):
+    type = "number"
+
+    _min = None
+    _max = None
+
+    @property
+    def min(self):
+        if self._min is not None:
+            return self._min
+        elif hasattr("min", self._variable):
+            return self._variable.min
+        else:
+            return None
+
+    @min.setter
+    def min(self, value):
+        self._min = value
+
+    @property
+    def max(self):
+        if self._max is not None:
+            return self._max
+        elif hasattr("max", self._variable):
+            return self._variable.max
+        else:
+            return None
+
+    @max.setter
+    def min(self, value):
+        self._max = value

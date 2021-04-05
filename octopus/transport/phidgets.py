@@ -13,72 +13,71 @@ from Phidgets.PhidgetException import PhidgetErrorCodes, PhidgetException
 import time
 import logging
 
-# Compatibility Imports
-from __future__ import print_function
-
 
 @implementer(IAddress)
-class PhidgetAddress (object):
-	compareAttributes = ('device_class', 'id')
+class PhidgetAddress(object):
+    compareAttributes = ("device_class", "id")
 
-	def __init__ (self, id):
-		self.id = id
+    def __init__(self, id):
+        self.id = id
 
-	def __repr__ (self):
-		return "{!s}({!s})".format(self.__class__.__name__, self.id)
-
-
-class PhidgetTransport (object):
-	def __init__ (self, protocol):
-		self.protocol = protocol
-
-	def loseConnection (self):
-		try:
-			self.protocol.closePhidget()
-		except (AttributeError, PhidgetException):
-			pass
+    def __repr__(self):
+        return "{!s}({!s})".format(self.__class__.__name__, self.id)
 
 
-class Phidget (object):
-	def __init__ (self, id):
-		self.id = id
-		self.name = "phidget({!s})".format(id)
+class PhidgetTransport(object):
+    def __init__(self, protocol):
+        self.protocol = protocol
 
-	def connect (self, protocolFactory):
-		d = defer.Deferred()
-		addr = PhidgetAddress(self.id)
-		protocol = protocolFactory.buildProtocol(addr)
-		protocol.transport = PhidgetTransport(protocol)
+    def loseConnection(self):
+        try:
+            self.protocol.closePhidget()
+        except (AttributeError, PhidgetException):
+            pass
 
-		@defer.inlineCallbacks
-		def check_attached ():
-			tries = 0
 
-			while tries < 20:
-				if protocol.isAttached():
-					serial = protocol.getSerialNum()
-					name = protocol.getDeviceName()
+class Phidget(object):
+    def __init__(self, id):
+        self.id = id
+        self.name = "phidget({!s})".format(id)
 
-					log.msg(
-						"Phidget Device '{!s}', Serial Number: {!s} connected".format(
-						name, serial
-					), logging.INFO)
+    def connect(self, protocolFactory):
+        d = defer.Deferred()
+        addr = PhidgetAddress(self.id)
+        protocol = protocolFactory.buildProtocol(addr)
+        protocol.transport = PhidgetTransport(protocol)
 
-					defer.returnValue(protocol)
-				else:
-					tries += 1
-					yield task.deferLater(reactor, 0.5, lambda: True)
+        @defer.inlineCallbacks
+        def check_attached():
+            tries = 0
 
-			raise Exception("Attachment to phidget timed out")
+            while tries < 20:
+                if protocol.isAttached():
+                    serial = protocol.getSerialNum()
+                    name = protocol.getDeviceName()
 
-		try:
-			protocol.openPhidget(self.id)
+                    log.msg(
+                        "Phidget Device '{!s}', Serial Number: {!s} connected".format(
+                            name, serial
+                        ),
+                        logging.INFO,
+                    )
 
-			# Blocks to allow time for phidget to initialise
-			time.sleep(0.00125)
+                    defer.returnValue(protocol)
+                else:
+                    tries += 1
+                    yield task.deferLater(reactor, 0.5, lambda: True)
 
-			check_attached().addCallbacks(d.callback, d.errback)
-		except PhidgetException as e:
-			d.errback(e)
+            raise Exception("Attachment to phidget timed out")
 
-		return d
+        try:
+            protocol.openPhidget(self.id)
+
+            # Blocks to allow time for phidget to initialise
+            time.sleep(0.00125)
+
+            check_attached().addCallbacks(d.callback, d.errback)
+        except PhidgetException as e:
+            d.errback(e)
+
+        return d
