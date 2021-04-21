@@ -74,7 +74,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		self.queue.append(command)
 
 		self.log.debug(
-			"{log_source.machine_alias!s} [{log_source.connection_name!s}] queued command ({command.index}) {command.line!r}",
+			"{log_source.machine_alias!s} [{log_source.connection_name!s}] queued command (#{command.index}) {command.line!r}",
 			action = 'queue',
 			command = command,
 			queue_len = len(self.queue)
@@ -87,7 +87,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 		self._queue_d = defer.Deferred()
 		
 		self.log.debug(
-			"{log_source.machine_alias!s} [{log_source.connection_name!s}] sent command ({command.index}) {command.line!r}",
+			"{log_source.machine_alias!s} [{log_source.connection_name!s}] sent command (#{command.index}) {command.line!r}",
 			action = 'send',
 			command = command
 		)
@@ -136,7 +136,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 			command = self._current
 
 			self.log.debug(
-				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received response ({command.index}) {response!r}",
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received response (#{command.index}) {response!r}",
 				action = 'receive',
 				command = command,
 				response = line
@@ -169,7 +169,7 @@ class QueuedLineReceiver (LineOnlyReceiver):
 	def _timeoutCurrent (self):
 		try:
 			self.log.error(
-				"{log_source.machine_alias!s} [{log_source.connection_name!s}] command timed out ({command.index}) {command.line!r}",
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] command timed out (#{command.index}) {command.line!r}",
 				action = 'timeout',
 				command = self._current
 			)
@@ -249,7 +249,7 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 			return
 		
 		self.log.debug(
-			"{log_source.machine_alias!s} [{log_source.connection_name!s}] received data ({command.index}) {response!r}",
+			"{log_source.machine_alias!s} [{log_source.connection_name!s}] received data (#{command.index}) {response!r}",
 			action = 'receive',
 			command = current,
 			response = data
@@ -327,7 +327,7 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 				# Remove the message from the buffer and return it.
 				else:
 					self.log.debug(
-						"{log_source.machine_alias!s} [{log_source.connection_name!s}] received ({command.index}) {line!r}",
+						"{log_source.machine_alias!s} [{log_source.connection_name!s}] received (#{command.index}) {line!r}",
 						action = 'receive',
 						command = current,
 						response = line
@@ -366,7 +366,7 @@ class VaryingDelimiterQueuedLineReceiver (QueuedLineReceiver):
 			self._buffer = self._buffer[idx + current.endDelimiterLength:]
 
 			self.log.debug(
-				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received ({command.index}) {line!r}",
+				"{log_source.machine_alias!s} [{log_source.connection_name!s}] received (#{command.index}) {line!r}",
 				command = current,
 				response = line
 			)
