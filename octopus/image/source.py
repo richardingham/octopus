@@ -157,6 +157,3 @@ class camera_proxy (object):
             return
 
         defer.returnValue(Image(img_array, ColorSpace.BGR))
-
-    def disconnect (self):
-        threads.deferToThread(self.camera.release)
