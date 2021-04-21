@@ -252,15 +252,15 @@ class Machine (Component):
 				raise
 
 			# Connection made
+			self.protocol = protocol
+			self.protocol.connection_name = connection_name
+			self.protocol.machine_alias = alias
+
 			self.log.debug(
 				"Machine: {log_source.alias!s} - connected to endpoint {protocol.connection_name}",
 				state = 'connected',
 				protocol = protocol
 			)
-
-			self.protocol = protocol
-			self.protocol.connection_name = connection_name
-			self.protocol.machine_alias = alias
 
 			try:
 				start_result = yield defer.maybeDeferred(self.start)
