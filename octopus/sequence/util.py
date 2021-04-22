@@ -137,6 +137,9 @@ class Dependent (Runnable, Pausable, Cancellable, EventEmitter):
 	def __init__ (self):
 		self.state = State.READY
 
+	def _bubbleEvent (self, event, data):
+		self.emit(event, **data)
+
 
 class Looping (Runnable, Pausable, Cancellable):
 	"""

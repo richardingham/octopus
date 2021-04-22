@@ -7,7 +7,7 @@ from ..constants import State
 from ..util import now
 
 # Sibling Imports
-from .util import Looping, Dependent
+from .util import Looping, Dependent, init_child
 from . import error
 
 
@@ -209,7 +209,7 @@ class StateMonitor (Dependent):
 
 	@trigger_step.setter
 	def trigger_step (self, step):
-		self._trigger_step = util.init_child(self, step)
+		self._trigger_step = init_child(self, step)
 
 	@property
 	def reset_step (self):
@@ -217,7 +217,7 @@ class StateMonitor (Dependent):
 
 	@reset_step.setter
 	def reset_step (self, step):
-		self._reset_step = util.init_child(self, step)
+		self._reset_step = init_child(self, step)
 
 	def __init__ (self, tests = None, trigger_step = None, reset_step = None, auto_reset = True, cancel_on_trigger = True, cancel_on_reset = True):
 		Dependent.__init__(self)

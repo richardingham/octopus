@@ -10,7 +10,7 @@ from collections import deque
 
 # Sibling Imports
 from ..data import Variable as data_Variable
-from ..util import now, Event
+from ..util import now
 from ..events import Event
 from ..machine import Machine, Component
 from ..machine.interface import InterfaceSection, InterfaceSectionSet
