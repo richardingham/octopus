@@ -4,7 +4,7 @@ from collections import deque
 import functools
 
 # Sibling Imports
-from .events import Event
+from octopus.events import Event
 
 
 class AsyncQueue (object):
@@ -46,29 +46,36 @@ class AsyncQueue (object):
 		return task.d
 
 	async def _process (self):
-		if not self._paused and self._workers < self._concurrency:
-			try:
-				task = self._tasks.popleft()
-			except IndexError:
-				self.drained()
-				return
+		if self._paused or self._workers < self._concurrency:
+			return
 
-			self._workers += 1
-			self._current.add(task)
-			
+		try:
+			task = self._tasks.popleft()
+		except IndexError:
+			self.drained()
+			return
+
+		self._workers += 1
+		self._current.add(task)
+		
+		while True:
 			try:
 				result = self._worker(task.data)
 				if asyncio.isfuture(result):
 					task.d.set_result(await result)
 				else:
 					task.d.set_result(result)
+				break
+			except AsyncQueueRetry:
+				continue
 			except Exception as err:
 				task.d.set_exception(err)
+				break
 			
-			self._workers -= 1
-			self._current.discard(task)
+		self._workers -= 1
+		self._current.discard(task)
 
-			asyncio.create_task(self._process)
+		asyncio.create_task(self._process)
 
 	def __len__ (self):
 		return len(self._tasks)
