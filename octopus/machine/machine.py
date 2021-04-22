@@ -120,7 +120,7 @@ class Component (object):
 			var = getattr(self, name)
 
 			if isinstance(var, data.Variable):
-				return var.set(value);
+				return var.set(value)
 
 		except AttributeError:
 			pass
@@ -188,38 +188,36 @@ class Machine (Component):
 
 	@property
 	def connected (self):
-		try:
-			return self.protocol is not None
-		except AttributeError:
-			return False
+		return self._connected.is_set()
 
-	def disconnect (self):
+	async def disconnect (self):
 		self.log.debug(
-			"Machine: {log_source.alias!s} - disconnect()"
+			"Machine: {log_source.alias!s} - disconnecting"
 		)
 
-		self.stop()
+		self._connected.clear()
+		self._ready.clear()
+
+		await self.stop()
+
 		try:
 			self.protocol.transport.loseConnection()
 		except AttributeError:
 			pass
 	
+		# TODO: await until the connection is actually closed.
+		await asyncio.sleep(0)
+
 		self.protocol = None
-	
+
 	async def waitUntilReady (self):
-		if self.connected:
-			return True
-		elif self._startError is not None:
-			raise Exception(self._startError)
-		
-		d = asyncio.Future()
-		self._connectedWaits.append(d)
-		return d
+		await self._ready.wait()
 
 	def __init__(self, endpoint, alias = None, **kwargs):
 
 		self._ticks = []
-		self._connectedWaits = []
+		self._connected = asyncio.Event()
+		self._ready = asyncio.Event()
 		self._startError = None
 
 		if alias is None:
@@ -232,83 +230,67 @@ class Machine (Component):
 		# propagates the alias to all of the variables.
 		self.alias = alias
 
-		def callbackReady (_):
-			for d in self._connectedWaits:
-				d.callback(True)
-		
-		def errbackReady (failure):
-			self._startError = failure
+	async def connect ():
+		def errbackReady (error):
+			self._startError = error
 
-			for d in self._connectedWaits:
-				d.set_exception(failure)
+			for fut in self._ready._waiters:
+				if not fut.done():
+					fut.set_exception(error)
 
-		async def connect ():
-			if asyncio.isfuture(endpoint):
-				self.log.debug(
-					"Machine: {log_source.alias!s} - waiting for endpoint",
-					state = 'awaiting endpoint'
-				)
-
-				connected_endpoint = await endpoint
-
-			else:
-				connected_endpoint = endpoint
-
-			# Endpoint is ready
-			connection_name = connected_endpoint.name
-
+		if asyncio.isfuture(endpoint):
 			self.log.debug(
-				"Machine: {log_source.alias!s} - connecting to endpoint {endpoint.name}",
-				state = 'connecting to endpoint',
-				endpoint = connected_endpoint
+				"Machine: {log_source.alias!s} - waiting for endpoint",
+				state = 'awaiting endpoint'
 			)
 
-			try:
-				protocol = await maybeFuture(connected_endpoint.connect, self.protocolFactory)
-			except Exception as e:
-				errbackReady(e)
-				raise
+			connected_endpoint = await endpoint
 
-			# Connection made
-			self.log.debug(
-				"Machine: {log_source.alias!s} - connected to endpoint {protocol.connection_name}",
-				state = 'connected',
-				protocol = protocol
-			)
+		else:
+			connected_endpoint = endpoint
 
-			self.protocol = protocol
-			self.protocol.connection_name = connection_name
-			self.protocol.machine_alias = alias
+		# Endpoint is ready
+		connection_name = connected_endpoint.name
 
-			try:
-				start_result = await maybeFuture(self.start)
-				callbackReady(start_result)
+		self.log.debug(
+			"Machine: {log_source.alias!s} - connecting to endpoint {endpoint.name}",
+			state = 'connecting to endpoint',
+			endpoint = connected_endpoint
+		)
 
-			except Exception as e:
-				self.log.error(
-					"Machine: {log_source.alias!s} - error during start",
-					state = 'error start',
-					failure = failure
-				)
-
-				self.disconnect()
-				errbackReady(e)
-				raise
-
-		# def disconnected (reason):
-		# 	self.log.debug(
-		# 		"Machine: {log_source.alias!s} - disconnected {reason}",
-		# 		reason = reason
-		# 	)
-
-		# 	self.stop()
-		# 	del self.protocol
-		
 		try:
-			connect()
+			protocol = await maybeFuture(connected_endpoint.connect, self.protocolFactory)
 		except Exception as e:
-			self.log.error("Failed to make connection to machine {log_source.alias}. {error}", error = e)
+			errbackReady(e)
+			raise
 
+		# Connection made
+		self.protocol = protocol
+		self.protocol.connection_name = connection_name
+		self.protocol.machine_alias = self.alias
+
+		self.log.debug(
+			"Machine: {log_source.alias!s} - connected to endpoint {protocol.connection_name}",
+			state = 'connected',
+			protocol = protocol
+		)
+
+		try:
+			self._connected.set()
+			await self.start()
+			self._ready.set()
+
+		except Exception as error:
+			self.log.error(
+				"Machine: {log_source.alias!s} - error during start",
+				state = 'error start',
+				error = error
+			)
+
+			self.disconnect()
+			errbackReady(error)
+			raise
+		
 	def setup (self, **kwargs):
 		pass
 
