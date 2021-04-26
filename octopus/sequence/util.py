@@ -1,6 +1,10 @@
+import asyncio
+from inspect import isawaitable
+
 # Twisted Imports
-from twisted.internet import reactor, defer, task
+from twisted.internet.task import LoopingCall
 from twisted.python import log, failure
+from twisted.logger import Logger
 
 # Sibling Imports
 from .error import NotRunning, AlreadyRunning, NotPaused, Stopped
@@ -10,8 +14,8 @@ from ..constants import State
 from ..events import EventEmitter
 
 
-def init_child (parent, child):
-	from .sequence import Sequence
+def init_child(parent, child):
+	from octopus.sequence import Sequence
 
 	if child is None:
 		child = Sequence([])
@@ -28,29 +32,29 @@ def init_child (parent, child):
 	return child
 
 
-class Runnable (object):
+class Runnable(object):
 	"""
 	Objects that can be run or reset.
 	"""
 
-	def run (self, parent = None):
+	async def run(self, parent: BaseStep = None):
 		if self.state is not State.READY:
 			raise AlreadyRunning
 
 		self.state = State.RUNNING
 		self.parent = parent
-		return defer.maybeDeferred(self._run)
+		return await self._run()
 
-	def reset (self):
+	async def reset(self):
 		if self.state in (State.RUNNING, State.PAUSED):
 			raise AlreadyRunning
 
 		self.state = State.READY
 		self._onResume = None
-		return defer.maybeDeferred(self._reset)
+		return await self._reset()
 
 	@property
-	def root (self):
+	def root(self):
 		obj = self
 
 		while obj.parent is not None:
@@ -58,45 +62,49 @@ class Runnable (object):
 
 		return obj
 
-	def _run (self):
+	async def _run(self):
 		pass
 
-	def _reset (self):
+	async def _reset(self):
 		pass
 
 
-class Pausable (object):
-	def pause (self):
+class Pausable(object):
+	async def pause(self):
 		if self.state is not State.RUNNING:
 			raise NotRunning
 
 		self.state = State.PAUSED
-		return defer.maybeDeferred(self._pause)
+		return await self._pause()
 
-	def resume (self):
+	async def resume(self):
 		if self.state is not State.PAUSED:
 			raise NotPaused
 
 		self.state = State.RUNNING
-		d = defer.maybeDeferred(self._resume)
 
 		try:
 			onResume, self._onResume = self._onResume, None
-			onResume()
 		except (AttributeError, TypeError):
-			pass
+			onResume = None
 
-		return d
+		await self._resume()
 
-	def _pause (self):
+		if onResume is not None:
+			if isawaitable(onResume):
+				await onResume()
+			else:
+				onResume()
+
+	async def _pause (self):
 		pass
 
-	def _resume (self):
+	async def _resume (self):
 		pass
 
 
-class Cancellable (object):
-	def cancel (self, abort = False):
+class Cancellable(object):
+	async def cancel(self, abort: bool = False):
 		"""
 		Stop gracefully, cancelling a loop or moving on to next step.
 		"""
@@ -107,47 +115,50 @@ class Cancellable (object):
 		self._onResume = None
 
 		self.state = State.CANCELLED
-		return defer.maybeDeferred(self._cancel, abort)
+		return await self._cancel(abort)
 
-	def abort (self):
+	async def abort(self):
 		"""
 		Stop nongracefully, raising an error.
 		"""
 
 		try:
-			return self.cancel(abort = True)
+			return await self.cancel(abort=True)
 		except NotRunning:
-			return defer.succeed(None)
+			pass
 
-	def _pause (self):
+	async def _pause(self):
 		pass
 
-	def _resume (self):
+	async def _resume(self):
 		pass
 
-	def _cancel (self, abort = False):
+	async def _cancel(self, abort: bool = False):
 		pass
 
 
-class BaseStep (Runnable, Pausable, Cancellable):
-	pass
+class BaseStep(Runnable, Pausable, Cancellable):
+	log = Logger()
 
 
-class Dependent (Runnable, Pausable, Cancellable, EventEmitter):
-	def __init__ (self):
+class Dependent(Runnable, Pausable, Cancellable, EventEmitter):
+	log = Logger()
+
+	def __init__(self):
 		self.state = State.READY
 
 
-class Looping (Runnable, Pausable, Cancellable):
+class Looping(Runnable, Pausable, Cancellable):
 	"""
 	Subclass this to create step or dependent objects that involve iteration.
 	"""
+	log = Logger()
 
-	def __init__ (self, max_calls = None):
+	def __init__(self, max_calls: int = None):
 		self._max_calls = max_calls
 		self._calls = 0
 
-	def _run (self):
+	async def _run(self):
 		# Don't run at all if max_calls was set to 0.
 		if self._max_calls is not None and self._max_calls == 0:
 			return self._iteration_complete()
@@ -155,7 +166,7 @@ class Looping (Runnable, Pausable, Cancellable):
 		self._calls = 0
 		self._iteration_start()
 
-	def _test (self):
+	def _test(self):
 		"""
 		Override to control whether or not _iterate() is called on each cycle.
 		Return True to run, False to skip
@@ -163,7 +174,7 @@ class Looping (Runnable, Pausable, Cancellable):
 
 		return True
 
-	def _iterate (self):
+	def _iterate(self):
 		def _done (result):
 			self._schedule()
 
@@ -196,28 +207,28 @@ class Looping (Runnable, Pausable, Cancellable):
 			self._iteration_stop()
 			self._iteration_error(e)
 
-	def _schedule (self):
+	def _schedule(self):
 		"""
 		Executed when each loop is complete, if another loop is required.
 		"""
 
 		pass
 
-	def _call (self):
+	def _call(self):
 		"""
 		Executed on each loop
 		"""
 
 		pass
 
-	def _iteration_start (self):
+	def _iteration_start(self):
 		"""
 		Starts the loop running
 		"""
 
 		self._iterate()
 
-	def _iteration_stop (self):
+	def _iteration_stop(self):
 		"""
 		Stops the loop.
 
@@ -227,7 +238,7 @@ class Looping (Runnable, Pausable, Cancellable):
 
 		pass
 
-	def _iteration_complete (self):
+	def _iteration_complete(self):
 		"""
 		Called when the loop finishes.
 
@@ -237,7 +248,7 @@ class Looping (Runnable, Pausable, Cancellable):
 
 		pass
 
-	def _iteration_error (self, error):
+	def _iteration_error(self, error):
 		"""
 		Called if an error other than StopIteration is raised within
 		_test() or _iterate()
@@ -247,28 +258,28 @@ class Looping (Runnable, Pausable, Cancellable):
 
 		pass
 
-	def _cancel (self, abort = False):
+	async def _cancel(self, abort: bool = False):
 		self._iteration_stop()
 
-	def _reset (self):
+	async def _reset(self):
 		self._iteration_stop()
 		self._calls = 0
 
 
-class Caller (EventEmitter):
-	def __init__ (self, fn, fnArgs = None, fnKeywords = None):
+class Caller(EventEmitter):
+	def __init__(self, fn, fnArgs=None, fnKeywords=None):
 		self._fn = fn
 		self._args = fnArgs or ()
 		self._kwargs = fnKeywords or {}
 		self._step = None
 
-	def _bubbleEvent (self, event, data):
+	def _bubbleEvent(self, event, data):
 		# If a parent is allocated, pass on any events.
 		# Always pass on log events
 		if event == "log" or self.parent is not None:
 			self.emit(event, **data)
 
-	def _call (self):
+	async def _call(self):
 		if isinstance(self._fn, BaseStep):
 			self._step = self._fn
 
@@ -276,65 +287,56 @@ class Caller (EventEmitter):
 			# Act based on the result of fn().
 			result = self._fn(*self._args, **self._kwargs)
 
-			if isinstance(result, defer.Deferred):
+			if isawaitable(result):
 				# Tick will wait for the Deferred before cycling again.
-				self._step = result
+				self._step = await result
 				return result
 			elif isinstance(result, BaseStep):
 				self._step = result
 			else:
-				return defer.succeed(result)
+				return result
 
 		# fn was not callable.
 		else:
 			return None
 
 		# We have a Runnable to run.
-		d = defer.Deferred()
+		self._step.on("all", self._bubbleEvent)
 
-		def remove_events (passthrough):
+		# Run the step
+		try:
+			await self._step.reset()
+			return await self._step.run(parent=self.parent)
+		finally:
 			# Clean up after the step is complete
 			self._step.off("all", self._bubbleEvent)
 			self._step = None
 
-			if isinstance(passthrough, failure.Failure):
-				d.errback(passthrough)
-			else:
-				d.callback(passthrough)
-
-		self._step.on("all", self._bubbleEvent)
-
-		# Run the step
-		self._step.reset()
-		self._step.run(parent = self.parent).addBoth(remove_events)
-
-		return d
-
-	def _cancel (self, abort = False):
+	async def _cancel(self, abort=False):
 		self._iteration_stop()
 
 		# If fn returned a Deferred, continue to wait on it
-		if isinstance(self._step, defer.Deferred):
+		if isawaitable(self._step):
 			return self._step
 
 		try:
-			return self._step.cancel(abort)
+			return await self._step.cancel(abort)
 		except AttributeError:
 			pass # step might be None
 		except NotRunning:
 			pass # no problem
 
-	def _pause (self):
+	async def _pause(self):
 		try:
-			return self._step.pause()
+			return await self._step.pause()
 		except AttributeError:
 			pass # step might be None
 		except NotRunning:
 			pass # no problem
 
-	def _resume (self):
+	async def _resume(self):
 		try:
-			return self._step.resume()
+			return await self._step.resume()
 		except AttributeError:
 			pass # step might be None
 		except NotRunning:
@@ -348,7 +350,7 @@ class Caller (EventEmitter):
 # resume() returns to run state, also doesn't raise errors.
 #
 
-class Tick (Caller, Looping, Dependent):
+class Tick(Caller, Looping, Dependent):
 	"""
 	This is a dependent that runs a function periodically.
 
@@ -365,7 +367,7 @@ class Tick (Caller, Looping, Dependent):
 	to the parent.
 	"""
 
-	def __init__ (self, fn, interval, now = True, max_calls = None, fnArgs = None, fnKeywords = None):
+	def __init__(self, fn, interval: float, now: float = True, max_calls: int = None, fnArgs=None, fnKeywords=None):
 		"""
 		Initialise a Tick.
 
@@ -384,27 +386,27 @@ class Tick (Caller, Looping, Dependent):
 
 		self._interval = float(interval)
 		self._now = bool(now)
-		self._c = task.LoopingCall(self._iterate)
+		self._c = LoopingCall(self._iterate)
 
-	def _schedule (self):
+	def _schedule(self):
 		pass
 
-	def _iteration_start (self):
+	def _iteration_start(self):
 		self._c.start(self._interval, now = self._now)
 
-	def _iteration_stop (self):
+	def _iteration_stop(self):
 		if self._c and self._c.running:
 			self._c.stop()
 
-	def _iteration_complete (self):
+	def _iteration_complete(self):
 		self.state = State.COMPLETE
 
-	def _iteration_error (self, error):
+	def _iteration_error(self, error):
 		self.state = State.ERROR
 		log.err(error)
 
 
-class Trigger (Caller, Looping, Dependent):
+class Trigger(Caller, Looping, Dependent):
 	"""
 	This is a dependent that runs a function as soon as a test evaluates to True.
 
@@ -421,7 +423,7 @@ class Trigger (Caller, Looping, Dependent):
 	to the parent.
 	"""
 
-	def __init__ (self, expr, fn, max_calls = None, fnArgs = None, fnKeywords = None):
+	def __init__(self, expr, fn, max_calls: int = None, fnArgs=None, fnKeywords=None):
 		"""
 		Initialise a Trigger.
 
@@ -439,40 +441,40 @@ class Trigger (Caller, Looping, Dependent):
 
 		self._expr = expr
 
-	def _cancel (self, abort = False):
+	def _cancel(self, abort=False):
 		Looping._cancel(self, abort)
 		Caller._cancel(self, abort)
 
-	def _test (self, data = None):
+	def _test(self, data=None):
 		return bool(self._expr)
 
-	def _schedule (self):
+	def _schedule(self):
 		self._expr.once("change", self._iterate)
 
-	def _iteration_stop (self):
+	def _iteration_stop(self):
 		try:
 			self._expr.off("change", self._iterate)
 		except KeyError:
 			pass
 
-	def _iteration_complete (self):
+	def _iteration_complete(self):
 		self.state = State.COMPLETE
 
-	def _iteration_error (self, error):
+	def _iteration_error(self, error):
 		self.state = State.ERROR
 		log.err(error)
 
 
-class Dependents (Dependent):
+class Dependents(Dependent):
 
-	def __init__ (self):
+	def __init__(self):
 		Dependent.__init__(self)
 		self._dependents = set()
 
-	def _bubbleEvent (self, event, data):
+	def _bubbleEvent(self, event, data):
 		self.emit(event, **data)
 
-	def add (self, dep):
+	def add(self, dep: Dependent):
 		if hasattr(dep, "container") and dep.container is not None:
 			raise Exception("Dependent is already assigned")
 
@@ -482,18 +484,18 @@ class Dependents (Dependent):
 		dep.on("all", self._bubbleEvent)
 
 		if self.state is State.RUNNING:
-			dep.run()
+			asyncio.get_running_loop().create_task(dep.run())
 
 		return dep
 
-	def remove (self, dependent):
+	def remove(self, dependent: Dependent):
 		try:
 			self._dependents.remove(dependent)
 		except KeyError:
 			pass
 		else:
 			if self.state in (State.RUNNING, State.PAUSED):
-				dependent.cancel()
+				asyncio.get_running_loop().create_task(dep.cancel())
 
 			dependent.container = None
 
@@ -501,31 +503,31 @@ class Dependents (Dependent):
 
 	# Runnable
 
-	def _run (self):
+	async def _run(self):
 		for d in self._dependents:
 			try:
-				d.run()
+				asyncio.get_running_loop().create_task(dep.run())
 			except AlreadyRunning:
 				pass
-			except Exception as e:
-				return defer.fail(e)
 
-		return defer.succeed(None)
-
-	def _reset (self):
+	async def _reset(self):
 		r = []
+
+		async def cancel_running_dep(d):
+			await d.cancel()
+			await d.reset()
 
 		for d in self._dependents:
 			try:
 				r.append(d.reset())
 			except AlreadyRunning:
-				r.append(d.cancel().addCallback(lambda _: d.reset())) # May take a while - should return a deferred. So all these functions should return deferred's (like run?)
+				r.append(cancel_running_dep(d))
 
-		return defer.gatherResults(r)
+		return await asyncio.gather(r)
 
 	# Pausable
 
-	def _pause (self):
+	async def _pause(self):
 		r = []
 
 		for d in self._dependents:
@@ -534,9 +536,9 @@ class Dependents (Dependent):
 			except NotRunning:
 				pass
 
-		return defer.gatherResults(r)
+		return await asyncio.gather(r)
 
-	def _resume (self):
+	async def _resume(self):
 		r = []
 
 		for d in self._dependents:
@@ -545,11 +547,11 @@ class Dependents (Dependent):
 			except NotPaused:
 				pass
 
-		return defer.gatherResults(r)
+		return await asyncio.gather(r)
 
 	# Cancelable
 
-	def _cancel (self, abort = False):
+	async def _cancel(self, abort=False):
 		r = []
 
 		for d in self._dependents:
@@ -558,4 +560,4 @@ class Dependents (Dependent):
 			except NotRunning:
 				pass
 
-		return defer.gatherResults(r)
+		return await asyncio.gather(r)

@@ -1,14 +1,12 @@
-# Twisted Imports
-from twisted.python import log
-from twisted.internet.defer import maybeDeferred
+import asyncio
 
 # Package Imports
-from ..constants import State
-from ..util import now
+from octopus.constants import State
+from octopus.util import now
 
 # Sibling Imports
-from .util import Looping, Dependent
-from . import error
+from octopus.sequence.util import Looping, Dependent
+from octopus.sequence import error
 
 
 class Bind (Dependent):
@@ -45,10 +43,10 @@ class Bind (Dependent):
 		self.expr = expr
 		self.process = process
 
-	def _run (self):
+	async def _run (self):
 		self.expr.on("change", self._update)
 
-	def _cancel (self, abort = False):
+	async def _cancel (self, abort: bool = False):
 		self.expr.off("change", self._update)
 
 	def _update (self, data):
@@ -73,7 +71,16 @@ class Bind (Dependent):
 		if self.variable.value != new_val:
 			# Return a value so that self._calls gets incremented,
 			# swallow any errors to avoid terminating the loop.
-			return maybeDeferred(self.variable.set, new_val).addErrback(log.err)
+			async def set_value():
+				try:
+					await self.variable.set(new_val)
+				except Exception as err:
+					self.log.error(err)
+			
+			asyncio.get_running_loop().create_task(set_value())
+
+			return True
+			
 
 
 class PID (Looping, Dependent):
