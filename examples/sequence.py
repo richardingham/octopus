@@ -7,16 +7,17 @@ defer.Deferred.debug = True
 
 from octopus.sequence.runtime import *
 
-s = sequence(
-	log("one"),
-	sequence(
-		log("two"),
-		log("three"),
-	),
-	wait("3s"),
-	log("four"),
-)
 
-run(s)
+async def sequence_1():
+    await log("one")
+
+    async def sequence_2():
+        await log("two")
+        await log("three")
+
+    await sequence_2()
+    await wait("3s")
+    await log("four")
 
 
+run(sequence_1)

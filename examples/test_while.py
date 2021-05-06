@@ -2,18 +2,22 @@ from octopus.sequence.runtime import *
 
 v = variable(0, "v", "v")
 
-s = sequence(
-	loop_while(v < 5, sequence(
-		log("v = " + v),
-		set(v, v + 1)
-	)),
-	set(v, 0),
-	loop_while(v < 2, sequence(
-		log("v = " + v),
-		set(v, v + 1)
-	), min_calls = 5),
-	log("Done")
-)
+async def main_sequence():
+    while v < 5:
+        await log("v = " + v)
+        await v.set(v + 1)
 
-run(s)
+    v.set(0)
+
+    _calls = 0
+    min_calls = 5
+    while v < 2 or _calls < min_calls:
+        _calls += 1
+        await log("v = " + v)
+        await v.set(v + 1)
+
+    await log("Done")
+
+
+run(main_sequence)
 
