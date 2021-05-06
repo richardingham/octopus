@@ -14,24 +14,6 @@ from ..constants import State
 from ..events import EventEmitter
 
 
-def init_child(parent, child):
-	from octopus.sequence import Sequence
-
-	if child is None:
-		child = Sequence([])
-	elif isinstance(child, BaseStep):
-		pass
-	else:
-		try:
-			child = Sequence(child)
-		except TypeError:
-			raise Error("Argument must be an instance of Step or a list of Steps")
-
-	child.on("all", parent._bubbleEvent)
-
-	return child
-
-
 class Runnable(object):
 	"""
 	Objects that can be run or reset.
@@ -43,6 +25,7 @@ class Runnable(object):
 
 		self.state = State.RUNNING
 		self.parent = parent
+
 		return await self._run()
 
 	async def reset(self):
@@ -50,7 +33,6 @@ class Runnable(object):
 			raise AlreadyRunning
 
 		self.state = State.READY
-		self._onResume = None
 		return await self._reset()
 
 	@property
@@ -69,6 +51,13 @@ class Runnable(object):
 		pass
 
 
+def _set_result_unless_cancelled(fut, result):
+    """Helper setting the result only if the future was not cancelled."""
+    if fut.cancelled():
+        return
+    fut.set_result(result)
+
+
 class Pausable(object):
 	async def pause(self):
 		if self.state is not State.RUNNING:
@@ -77,6 +66,11 @@ class Pausable(object):
 		self.state = State.PAUSED
 		return await self._pause()
 
+		try:
+			self._resume_waiters
+		except AttributeError:
+			self._resume_waiters = []
+
 	async def resume(self):
 		if self.state is not State.PAUSED:
 			raise NotPaused
@@ -84,23 +78,33 @@ class Pausable(object):
 		self.state = State.RUNNING
 
 		try:
-			onResume, self._onResume = self._onResume, None
-		except (AttributeError, TypeError):
-			onResume = None
+			self._resume_waters
+		except AttributeError:
+			pass
+		else:
+			loop = asyncio.get_running_loop()
+			for fut in self._resume_waiters:
+				loop.call_soon(_set_result_unless_cancelled, FutureWarning)
+			self._resume_waiters = []
 
-		await self._resume()
-
-		if onResume is not None:
-			if isawaitable(onResume):
-				await onResume()
-			else:
-				onResume()
-
-	async def _pause (self):
+	async def _pause(self):
 		pass
 
-	async def _resume (self):
+	async def _resume(self):
 		pass
+
+	def resumed(self) -> Awaitable:
+		if self.state is not State.PAUSED:
+			return
+
+		try:
+			self._resume_waiters
+		except AttributeError:
+			self._resume_waiters = []
+		
+		fut = asyncio.get_running_loop().create_future()
+		self.resume_waiters.append(fut)
+		return fut
 
 
 class Cancellable(object):
@@ -111,8 +115,6 @@ class Cancellable(object):
 
 		if self.state not in (State.RUNNING, State.PAUSED):
 			raise NotRunning
-
-		self._onResume = None
 
 		self.state = State.CANCELLED
 		return await self._cancel(abort)
