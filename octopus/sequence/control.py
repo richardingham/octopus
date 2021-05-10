@@ -9,15 +9,14 @@ from octopus.sequence.util import Looping, Dependent
 from octopus.sequence import error
 
 
-class Bind (Dependent):
+class Bind(Dependent):
 	"""
 	Connects a variable to an expression.
 
-	Each iteration, the value of expr is evaluated.
-	If process is defined, then the result is passed through this function.
-	(If expr is None, then the return value of process is used).
-
-	variable is updated with this new value.
+	Whenever the value of expr changes:
+	1. If process is defined, then expr is passed to this function 
+	   which should return the new value.
+	2. The variable is updated with this new value.
 
 	Process must be a function that accepts one parameter,
 	usually a Variable or Expression.
@@ -25,62 +24,64 @@ class Bind (Dependent):
 	Set max and min to limit the value of variable.
 	"""
 
-	max = None
-	min = None
-
-	class NoUpdate (Exception):
+	class NoUpdate(Exception):
 		"""
 		Throw this exception from process function to prevent variable
 		from being changed.
 		"""
 
-		pass
-
-	def __init__ (self, variable, expr = None, process = None):
+	def __init__(self, variable, expr=None, process=None, max=None, min=None):
 		Dependent.__init__(self)
 
+		self.calls = 0
 		self.variable = variable
 		self.expr = expr
 		self.process = process
+		self.max = max
+		self.min = min
+		self._waiter = None
 
-	async def _run (self):
-		self.expr.on("change", self._update)
+	async def _run(self):
+		self.calls = 0
 
-	async def _cancel (self, abort: bool = False):
-		self.expr.off("change", self._update)
+		while True:
+			if self.state is State.PAUSED:
+				self._waiter = self.resumed.wait()
+				await self._waiter
 
-	def _update (self, data):
-		if self.state is not State.RUNNING:
-			return
-
-		# Use self.process if set
-		if callable(self.process):
-			try:
-				new_val = self.process(self.expr)
-			except NoUpdate:
+			if self.state is not State.RUNNING:
 				return
-		else:
-			new_val = self.expr.value
+			
+			self_waiter = self.expr.changed.wait()
+			await self._waiter
 
-		# Enforce bounds
-		if self.max is not None:
-			new_val = min(new_val, self.max)
-		if self.min is not None:
-			new_val = max(new_val, self.min)
-
-		if self.variable.value != new_val:
-			# Return a value so that self._calls gets incremented,
-			# swallow any errors to avoid terminating the loop.
-			async def set_value():
+			# Use self.process if set
+			if callable(self.process):
 				try:
-					await self.variable.set(new_val)
+					new_val = self.process(self.expr)
+				except NoUpdate:
+					return
+			else:
+				new_val = self.expr.value
+
+			# Enforce bounds
+			if self.max is not None:
+				new_val = min(new_val, self.max)
+			if self.min is not None:
+				new_val = max(new_val, self.min)
+
+			if self.variable.value != new_val:
+				self.calls += 1
+
+				try:
+					self._waiter = self.variable.set(new_val)
+					await self._waiter
 				except Exception as err:
 					self.log.error(err)
-			
-			asyncio.get_running_loop().create_task(set_value())
-
-			return True
-			
+	
+	async def _cancel(self, abort=False):
+		if self._waiter is not None:
+			self._waiter.cancel()
 
 
 class PID (Looping, Dependent):
@@ -189,7 +190,7 @@ class PID (Looping, Dependent):
 		self.response.set(new)
 
 
-class StateMonitor (Dependent):
+class StateMonitor(Dependent):
 	"""
 	Monitors a set of expressions.
 
@@ -210,23 +211,7 @@ class StateMonitor (Dependent):
 
 	"""
 
-	@property
-	def trigger_step (self):
-		return self._trigger_step
-
-	@trigger_step.setter
-	def trigger_step (self, step):
-		self._trigger_step = util.init_child(self, step)
-
-	@property
-	def reset_step (self):
-		return self._reset_step
-
-	@reset_step.setter
-	def reset_step (self, step):
-		self._reset_step = util.init_child(self, step)
-
-	def __init__ (self, tests = None, trigger_step = None, reset_step = None, auto_reset = True, cancel_on_trigger = True, cancel_on_reset = True):
+	def __init__(self, tests=None, trigger_step=None, reset_step=None, auto_reset=True, cancel_on_trigger=True, cancel_on_reset=True):
 		Dependent.__init__(self)
 
 		self._tests = set()
@@ -243,113 +228,126 @@ class StateMonitor (Dependent):
 		self.cancel_on_reset = cancel_on_reset
 		self.auto_reset = auto_reset
 
-	def add (self, test):
+		self._trigger_coro_task = None
+		self._reset_coro_task = None
+		self._tests_changed = asyncio.Event()
+		self._trigger_reset = asyncio.Event()
+
+	def add(self, test):
 		"""
 		Add an expression to the set that is tested. If test becomes
 		False, the monitor is triggered.
 		"""
 
 		self._tests.add(test)
+		self._tests_changed.set()
+		self._tests_changed.clear()
 
-		if self.state is State.RUNNING:
-			test.on("change", self._changed)
-
-	def remove (self, test):
+	def remove(self, test):
 		"""
 		Remove an expression from the set of tests.
 		"""
 
 		self._tests.discard(test)
+		self._tests_changed.set()
+		self._tests_changed.clear()
 
-		try:
-			test.off("change", self._changed)
-		except KeyError:
-			pass
-
-	def _changed (self, data = None):
-		if self.state is not State.RUNNING:
-			return
-
-		# If the monitor is already triggered, check if we need to reset.
-		if self._triggered:
-			if self.auto_reset and all(self._tests):
-				self.reset_trigger()
-
-		# Check if the monitor should be triggered.
-		elif not all(self._tests):
-			# Cancel reset_step
-			try:
-				if self.cancel_on_trigger:
-					self.reset_step.cancel()
-			except error.NotRunning:
-				pass
-
-			# Run trigger_step
-			try:
-				self.trigger_step.reset()
-				self.trigger_step.run()
-			except error.AlreadyRunning:
-				return
-
-			self._triggered = True
-
-	def reset_trigger (self, run_reset_step = True):
+	def reset_trigger(self, run_reset_step=True):
 		self._triggered = False
 
 		if self.cancel_on_reset:
-			try:
-				self.trigger_step.cancel()
-			except error.NotRunning:
-				pass
+			self._trigger_coro_task.cancel()
 
 		if run_reset_step:
-			try:
-				self.reset_step.reset()
-				self.reset_step.run()
-			except error.AlreadyRunning:
+			if self._reset_coro_task is None or self._reset_coro_task.done():
+				self._reset_coro_task = asyncio.create_task(self.reset_step())
+
+		self._trigger_reset.set()
+		self._trigger_reset.clear()
+
+	async def _run(self):
+		while True:
+			if self.state is State.PAUSED:
+				self._waiter = self.resumed.wait()
+				await self._waiter
+
+			if self.state is not State.RUNNING:
 				return
+			
+			self._waiter = asyncio.wait(
+				[self._tests_changed.wait()] + [test.changed.wait() for test in self._tests()],
+				return_when=asyncio.FIRST_COMPLETED
+			)
+			await self._waiter
 
-	def _run (self):
-		for test in self._tests:
-			test.on("change", _changed)
+			# If the monitor is already triggered, check if we need to reset.
+			if self._triggered:
+				if self.auto_reset and all(self._tests):
+					self.reset_trigger()
+				elif not self.auto_reset:
+					self._waiter = self._trigger_reset.wait()
+					await self._waiter
 
-		_changed()
+			# Check if the monitor should be triggered.
+			elif not all(self._tests):
+				# Cancel reset_step
+				if self.cancel_on_trigger:
+					self._reset_coro_task.cancel()
 
-	def _cancel (self, abort = False):
-		self.reset_trigger()
+				# Run trigger_step
+				if self._trigger_coro_task is None or self._trigger_coro_task.done():
+					self._trigger_coro_task = asyncio.create_task(self.trigger_step())
+				else:
+					return
 
-		for test in self._tests:
-			try:
-				test.off("change", _changed)
-			except KeyError:
-				pass
+				self._triggered = True
 
-	def _pause (self):
+	async def _cancel(self, abort=False):
+		if self._waiter is not None:
+			self._waiter.cancel()
+		
+		if self._reset_coro_task is not None:
+			self._reset_coro_task.cancel()
+		
+		if self._trigger_coro_task is not None:
+			self._trigger_coro_task.cancel()
+
+	async def _pause(self):
 		d = []
 
 		try:
-			d.append(self.trigger_step.pause())
-		except error.NotRunning:
+			d.append(self._waiter.pause())
+		except AttributeError:
 			pass
 
 		try:
-			d.append(self.reset_step.pause())
-		except error.NotRunning:
+			d.append(self._trigger_coro_task.pause())
+		except AttributeError:
 			pass
 
-		return defer.gatherResults(d)
+		try:
+			d.append(self._reset_coro_task.pause())
+		except AttributeError:
+			pass
 
-	def _resume (self):
+		await asyncio.gather(d)
+
+	async def _resume(self):
 		d = []
 
 		try:
-			d.append(self.trigger_step.resume())
-		except error.NotRunning:
+			d.append(self._waiter.pause())
+		except AttributeError:
 			pass
 
 		try:
-			d.append(self.reset_step.resume())
-		except error.NotRunning:
+			d.append(self._trigger_coro_task.resume())
+		except AttributeError:
 			pass
 
-		return defer.gatherResults(d)
+		try:
+			d.append(self._reset_coro_task.resume())
+		except AttributeError:
+			pass
+
+		await asyncio.gather(d)
