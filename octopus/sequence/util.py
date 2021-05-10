@@ -2,7 +2,6 @@ import asyncio
 from inspect import isawaitable
 
 # Twisted Imports
-from twisted.internet.task import LoopingCall
 from twisted.python import log, failure
 from twisted.logger import Logger
 
@@ -10,30 +9,19 @@ from twisted.logger import Logger
 from .error import NotRunning, AlreadyRunning, NotPaused, Stopped
 
 # Package Imports
-from ..constants import State
-from ..events import EventEmitter
+from octopus.task import LoopingCall
+from octopus.constants import State
+from octopus.events import EventEmitter
 
 
 class Runnable(object):
 	"""
-	Objects that can be run or reset.
+	Objects that can be run, reset, paused, cancelled.
 	"""
 
-	async def run(self, parent: BaseStep = None):
-		if self.state is not State.READY:
-			raise AlreadyRunning
-
-		self.state = State.RUNNING
-		self.parent = parent
-
-		return await self._run()
-
-	async def reset(self):
-		if self.state in (State.RUNNING, State.PAUSED):
-			raise AlreadyRunning
-
+	def __init__(self):
 		self.state = State.READY
-		return await self._reset()
+		self.resumed = asyncio.Event()
 
 	@property
 	def root(self):
@@ -44,70 +32,40 @@ class Runnable(object):
 
 		return obj
 
-	async def _run(self):
-		pass
+	async def run(self, parent: BaseStep = None):
+		if self.state is not State.READY:
+			raise AlreadyRunning
 
-	async def _reset(self):
-		pass
+		self.state = State.RUNNING
+		self.resumed.set()
+		self.parent = parent
 
+		return await self._run()
 
-def _set_result_unless_cancelled(fut, result):
-    """Helper setting the result only if the future was not cancelled."""
-    if fut.cancelled():
-        return
-    fut.set_result(result)
+	async def reset(self):
+		if self.state in (State.RUNNING, State.PAUSED):
+			raise AlreadyRunning
 
+		self.state = State.READY
+		self.resumed.clear()
+		return await self._reset()
 
-class Pausable(object):
 	async def pause(self):
 		if self.state is not State.RUNNING:
 			raise NotRunning
 
 		self.state = State.PAUSED
+		self.resumed.clear()
 		return await self._pause()
-
-		try:
-			self._resume_waiters
-		except AttributeError:
-			self._resume_waiters = []
 
 	async def resume(self):
 		if self.state is not State.PAUSED:
 			raise NotPaused
 
 		self.state = State.RUNNING
+		self.resumed.set()
+		return await self._resume()
 
-		try:
-			self._resume_waters
-		except AttributeError:
-			pass
-		else:
-			loop = asyncio.get_running_loop()
-			for fut in self._resume_waiters:
-				loop.call_soon(_set_result_unless_cancelled, FutureWarning)
-			self._resume_waiters = []
-
-	async def _pause(self):
-		pass
-
-	async def _resume(self):
-		pass
-
-	def resumed(self) -> Awaitable:
-		if self.state is not State.PAUSED:
-			return
-
-		try:
-			self._resume_waiters
-		except AttributeError:
-			self._resume_waiters = []
-		
-		fut = asyncio.get_running_loop().create_future()
-		self.resume_waiters.append(fut)
-		return fut
-
-
-class Cancellable(object):
 	async def cancel(self, abort: bool = False):
 		"""
 		Stop gracefully, cancelling a loop or moving on to next step.
@@ -129,6 +87,12 @@ class Cancellable(object):
 		except NotRunning:
 			pass
 
+	async def _run(self):
+		pass
+
+	async def _reset(self):
+		pass
+
 	async def _pause(self):
 		pass
 
@@ -139,24 +103,25 @@ class Cancellable(object):
 		pass
 
 
-class BaseStep(Runnable, Pausable, Cancellable):
+class BaseStep(Runnable):
 	log = Logger()
 
 
-class Dependent(Runnable, Pausable, Cancellable, EventEmitter):
+class Dependent(Runnable, EventEmitter):
 	log = Logger()
 
 	def __init__(self):
-		self.state = State.READY
+		super().__init__()
 
 
-class Looping(Runnable, Pausable, Cancellable):
+class Looping(Runnable):
 	"""
 	Subclass this to create step or dependent objects that involve iteration.
 	"""
 	log = Logger()
 
 	def __init__(self, max_calls: int = None):
+		super().__init__()
 		self._max_calls = max_calls
 		self._calls = 0
 

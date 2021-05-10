@@ -4,7 +4,7 @@ from twisted.python import log
 from twisted.logger import Logger
 
 # Octopus Imports
-from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
+from octopus.sequence.util import Runnable, BaseStep
 from octopus.sequence.error import NotRunning, AlreadyRunning, NotPaused
 from octopus.constants import State
 from octopus.data.data import BaseVariable
@@ -79,13 +79,13 @@ def populate_blocks ():
 	Workspace.blocks = { c.__name__: c for c in _subclasses(Block) }
 
 
-class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
+class Workspace (Runnable, EventEmitter):
 	blocks = {}
 	
 	log = Logger()
 
 	def __init__ (self):
-		self.state = State.READY
+		super().__init__()
 
 		self.allBlocks = {}
 		self.topBlocks = {}

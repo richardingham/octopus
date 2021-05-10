@@ -22,8 +22,7 @@ from ..data.data import BaseVariable, Variable, Constant
 
 
 __all__ = [
-	"Step", "Sequence", "Parallel", "IfStep", "SetStep", "CancelStep",
-	"LogStep", "WhileStep", "WaitStep", "WaitUntilStep", "CallStep",
+	"Step", "WaitStep", "WaitUntilStep",
 	"Error", "NotRunning", "AlreadyRunning", "NotPaused", "Stopped"
 ]
 
@@ -43,13 +42,13 @@ class Step (util.BaseStep, EventEmitter):
 	duration = 0
 
 	def __init__(self, expr=None):
+		super().__init__()
 		self.id = next(_counter)
 
 		if expr is not None and not isinstance(expr, BaseVariable):
 			expr = Constant(expr)
 
 		self._expr = expr
-		self.state = State.READY
 
 
 _wait_re = re.compile("(?:(\d+) *h(?:our(?:s)?)?)? *(?:(\d+) *m(?:in(?:ute(?:s)?)?)?)? *(?:(\d+) *s(?:ec(?:ond(?:s)?)?)?)? *(?:(\d+) *m(?:illi)?s(?:ec(?:ond(?:s)?)?)?)?", re.I)
@@ -173,7 +172,7 @@ class WaitUntilStep (Step):
 		self._start = now()
 
 		while True:
-			await self._expr.changed()
+			await self._expr.changed.wait()
 
 			if self.state is State.PAUSED:
 				await self.resumed()

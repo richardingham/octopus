@@ -2,7 +2,7 @@ from twisted.internet import reactor
 
 from octopus.sequence.runtime import *
 from octopus.sequence import runtime as r
-from octopus.sequence.util import Runnable, Pausable, Cancellable, Dependent
+from octopus.sequence.util import Dependent
 
 
 class MyD (Dependent):

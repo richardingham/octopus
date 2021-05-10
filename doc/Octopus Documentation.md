@@ -509,8 +509,7 @@ Running, Pausing, Resuming, Cancelling
 
 (For implementation see `octopus.sequence.util`)
 
-Sequences and Steps are defined as `Runnable`, `Pausable` and `Cancellable`
-objects.
+Sequences and Steps are defined as `Runnable` objects.
 
 "Runnable" objects have `run` and `reset` methods. "Pausable" objects have
 `pause` and `resume` methods. "Cancellable" objects have `cancel` and `abort`
