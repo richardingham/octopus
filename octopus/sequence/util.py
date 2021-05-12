@@ -137,14 +137,10 @@ class Dependent(Runnable, EventEmitter):
 		
 		self.__task_calls -= 1
 
-		if self.__task_calls == 0:
-			await cancel_and_wait(self.__task, self.__loop)
+		if self.state in (State.RUNNING, State.PAUSED):
+			if self.__task_calls == 0:
+				await cancel_and_wait(self.__task, self.__loop)
 		
-
-
-
-
-
 
 class Looping(Runnable):
 	"""
