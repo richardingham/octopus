@@ -174,7 +174,7 @@ class Looping(Runnable):
 			self._schedule()
 
 		def _error (failure):
-			self.state = state.ERROR
+			self.state = State.ERROR
 
 		try:
 			if self.state is State.PAUSED:
