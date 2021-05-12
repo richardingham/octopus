@@ -1,5 +1,27 @@
 from typing import Awaitable, Callable, Any
 import asyncio
+import functools
+
+# From asyncio.tasks
+def release_waiter(waiter, *args):
+    if not waiter.done():
+        waiter.set_result(None)
+
+# From asyncio.tasks
+async def cancel_and_wait(fut, loop):
+    """Cancel the *fut* future or task and wait until it completes."""
+
+    waiter = loop.create_future()
+    cb = functools.partial(release_waiter, waiter)
+    fut.add_done_callback(cb)
+
+    try:
+        fut.cancel()
+        # We cannot wait on *fut* directly to make
+        # sure cancel_and_wait itself is reliably cancellable.
+        await waiter
+    finally:
+        fut.remove_done_callback(cb)
 
 class PausableSleep():
     def __init__(self, delay, result=None):

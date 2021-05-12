@@ -9,7 +9,7 @@ from twisted.logger import Logger
 from .error import NotRunning, AlreadyRunning, NotPaused, Stopped
 
 # Package Imports
-from octopus.task import LoopingCall
+from octopus.task import LoopingCall, cancel_and_wait
 from octopus.constants import State
 from octopus.events import EventEmitter
 
@@ -40,7 +40,12 @@ class Runnable(object):
 		self.resumed.set()
 		self.parent = parent
 
-		return await self._run()
+		try:
+			await self._run()
+			self.state = State.COMPLETE
+		except asyncio.CancelledError:
+			self.state = State.CANCELLED
+			raise
 
 	async def reset(self):
 		if self.state in (State.RUNNING, State.PAUSED):
@@ -112,6 +117,31 @@ class Dependent(Runnable, EventEmitter):
 
 	def __init__(self):
 		super().__init__()
+		self.__task_calls = 0
+		self.__task = None
+		self.__loop = None
+	
+	async def __aenter__(self):
+		if self.__task_calls == 0:
+			self.__loop = asyncio.get_running_loop()
+			self.__task = self.__loop.create_task(self.run())
+
+		self.__task_calls += 1
+	
+	async def __aexit__(self, exc_type, exc, tb):
+		if exc_type is not None:
+			self.__task.cancel()
+			return False
+		
+		self.__task_calls -= 1
+
+		if self.__task_calls == 0:
+			await cancel_and_wait(self.__task, self.__loop)
+		
+
+
+
+
 
 
 class Looping(Runnable):
