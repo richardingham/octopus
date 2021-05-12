@@ -52,15 +52,18 @@ class Bind(Dependent):
 			if self.state is not State.RUNNING:
 				return
 			
-			self_waiter = self.expr.changed.wait()
+			self._waiter = self.expr.changed.wait()
 			await self._waiter
+
+			if self.state is not State.RUNNING:
+				continue
 
 			# Use self.process if set
 			if callable(self.process):
 				try:
 					new_val = self.process(self.expr)
-				except NoUpdate:
-					return
+				except Bind.NoUpdate:
+					continue
 			else:
 				new_val = self.expr.value
 
@@ -280,6 +283,9 @@ class StateMonitor(Dependent):
 			)
 			await self._waiter
 
+			if self.state is not State.RUNNING:
+				continue
+
 			# If the monitor is already triggered, check if we need to reset.
 			if self._triggered:
 				if self.auto_reset and all(self._tests):
@@ -298,7 +304,7 @@ class StateMonitor(Dependent):
 				if self._trigger_coro_task is None or self._trigger_coro_task.done():
 					self._trigger_coro_task = asyncio.create_task(self.trigger_step())
 				else:
-					return
+					continue
 
 				self._triggered = True
 
