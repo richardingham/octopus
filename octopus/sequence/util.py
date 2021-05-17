@@ -25,22 +25,12 @@ class Runnable(object):
 		self.state = State.READY
 		self.resumed = asyncio.Event()
 
-	@property
-	def root(self):
-		obj = self
-
-		while obj.parent is not None:
-			obj = obj.parent
-
-		return obj
-
-	async def run(self, parent: BaseStep = None):
+	async def run(self):
 		if self.state is not State.READY:
 			raise AlreadyRunning
 
 		self.state = State.RUNNING
 		self.resumed.set()
-		self.parent = parent
 
 		try:
 			await self._run()
