@@ -7,7 +7,7 @@ async def main_sequence():
         await log("v = " + v)
         await v.set(v + 1)
 
-    v.set(0)
+    await v.set(0)
 
     _calls = 0
     min_calls = 5
