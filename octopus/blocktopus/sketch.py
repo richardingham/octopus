@@ -4,10 +4,9 @@ import os
 import re
 import json
 from time import time as now
+import asyncio
 
 # Twisted Imports
-from twisted.internet import defer, threads
-from twisted.python import log
 from twisted.python.filepath import FilePath
 from twisted.logger import Logger
 
@@ -98,9 +97,9 @@ class Sketch (EventEmitter):
 	def copyFrom (self, id):
 		return self._loadFrom(id, copy = True)
 
-	@defer.inlineCallbacks
-	def _loadFrom (self, id, copy = False):
-		sketch = yield self.db.runQuery(
+	
+	async def _loadFrom (self, id, copy = False):
+		sketch = await self.db.runQuery(
 			"SELECT title FROM sketches WHERE guid = ?",
 			(id, )
 		)
@@ -133,7 +132,8 @@ class Sketch (EventEmitter):
 			snapFile = sketchDir.child('snapshot.' + str(max_snap) + '.log')
 
 			if max_snap > 0:
-				snapshot = yield threads.deferToThread(snapFile.getContent)
+				loop = asyncio.get_running_loop()
+				snapshot = await loop.run_in_executor(None, snapFile.getContent)
 				events = list(map(
 					json.loads,
 					filter(lambda e: e.strip() != b"", snapshot.split(b"\n"))
@@ -216,7 +216,7 @@ class Sketch (EventEmitter):
 	# Experiment
 	#
 
-	def runExperiment (self, context):
+	async def runExperiment (self, context):
 		if self.experiment is not None:
 			raise ExperimentAlreadyRunning
 
@@ -231,49 +231,35 @@ class Sketch (EventEmitter):
 			"experiment": self.experiment.id
 		}, self.experiment)
 
-		def _done (result):
+		try:
+			try:
+				result = await self.experiment.run()
+			except Cancelled as msg:
+				result = msg
+
+		except Exception as exc:
+			if isinstance(exc, Aborted):
+				exc = Aborted("Manual stop")
+
+			self.notifySubscribers("experiment", "state-error", {
+				"sketch": self.id,
+				"experiment": self.experiment.id,
+				"error": exc
+			}, self.experiment)
+
+		else:
 			self.notifySubscribers("experiment", "state-stopped", {
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
 
-			self.experiment = None
-
+		finally:
 			self.log.info(
 				"Closing experiment for sketch {log_source.id!s} ({result})",
 				result = result
 			)
 
-		def _cancelled (failure):
-			f = failure.trap(Aborted, Cancelled)
-
-			if f is not Aborted:
-				_done(failure)
-			else:
-				_error(Aborted("Manual stop"))
-
-		def _error (failure):
-			self.log.error(
-				"Ended experiment for sketch {log_source.id!s} due to error ({error})",
-				error = failure
-			)
-
-			try:
-				errorMessage = failure.getErrorMessage()
-			except AttributeError:
-				errorMessage = str(failure)
-
-			self.notifySubscribers("experiment", "state-error", {
-				"sketch": self.id,
-				"experiment": self.experiment.id,
-				"error": errorMessage
-			}, self.experiment)
-
 			self.experiment = None
-
-		d = self.experiment.run()
-		d.addCallbacks(_done, _cancelled)
-		d.addErrback(_error)
 
 	def pauseExperiment (self, context):
 		if self.experiment is None:
@@ -283,20 +269,21 @@ class Sketch (EventEmitter):
 			"Pausing experiment for sketch {log_source.id!s}"
 		)
 
-		def _notify (result):
+		try:
+			self.experiment.pause()
+		except Exception as exc:
+			self.notifySubscribers("experiment", "state-error", {
+				"sketch": self.id,
+				"experiment": self.experiment.id,
+				"error": str(exc)
+			}, self.experiment)
+			raise
+		else:
 			self.notifySubscribers("experiment", "state-paused", {
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
 
-		def _error (failure):
-			self.notifySubscribers("experiment", "state-error", {
-				"sketch": self.id,
-				"experiment": self.experiment.id,
-				"error": str(failure)
-			}, self.experiment)
-
-		self.experiment.pause().addCallbacks(_notify, _error)
 
 	def resumeExperiment (self, context):
 		if self.experiment is None:
@@ -306,20 +293,19 @@ class Sketch (EventEmitter):
 			"Resuming experiment for sketch {log_source.id!s}"
 		)
 
-		def _notify (result):
+		try:
+			self.experiment.resume()
+		except Exception as exc:
+			self.notifySubscribers("experiment", "state-error", {
+				"sketch": self.id,
+				"experiment": self.experiment.id,
+				"error": str(exc)
+			}, self.experiment)
+		else:
 			self.notifySubscribers("experiment", "state-resumed", {
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
-
-		def _error (failure):
-			self.notifySubscribers("experiment", "state-error", {
-				"sketch": self.id,
-				"experiment": self.experiment.id,
-				"error": str(failure)
-			}, self.experiment)
-
-		self.experiment.resume().addCallbacks(_notify, _error)
 
 	def stopExperiment (self, context):
 		if self.experiment is None:
