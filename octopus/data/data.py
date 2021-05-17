@@ -1,6 +1,7 @@
 # System Imports
 from math import ceil
 import operator
+import asyncio
 
 # Package Imports
 from ..util import now, timerange
@@ -232,6 +233,7 @@ def _default_alias (object):
 
 class BaseVariable (EventEmitter):
 	alias = ""
+	changed: asyncio.Event
 
 	@property
 	def value (self):
@@ -281,6 +283,7 @@ class Variable (BaseVariable):
 
 	def __init__ (self, type, value = None):
 		self.alias = _default_alias(self)
+		self.changed = asyncio.Event()
 
 		self._time = None
 		self._value = None
@@ -416,6 +419,7 @@ class Constant (BaseVariable):
 	def __init__ (self, value):
 		self._value = value
 		self._type = type(value)
+		self.changed = asyncio.Event()  # Won't be called!
 
 	def get (self, start, interval = None):
 		start, interval = _prepare(start, interval)
@@ -494,6 +498,7 @@ def _def_binary_op (symbol, operatorFn):
 			self._value = None
 			self._type = None
 
+		self.changed = asyncio.Event()
 		lhs.on("change", self._changed)
 		rhs.on("change", self._changed)
 
