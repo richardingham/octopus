@@ -251,81 +251,6 @@ class Looping(Runnable):
 		self._calls = 0
 
 
-class Caller(EventEmitter):
-	def __init__(self, fn, fnArgs=None, fnKeywords=None):
-		self._fn = fn
-		self._args = fnArgs or ()
-		self._kwargs = fnKeywords or {}
-		self._step = None
-
-	def _bubbleEvent(self, event, data):
-		# If a parent is allocated, pass on any events.
-		# Always pass on log events
-		if event == "log" or self.parent is not None:
-			self.emit(event, **data)
-
-	async def _call(self):
-		if isinstance(self._fn, BaseStep):
-			self._step = self._fn
-
-		elif callable(self._fn):
-			# Act based on the result of fn().
-			result = self._fn(*self._args, **self._kwargs)
-
-			if isawaitable(result):
-				# Tick will wait for the Deferred before cycling again.
-				self._step = await result
-				return result
-			elif isinstance(result, BaseStep):
-				self._step = result
-			else:
-				return result
-
-		# fn was not callable.
-		else:
-			return None
-
-		# We have a Runnable to run.
-		self._step.on("all", self._bubbleEvent)
-
-		# Run the step
-		try:
-			await self._step.reset()
-			return await self._step.run(parent=self.parent)
-		finally:
-			# Clean up after the step is complete
-			self._step.off("all", self._bubbleEvent)
-			self._step = None
-
-	async def _cancel(self, abort=False):
-		self._iteration_stop()
-
-		# If fn returned a Deferred, continue to wait on it
-		if isawaitable(self._step):
-			return self._step
-
-		try:
-			return await self._step.cancel(abort)
-		except AttributeError:
-			pass # step might be None
-		except NotRunning:
-			pass # no problem
-
-	async def _pause(self):
-		try:
-			return await self._step.pause()
-		except AttributeError:
-			pass # step might be None
-		except NotRunning:
-			pass # no problem
-
-	async def _resume(self):
-		try:
-			return await self._step.resume()
-		except AttributeError:
-			pass # step might be None
-		except NotRunning:
-			pass # no problem
 
 #
 # Idea 2 - allow dependents to be attached to multiple parents
@@ -335,7 +260,56 @@ class Caller(EventEmitter):
 # resume() returns to run state, also doesn't raise errors.
 #
 
-class Tick(Caller, Looping, Dependent):
+def _next_interval(start_time: float, interval: float, when: float) -> float:
+    """
+    Calculate the time to wait until the next iteration of a looping call.
+    @param start_time: the time the loop was started.
+    @param interval: the interval between each call.
+    @param when: The present time from whence the call is scheduled.
+    """
+
+    # How long should it take until the next invocation of our
+    # callable?  Split out into a function because there are multiple
+    # places we want to 'return' out of this.
+    if interval == 0:
+        # If the interval is 0, just go as fast as possible, always
+        # return zero, call ourselves ASAP.
+        return 0
+
+    # Compute the time until the next interval; how long has this call
+    # been running for?
+    running_for = when - start_time
+
+    # And based on that start time, when does the current interval end?
+    until_next_interval = interval - (running_for % interval)
+
+    # Now that we know how long it would be, we have to tell if the
+    # number is effectively zero.  However, we can't just test against
+    # zero.  If a number with a small exponent is added to a number
+    # with a large exponent, it may be so small that the digits just
+    # fall off the end, which means that adding the increment makes no
+    # difference; it's time to tick over into the next interval.
+    if when == when + until_next_interval:
+        # If it's effectively zero, then we need to add another
+        # interval.
+        return interval
+
+    # Finally, if everything else is normal, we just return the
+    # computed delay.
+    return until_next_interval
+
+
+def _missed_calls(until_next_interval: float, interval: float, when: float) -> int:
+    """
+    Return the number of skipped calls from a loop.
+    @param until_next_interval: value returned from wait_time.
+    @param interval: the interval between each call.
+    @param when: the last call time.
+    """
+    return int((until_next_interval - when) / interval - 1)
+
+
+class Tick(Dependent):
 	"""
 	This is a dependent that runs a function periodically.
 
@@ -364,34 +338,48 @@ class Tick(Caller, Looping, Dependent):
 		@param fnArgs: Arguments to pass to fn.
 		@param fnKeywords: Keyword arguments to pass to fn.
 		"""
-
 		Dependent.__init__(self)
-		Caller.__init__(self, fn, fnArgs, fnKeywords)
-		Looping.__init__(self, max_calls)
+
+		self._fn = fn
+		self._args = fnArgs or ()
+		self._kwargs = fnKeywords or {}
 
 		self._interval = float(interval)
 		self._now = bool(now)
-		self._c = LoopingCall(self._iterate)
 
-	def _schedule(self):
-		pass
+		self._calls = 0
+		self._max_calls = max_calls
 
-	def _iteration_start(self):
-		self._c.start(self._interval, now = self._now)
+	async def _run(self):
+		from octopus.task import PausableSleep
+		self._calls = 0
 
-	def _iteration_stop(self):
-		if self._c and self._c.running:
-			self._c.stop()
+		loop = asyncio.get_running_loop()
+		start_time = loop.time()
 
-	def _iteration_complete(self):
-		self.state = State.COMPLETE
+		if not self._now:
+			self._waiter = PausableSleep(_next_interval(start_time, self._interval, start_time))
+			await self._waiter
 
-	def _iteration_error(self, error):
-		self.state = State.ERROR
-		log.err(error)
+		while True:
+			last_run_time = loop.time()
+			result = self._fn(*self._args, **self._kwargs)
+
+			if isawaitable(result):
+				self._waiter = result
+				result = await self._waiter
+			
+			self.last_result = result
+			self._calls += 1
+
+			if self._calls >= self._max_calls:
+				break
+		
+			self._waiter = PausableSleep(_next_interval(start_time, self._interval, last_run_time))
+			await self._waiter
 
 
-class Trigger(Caller, Looping, Dependent):
+class Trigger(Dependent):
 	"""
 	This is a dependent that runs a function as soon as a test evaluates to True.
 
@@ -421,128 +409,33 @@ class Trigger(Caller, Looping, Dependent):
 		"""
 
 		Dependent.__init__(self)
-		Caller.__init__(self, fn, fnArgs, fnKeywords)
-		Looping.__init__(self, max_calls)
 
+		self._fn = fn
+		self._args = fnArgs or ()
+		self._kwargs = fnKeywords or {}
 		self._expr = expr
 
-	def _cancel(self, abort=False):
-		Looping._cancel(self, abort)
-		Caller._cancel(self, abort)
-
-	def _test(self, data=None):
-		return bool(self._expr)
-
-	def _schedule(self):
-		self._expr.once("change", self._iterate)
-
-	def _iteration_stop(self):
-		try:
-			self._expr.off("change", self._iterate)
-		except KeyError:
-			pass
-
-	def _iteration_complete(self):
-		self.state = State.COMPLETE
-
-	def _iteration_error(self, error):
-		self.state = State.ERROR
-		log.err(error)
-
-
-class Dependents(Dependent):
-
-	def __init__(self):
-		Dependent.__init__(self)
-		self._dependents = set()
-
-	def _bubbleEvent(self, event, data):
-		self.emit(event, **data)
-
-	def add(self, dep: Dependent):
-		if hasattr(dep, "container") and dep.container is not None:
-			raise Exception("Dependent is already assigned")
-
-		self._dependents.add(dep)
-		dep.container = self
-
-		dep.on("all", self._bubbleEvent)
-
-		if self.state is State.RUNNING:
-			asyncio.get_running_loop().create_task(dep.run())
-
-		return dep
-
-	def remove(self, dependent: Dependent):
-		try:
-			self._dependents.remove(dependent)
-		except KeyError:
-			pass
-		else:
-			if self.state in (State.RUNNING, State.PAUSED):
-				asyncio.get_running_loop().create_task(dep.cancel())
-
-			dependent.container = None
-
-		dep.off("all", self._bubbleEvent)
-
-	# Runnable
+		self._calls = 0
+		self._max_calls = max_calls
 
 	async def _run(self):
-		for d in self._dependents:
-			try:
-				asyncio.get_running_loop().create_task(dep.run())
-			except AlreadyRunning:
-				pass
+		self._calls = 0
 
-	async def _reset(self):
-		r = []
+		while True:
+			self._waiter = self._expr.changed.wait()
+			await self._waiter
 
-		async def cancel_running_dep(d):
-			await d.cancel()
-			await d.reset()
+			if not bool(self._expr):
+				continue
 
-		for d in self._dependents:
-			try:
-				r.append(d.reset())
-			except AlreadyRunning:
-				r.append(cancel_running_dep(d))
+			result = self._fn(*self._args, **self._kwargs)
 
-		return await asyncio.gather(r)
+			if isawaitable(result):
+				self._waiter = result
+				result = await self._waiter
+			
+			self.last_result = result
+			self._calls += 1
 
-	# Pausable
-
-	async def _pause(self):
-		r = []
-
-		for d in self._dependents:
-			try:
-				r.append(d.pause())
-			except NotRunning:
-				pass
-
-		return await asyncio.gather(r)
-
-	async def _resume(self):
-		r = []
-
-		for d in self._dependents:
-			try:
-				r.append(d.resume())
-			except NotPaused:
-				pass
-
-		return await asyncio.gather(r)
-
-	# Cancelable
-
-	async def _cancel(self, abort=False):
-		r = []
-
-		for d in self._dependents:
-			try:
-				r.append(d.cancel(abort))
-			except NotRunning:
-				pass
-
-		return await asyncio.gather(r)
+			if self._calls >= self._max_calls:
+				break
