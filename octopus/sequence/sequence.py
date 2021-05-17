@@ -175,7 +175,7 @@ class WaitUntilStep (Step):
 			await self._expr.changed.wait()
 
 			if self.state is State.PAUSED:
-				await self.resumed()
+				await self.resumed.wait()
 
 			if self.state is State.RUNNING and bool(self._expr) is True:
 				return
