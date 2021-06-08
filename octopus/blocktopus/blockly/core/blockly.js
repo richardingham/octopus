@@ -831,7 +831,7 @@ export function xmlTextToDom (text) {
   return Xml.textToDom(text);
 }
 
-export function xmDomToBlock(workspace, xmlBlock) {
+export function xmlDomToBlock(workspace, xmlBlock) {
   return Xml.domToBlock(workspace, xmlBlock);
 }
 

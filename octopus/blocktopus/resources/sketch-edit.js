@@ -513,14 +513,16 @@ jQuery(function ($) {
       }
       try {
         var dom = Blockly.xmlTextToDom(text);
+        workspace.startEmitTransaction();
         $(dom).children('block').each(function () {
-          block = Blockly.Xml.domToBlock(workspace, this);
+          block = Blockly.xmlDomToBlock(workspace, this);
           block.moveTo(0, maxY);
 
           blockY = block.getRelativeToSurfaceXY().y;
           blockH = block.svg_.svgGroup_.getBBox().height;
           maxY = Math.max(maxY, blockY + blockH + 10);
         });
+        workspace.completeEmitTransaction();
       } catch (e) {
         workspace.discardEmitTransaction();
 
