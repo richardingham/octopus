@@ -1,6 +1,6 @@
-import Blockly from '../core/blockly';
 import Block from '../core/block';
 import Blocks from '../core/blocks';
+import Msg from '../core/msg';
 import Mutator from '../core/mutator';
 import Names from '../core/names';
 import {GlobalScope} from '../core/variables';

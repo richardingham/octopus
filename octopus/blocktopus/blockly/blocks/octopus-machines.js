@@ -263,7 +263,7 @@ var machineBlock = {
           thisBlock.applyMutation();
         };
         this.applyMutation = function applyMutation (xmlElement) {
-          var opt, attributes = machineVars.slice();
+          var opt, attributes = thisBlock.machineVars.slice();
           for (var i = 0, max = options.length; i < max; i++) {
             opt = options[i];
             if (opt.createAttributes) {
