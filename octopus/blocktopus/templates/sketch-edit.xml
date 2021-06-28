@@ -76,7 +76,6 @@
 		<block type="machine_knauer_S100"></block>
 		<block type="machine_vici_multivalve"></block>
 		<block type="machine_mt_icir"></block>
-		<block type="machine_wpi_aladdin"></block>
 		<block type="machine_phidgets_phsensor"></block>
 		<block type="machine_omega_hh306a"></block>
 		<block type="machine_harvard_phd2000"></block>
