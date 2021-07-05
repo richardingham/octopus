@@ -276,7 +276,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				self.log.error(
 					"Received error {error} from block {block.id}. Aborting.",
 					error = failure,
-					block = block.id,
+					block = block,
 				)
 
 				def _errback (error):
