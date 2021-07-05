@@ -73,7 +73,7 @@ def get_connection_js_definitions ():
 
 
 def populate_blocks ():
-	from .blocks import mathematics, text, logic, controls, variables, machines, dependents, images, colour
+	from .blocks import mathematics, text, logic, controls, variables, machines, dependents, images, images_thermal, colour
 	get_block_plugin_modules()
 
 	Workspace.blocks = { c.__name__: c for c in _subclasses(Block) }

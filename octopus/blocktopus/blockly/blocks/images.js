@@ -161,6 +161,28 @@ Blocks['image_intensityfn'] = {
   }
 };
 
+Blocks['image_thermalfn'] = {
+  /**
+   * Block for finding degree value of a radiometric image
+   * @this Block
+   */
+  init: function() {
+    var OPERATORS =
+        [['maximum', 'MAX'],
+         ['minimum', 'MIN'],
+         ['mean', 'MEAN'],
+         ['median', 'MEDIAN']];
+    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
+    this.setOutput(true, 'Number');
+    this.appendValueInput('INPUT')
+        .setCheck('Image')
+        .appendField('get thermal')
+        .appendField(new FieldDropdown(OPERATORS), 'OP');
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
+  }
+};
+
 Blocks['image_crop'] = {
   /**
    * Block for cropping an image

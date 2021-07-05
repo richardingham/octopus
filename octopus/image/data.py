@@ -31,6 +31,7 @@ class ColorSpace:
     HSV = 5
     XYZ  = 6
     YCrCb = 7
+    RADIOMETRIC = 8
     
 
 class Image:
@@ -82,6 +83,8 @@ class BaseImageProperty (BaseVariable):
         pass
 
     def __str__ (self):
+        from .functions import get_BGR_bitmap
+
         img = self.get_value()
 
         if img is None:
@@ -89,7 +92,7 @@ class BaseImageProperty (BaseVariable):
 
         scaled_x = int(img.width / 4)
         scaled_y = int(img.height / 4)
-        scaled = cv2.resize(img.data, (scaled_x, scaled_y))
+        scaled = cv2.resize(get_BGR_bitmap(img), (scaled_x, scaled_y))
 
         # Encode
         is_success, buffer = cv2.imencode(".png", scaled)

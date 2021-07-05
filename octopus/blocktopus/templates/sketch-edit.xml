@@ -127,6 +127,7 @@
 		<!--block type="machine_multitracker"></block-->
 		<block type="connection_cvcamera"></block>
 		<block type="connection_camera_proxy"></block>
+		<block type="connection_cv_flir_lepton"></block>
 		<block type="colour_picker"></block>
 		<block type="image_findcolour"></block>
 		<block type="image_threshold"></block>
@@ -136,6 +137,7 @@
 		<block type="image_huedistance"></block>
 		<!--block type="image_crop"></block-->
 		<!--block type="image_intensityfn"></block-->
+		<block type="image_thermalfn"></block>
 		<!--block type="image_tonumber"></block-->
 	</category>
 	<category name="Math" icon="superscript">

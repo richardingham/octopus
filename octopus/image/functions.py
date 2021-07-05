@@ -552,6 +552,13 @@ def min(image: Image, other: typing.Union[int, Image]):
     return Image(result, colorspace = image.colorspace)
 
 
+def _radiometric_to_gray(data: numpy.ndarray) -> numpy.ndarray:
+    result = numpy.zeros_like(data)
+    cv2.normalize(data, result, 0, 65535, cv2.NORM_MINMAX)
+    numpy.right_shift(result, 8, result)
+    return numpy.uint8(result)
+
+
 def _getGrayscaleBitmap(image: Image) -> numpy.ndarray:
     if (image.colorspace == ColorSpace.BGR or
             image.colorspace == ColorSpace.UNKNOWN):
@@ -566,6 +573,8 @@ def _getGrayscaleBitmap(image: Image) -> numpy.ndarray:
         return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_XYZ2RGB), cv2.COLOR_RGB2GRAY)
     elif (image.colorspace == ColorSpace.GRAY):
         return cv2.split(image.data)[0]
+    elif (image.colorspace == ColorSpace.RADIOMETRIC):
+        return cv2.split(_radiometric_to_gray(image.data))[0]
     else:
         logger.warning("_getGrayscaleBitmap: There is no supported conversion to gray colorspace")
         return None
@@ -584,6 +593,28 @@ def _getHSVBitmap(image: Image) -> numpy.ndarray:
         return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_XYZ2RGB), cv2.COLOR_RGB2HSV)
     elif (image.colorspace == ColorSpace.GRAY):
         return cv2.cvtColor(cv2.cvtColor(image.data, cv2.COLOR_GRAY2RGB), cv2.COLOR_RGB2HSV)
+    elif (image.colorspace == ColorSpace.RADIOMETRIC):
+        return cv2.cvtColor(cv2.cvtColor(_radiometric_to_gray(image.data), cv2.COLOR_GRAY2RGB), cv2.COLOR_RGB2HSV)
     else:
         logger.warning("_getHSVBitmap: There is no supported conversion to HSV colorspace")
+        return None
+
+def get_BGR_bitmap(image: Image) -> numpy.ndarray:
+    if (image.colorspace == ColorSpace.BGR or
+            image.colorspace == ColorSpace.UNKNOWN):
+        return image.data
+    elif (image.colorspace == ColorSpace.BGR):
+        return cv2.cvtColor(image.data, cv2.COLOR_BGR2RGB)
+    elif (image.colorspace == ColorSpace.HLS):
+        return cv2.cvtColor(image.data, cv2.COLOR_HLS2RGB)
+    elif (image.colorspace == ColorSpace.HSV):
+        return image.data
+    elif (image.colorspace == ColorSpace.XYZ):
+        return cv2.cvtColor(image.data, cv2.COLOR_XYZ2RGB)
+    elif (image.colorspace == ColorSpace.GRAY):
+        return cv2.cvtColor(image.data, cv2.COLOR_GRAY2RGB)
+    elif (image.colorspace == ColorSpace.RADIOMETRIC):
+        return cv2.cvtColor(_radiometric_to_gray(image.data), cv2.COLOR_GRAY2RGB)
+    else:
+        logger.warning("get_bgr_bitmap: There is no supported conversion to BGR colorspace")
         return None

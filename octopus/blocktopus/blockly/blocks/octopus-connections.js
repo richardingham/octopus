@@ -87,6 +87,16 @@ Blocks['connection_cvcamera'] = extend({
 }, connectionBlock);
 
 
+Blocks['connection_cv_flir_lepton'] = extend({
+  "connInputFields": [
+    "FLIR Lepton - Camera No",
+    { "name": "ID", "type": "integer", "default": "0" },
+  ],
+  "connOutputType": "CameraConnection",
+  "connTooltip": "Represents a USB camera. The first camera has id 0, the second 1, and so on."
+}, connectionBlock);
+
+
 Blocks['connection_camera_proxy'] = {
   init: function() {
     //this.setHelpUrl('http://www.example.com/');
