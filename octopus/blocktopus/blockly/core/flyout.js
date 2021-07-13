@@ -35,7 +35,7 @@ import Xml from './xml';
 import {bindEvent_, unbindEvent_, addClass_, removeClass_, getSvgXY_, isRightButton, fireUiEvent, fireUiEventNow, createSvgElement} from './utils';
 import {VARIABLES_NAME_TYPE, PROCEDURES_NAME_TYPE} from '../constants';
 
-var Variables = Blockly.Variables;
+//var Variables = Blockly.Variables;
 
 /**
  * Class for a flyout.
