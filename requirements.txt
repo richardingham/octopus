@@ -10,3 +10,4 @@ autobahn
 wget
 opencv-python
 bcrypt
+click

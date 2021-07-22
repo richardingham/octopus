@@ -16,11 +16,12 @@ from zope.interface import implements
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 from autobahn.websocket.compress import PerMessageDeflateOffer, PerMessageDeflateOfferAccept
 
+# Command line
+import click
+
 # Sibling Imports
-from .. import sketch
-from .. import experiment
-from . import websocket
-from . import template
+from octopus.blocktopus import sketch, experiment
+from octopus.blocktopus.server import websocket, template
 
 # System Imports
 import sys, os
@@ -36,25 +37,27 @@ now = time.time
 ## Database
 ##
 
-data_path = os.path.abspath(os.path.join(os.getcwd(), "data"))
+default_data_path = os.path.abspath(os.path.join(os.getcwd(), "data"))
 
-print(data_path)
-dbfilename = os.path.join(data_path, "octopus.db")
+def set_data_path(data_path):
+	print("Using data path:", data_path)
 
-if not os.path.isfile(dbfilename):
-	sys.exit(
-		"ERROR: Database not found.\n" + 
-		"Searched in: " + dbfilename + "\n" +
-		"Create the database using initialise.py before starting the server."
-	)
+	dbfilename = os.path.join(data_path, "octopus.db")
 
-dbpool = adbapi.ConnectionPool("sqlite3", dbfilename, check_same_thread = False)
+	if not os.path.isfile(dbfilename):
+		sys.exit(
+			"ERROR: Database not found.\n" + 
+			"Searched in: " + dbfilename + "\n" +
+			"Create the database using initialise.py before starting the server."
+		)
 
-experiment.Experiment.db = dbpool
-experiment.Experiment.dataDir = os.path.join(data_path, "experiments")
+	dbpool = adbapi.ConnectionPool("sqlite3", dbfilename, check_same_thread = False)
 
-sketch.Sketch.db = dbpool
-sketch.Sketch.dataDir = os.path.join(data_path, "sketches")
+	experiment.Experiment.db = dbpool
+	experiment.Experiment.dataDir = os.path.join(data_path, "experiments")
+
+	sketch.Sketch.db = dbpool
+	sketch.Sketch.dataDir = os.path.join(data_path, "sketches")
 
 ##
 ## Sketch / Experiment Runtime
@@ -604,18 +607,24 @@ def makeConsoleServerFactory ():
 	return factory
 
 
-def run_server ():
+@click.command()
+@click.option('-d', '--data-dir', default=default_data_path, type=str, help="Data directory")
+@click.option('-p', '--port', 'http_port', default=8001, type=int, help="HTTP port for the interface", envvar='BLOCKTOPUS_HTTP_PORT')
+@click.option('--ws-host', default='localhost', type=str, help="Hostname for the websocket")
+@click.option('--ws-port', default=9000, type=int, help="Port for the websocket")
+def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000):
 	import sys
 	log.startLogging(sys.stdout)
 
-	ws_port = 9000
-	ws_factory = makeWebsocketServerFactory("localhost", ws_port)
+	set_data_path(data_dir)
+
+	ws_factory = makeWebsocketServerFactory(ws_host, ws_port)
 	reactor.listenTCP(ws_port, ws_factory)
-	log.msg("WS listening on port %s" % ws_port)
+	log.msg(f"WS listening on port {ws_port}")
 
 	http_factory = makeHTTPResourcesServerFactory()
-	reactor.listenTCP(8001, http_factory)
-	log.msg("HTTP listening on port 8001")
+	reactor.listenTCP(http_port, http_factory)
+	log.msg(f"HTTP listening on port {http_port}")
 
 	# try:
 	# 	console_factory = makeConsoleServerFactory()
