@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # Twisted Imports
-from twisted.application import internet, service
 from twisted.enterprise import adbapi
-from twisted.internet import reactor, defer, utils
-from twisted.spread import pb
+from twisted.internet import reactor, defer
 from twisted.python import log, filepath, urlpath
 from twisted.web import server, static, resource, guard, http
 from twisted.web.template import flatten
@@ -606,31 +604,6 @@ def makeConsoleServerFactory ():
 	return factory
 
 
-def makeService (options):
-	"""
-	This will be called from twistd plugin system and we are supposed to
-	create and return an application service.
-	"""
-
-	application = service.IServiceCollection(
-		service.Application("octopus_editor_server", uid = 1, gid = 1)
-	)
-
-	ws_factory = makeWebsocketServerFactory(str(options["wshost"]), int(options["wsport"]))
-	internet.TCPServer(int(options["wsport"]), ws_factory).setServiceParent(application)
-
-	http_factory = makeHTTPResourcesServerFactory()
-	internet.TCPServer(int(options["port"]), http_factory).setServiceParent(application)
-
-	try:
-		console_factory = makeConsoleServerFactory()
-		internet.TCPServer(int(options["consoleport"]), console_factory).setServiceParent(application)
-	except IOError:
-		log.err("ERROR: Console could not be started. Create SSH keys using initialise.py before running.")
-
-	return application
-
-
 def run_server ():
 	import sys
 	log.startLogging(sys.stdout)
@@ -643,6 +616,12 @@ def run_server ():
 	http_factory = makeHTTPResourcesServerFactory()
 	reactor.listenTCP(8001, http_factory)
 	log.msg("HTTP listening on port 8001")
+
+	# try:
+	# 	console_factory = makeConsoleServerFactory()
+	# 	reactor.listenTCP(4040, console_factory)
+	# except IOError:
+	# 	log.err("ERROR: Console could not be started. Create SSH keys using initialise.py before running.")
 
 	reactor.run()
 

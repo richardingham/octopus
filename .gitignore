@@ -43,6 +43,7 @@ twisted/plugins/dropin.cache
 
 # Octopus plugins
 plugins/*
+octopus-plugins.txt
 
 # Dependencies
 node_modules/*
