@@ -40,16 +40,23 @@ now = time.time
 default_data_path = os.path.abspath(os.path.join(os.getcwd(), "data"))
 
 def set_data_path(data_path):
+	from os.path import join as pjoin
+	from distutils.dir_util import mkpath
+
 	print("Using data path:", data_path)
 
-	dbfilename = os.path.join(data_path, "octopus.db")
+	dbfilename = pjoin(data_path, "octopus.db")
 
 	if not os.path.isfile(dbfilename):
-		sys.exit(
-			"ERROR: Database not found.\n" + 
-			"Searched in: " + dbfilename + "\n" +
-			"Create the database using initialise.py before starting the server."
-		)
+		from octopus.blocktopus.database.createdb import createdb
+
+		print(f"No database found - creating in {data_path}")
+		createdb(data_path)
+
+		print ("Creating data directories")
+		mkpath(pjoin(data_path, 'sketches'))
+		mkpath(pjoin(data_path, 'experiments'))
+
 
 	dbpool = adbapi.ConnectionPool("sqlite3", dbfilename, check_same_thread = False)
 
@@ -573,42 +580,9 @@ def makeHTTPResourcesServerFactory ():
 
 	return server.Site(root)
 
-def makeConsoleServerFactory ():
-	from twisted.conch.insults import insults
-	from twisted.conch.manhole import ColoredManhole
-	from twisted.conch.manhole_ssh import ConchFactory, TerminalRealm
-	from twisted.conch.ssh import keys
-	from twisted.cred import checkers, portal
-
-	shell_password = str(uuid.uuid1()).split("-")[0]
-
-	# Note - using unsafe credentials checker.
-	checker = checkers.InMemoryUsernamePasswordDatabaseDontUse(octopus=shell_password)
-
-	def chainProtocolFactory():
-		return insults.ServerProtocol(
-			ColoredManhole,
-			dict(
-				sketches = loaded_sketches,
-				experiments = running_experiments
-			)
-		)
-
-	rlm = TerminalRealm()
-	rlm.chainedProtocolFactory = chainProtocolFactory
-	ptl = portal.Portal(rlm, [checker])
-
-	factory = ConchFactory(ptl)
-	factory.publicKeys[b"ssh-rsa"] = keys.Key.fromFile(os.path.join(data_path, "ssh-keys", "ssh_host_rsa_key.pub"))
-	factory.privateKeys[b"ssh-rsa"] = keys.Key.fromFile(os.path.join(data_path, "ssh-keys", "ssh_host_rsa_key"))
-
-	print ("Octopus SSH access credentials are octopus:%s\n\n" % shell_password)
-
-	return factory
-
 
 @click.command()
-@click.option('-d', '--data-dir', default=default_data_path, type=str, help="Data directory")
+@click.option('-d', '--data-dir', default=default_data_path, type=click.Path(exists=True, file_okay=False, dir_okay=True), help="Data directory")
 @click.option('-p', '--port', 'http_port', default=8001, type=int, help="HTTP port for the interface", envvar='BLOCKTOPUS_HTTP_PORT')
 @click.option('--ws-host', default='localhost', type=str, help="Hostname for the websocket")
 @click.option('--ws-port', default=9000, type=int, help="Port for the websocket")
@@ -625,12 +599,6 @@ def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost',
 	http_factory = makeHTTPResourcesServerFactory()
 	reactor.listenTCP(http_port, http_factory)
 	log.msg(f"HTTP listening on port {http_port}")
-
-	# try:
-	# 	console_factory = makeConsoleServerFactory()
-	# 	reactor.listenTCP(4040, console_factory)
-	# except IOError:
-	# 	log.err("ERROR: Console could not be started. Create SSH keys using initialise.py before running.")
 
 	reactor.run()
 

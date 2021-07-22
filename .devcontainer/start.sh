@@ -1,6 +1,1 @@
-if [ ! -d "/workspaces/octopus/data/experiments" ]
-then
-  python /workspaces/octopus/tools/initialise.py
-fi
-
-twistd --nodaemon --pidfile=twistd.pid octopus-editor --wshost 127.0.0.1
+python /workspaces/octopus/blocktopus/server/server.py -d /workspaces/octopus/data --ws-host=127.0.0.1
