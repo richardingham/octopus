@@ -31,6 +31,7 @@ import sqlite3
 import json
 import time
 import re
+from pathlib import Path
 
 now = time.time
 logger = Logger()
@@ -39,34 +40,33 @@ logger = Logger()
 ## Database
 ##
 
-default_data_path = os.path.abspath(os.path.join(os.getcwd(), "data"))
+default_data_path = Path.cwd().resolve() / "data"
 
-def set_data_path(data_path):
-	from os.path import join as pjoin
+def set_data_path(data_path: Path):
 	from distutils.dir_util import mkpath
 
-	print("Using data path:", data_path)
+	logger.info("Using data path: {path}", path=data_path)
 
-	dbfilename = pjoin(data_path, "octopus.db")
+	dbfilename = data_path / "octopus.db"
 
-	if not os.path.isfile(dbfilename):
+	if not dbfilename.is_file():
 		from octopus.blocktopus.database.createdb import createdb
 
-		print(f"No database found - creating in {data_path}")
+		logger.warn("No database found - creating in {dir}", dri=data_path)
 		createdb(data_path)
 
-		print ("Creating data directories")
-		mkpath(pjoin(data_path, 'sketches'))
-		mkpath(pjoin(data_path, 'experiments'))
+		logger.info("Creating data directories for sketches and experiments")
+		mkpath(data_path / 'sketches')
+		mkpath(data_path / 'experiments')
 
 
 	dbpool = adbapi.ConnectionPool("sqlite3", dbfilename, check_same_thread = False)
 
 	experiment.Experiment.db = dbpool
-	experiment.Experiment.dataDir = os.path.join(data_path, "experiments")
+	experiment.Experiment.dataDir = data_path / "experiments"
 
 	sketch.Sketch.db = dbpool
-	sketch.Sketch.dataDir = os.path.join(data_path, "sketches")
+	sketch.Sketch.dataDir = data_path / "sketches"
 
 ##
 ## Sketch / Experiment Runtime
@@ -606,9 +606,10 @@ def setup_logging():
 @click.option('--ws-port', default=9000, type=int, help="Port for the websocket")
 def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000):
 	import sys
+	from pathlib import Path
 	setup_logging()
 
-	set_data_path(data_dir)
+	set_data_path(Path(data_dir))
 
 	ws_factory = makeWebsocketServerFactory(ws_host, ws_port)
 	reactor.listenTCP(ws_port, ws_factory)

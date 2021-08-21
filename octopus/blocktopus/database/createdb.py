@@ -1,11 +1,14 @@
 import sqlite3
-from os.path import join, dirname
+from pathlib import Path
+from twisted.logger import Logger
 
-def createdb (dir):
-	print ("Creating database " + join(dir, 'octopus.db'))
+log = Logger()
+
+def createdb(dir: Path):
+	log.info("Creating database: {file}", file=(dir / 'octopus.db'))
 
 	# Create Database
-	conn = sqlite3.connect(join(dir, 'octopus.db'))
+	conn = sqlite3.connect(dir / 'octopus.db')
 
 	# Create tables
 	conn.execute('''CREATE TABLE sketches (
@@ -29,4 +32,5 @@ def createdb (dir):
 
 # By default, create in the ../data directory.
 if __name__ == "__main__":
+	from os.path import join, dirname
 	createdb(join(dirname(dirname(__file__)), 'data'))
