@@ -21,13 +21,13 @@ ENV NODE_ENV="${NODE_ENV}" \
 RUN mkdir -p octopus/blocktopus/resources/blockly/pack/ && mkdir -p octopus/blocktopus/blockly/ && chown node:node -R octopus
 COPY --chown=node:node octopus/blocktopus/blockly octopus/blocktopus/blockly
 
-
-
 RUN if [ "${NODE_ENV}" != "development" ]; then \
   yarn run build; fi
 
 CMD ["bash"]
 
+#
+# App
 #
 
 FROM python:3.9.5-slim-buster AS app
@@ -44,6 +44,7 @@ RUN apt-get update \
 
 USER python
 
+# Install requirements and plugins
 COPY --chown=python:python requirements*.txt octopus-plugins.txt ./
 COPY --chown=python:python bin/ ./bin
 
@@ -51,6 +52,7 @@ RUN chmod 0755 bin/* && dos2unix bin/pip3-install && bin/pip3-install
 
 RUN if [ -f octopus-plugins.txt ]; then pip install -r octopus-plugins.txt; fi
 
+# Set environment variables
 ARG OCTOPUS_ENV="production"
 ENV OCTOPUS_ENV="${OCTOPUS_ENV}" \
     PYTHONUNBUFFERED="true" \
@@ -58,21 +60,19 @@ ENV OCTOPUS_ENV="${OCTOPUS_ENV}" \
     PATH="${PATH}:/home/python/.local/bin" \
     USER="python"
 
+# Download the JS/CSS/etc resources if in prodution env
+RUN mkdir -p octopus/blocktopus/resources/cache/ && mkdir -p octopus/blocktopus/templates/ && chown python:python -R octopus
+RUN mkdir tools && chown python:python tools
+COPY --chown=python:python octopus/blocktopus/templates/template-resources.json octopus/blocktopus/templates/template-resources.json
+COPY --chown=python:python tools/build.py tools
+RUN if [ "$OCTOPUS_ENV" == "production" ]; then \
+  python tools/build.py ; fi
 
+# Copy packed javascript from the webpack worker
 COPY --chown=python:python --from=webpack /app/octopus/blocktopus/resources/blockly/pack /pack/
+
+# Copy rest of source
 COPY --chown=python:python . ./
-
-# RUN dos2unix bin/docker-entrypoint-web
-
-# RUN python tools/build.py
-
-# RUN dos2unix start.sh
-# RUN ["chmod", "+x", "start.sh"]
-
-# Start the platform
-#CMD ./start.sh
-
-# ENTRYPOINT ["/app/bin/docker-entrypoint-web"]
 
 CMD ["python", "-m", "octopus.blocktopus.server"]
 
