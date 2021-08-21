@@ -23,26 +23,35 @@ class XMLFile (Twisted_XMLFile):
 		return os.path.splitext(self._path.basename())[0]
 
 
+if os.getenv('OCTOPUS_ENV', "production") == "production":
+	def _resource_tags (template_name, resource_ext, tag):
+		for src in resources[template_name].keys():
+			if os.path.splitext(src)[1] != resource_ext:
+				continue
+
+			yield tag.clone().fillSlots(
+				src = resources_uri + src
+			)
+
+else:
+	def _resource_tags (template_name, resource_ext, tag):
+		for name, src in resources[template_name].items():
+			if os.path.splitext(name)[1] != resource_ext:
+				continue
+
+			yield tag.clone().fillSlots(
+				src = src
+			)
+
+
 class ElementWithCachedResources (Element):
 	@renderer
 	def cached_js (self, request, tag):
-		for src in resources[self.loader.getTemplateName()].keys():
-			if os.path.splitext(src)[1] != '.js':
-				continue
-
-			yield tag.clone().fillSlots(
-				src = resources_uri + src
-			)
+		yield from _resource_tags(self.loader.getTemplateName(), '.js', tag)
 
 	@renderer
 	def cached_css (self, request, tag):
-		for src in resources[self.loader.getTemplateName()].keys():
-			if os.path.splitext(src)[1] != '.css':
-				continue
-
-			yield tag.clone().fillSlots(
-				src = resources_uri + src
-			)
+		yield from _resource_tags(self.loader.getTemplateName(), '.css', tag)
 
 
 class Root (ElementWithCachedResources):
@@ -218,7 +227,7 @@ class ExperimentRunning (ElementWithCachedResources):
 	@renderer
 	def editor_body (self, request, tag):
 		return tag.fillSlots(
-			websocket_url = websocketUrl,
+			websocket_url = websocket_url,
 			sketch_id = self.experiment.sketch.id,
 			experiment_id = self.experiment.id,
 			title = self.experiment.sketch.title,
