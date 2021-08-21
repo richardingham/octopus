@@ -36,7 +36,7 @@ WORKDIR /app
 
 RUN apt-get update \
   && apt-get install -y build-essential curl libpq-dev git --no-install-recommends \
-  && apt-get install -y libatlas-base-dev libffi-dev libgl1 usbutils dos2unix --no-install-recommends \
+  && apt-get install -y libatlas-base-dev libffi-dev libglib2.0-0 libgl1 usbutils dos2unix --no-install-recommends \
   && rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man \
   && apt-get clean \
   && useradd --create-home python \
