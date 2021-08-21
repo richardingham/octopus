@@ -3,6 +3,7 @@
 # Twisted Imports
 from twisted.enterprise import adbapi
 from twisted.internet import reactor, defer
+from twisted.logger import Logger
 from twisted.python import log, filepath, urlpath
 from twisted.web import server, static, resource, guard, http
 from twisted.web.template import flatten
@@ -32,6 +33,7 @@ import time
 import re
 
 now = time.time
+logger = Logger()
 
 ##
 ## Database
@@ -581,6 +583,22 @@ def makeHTTPResourcesServerFactory ():
 	return server.Site(root)
 
 
+def setup_logging():
+	import sys
+	from twisted import logger
+
+	observers = []
+
+	log_level_filter = logger.LogLevelFilterPredicate(defaultLogLevel=logger.LogLevel.info)
+
+	observers.append(logger.FilteringLogObserver(
+		observer=logger.textFileLogObserver(sys.stdout),
+		predicates=[log_level_filter]
+	))
+
+	logger.globalLogBeginner.beginLoggingTo(observers)
+
+
 @click.command()
 @click.option('-d', '--data-dir', default=default_data_path, type=click.Path(exists=True, file_okay=False, dir_okay=True), help="Data directory")
 @click.option('-p', '--port', 'http_port', default=8001, type=int, help="HTTP port for the interface", envvar='BLOCKTOPUS_HTTP_PORT')
@@ -588,21 +606,21 @@ def makeHTTPResourcesServerFactory ():
 @click.option('--ws-port', default=9000, type=int, help="Port for the websocket")
 def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000):
 	import sys
-	log.startLogging(sys.stdout)
+	setup_logging()
 
 	set_data_path(data_dir)
 
 	ws_factory = makeWebsocketServerFactory(ws_host, ws_port)
 	reactor.listenTCP(ws_port, ws_factory)
-	log.msg(f"WS listening on port {ws_port}")
+	logger.info("WS listening on {ws_host} port {ws_port}", ws_host=ws_host, ws_port=ws_port)
 
 	http_factory = makeHTTPResourcesServerFactory()
 	reactor.listenTCP(http_port, http_factory)
-	log.msg(f"HTTP listening on port {http_port}")
+	logger.info("HTTP listening on port {http_port}", http_port=http_port)
 
 	reactor.run()
 
-	log.msg("Server stopped")
+	logger.info("Server stopped")
 
 
 if __name__ == "__main__":
