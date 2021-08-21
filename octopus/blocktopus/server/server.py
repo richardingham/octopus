@@ -604,12 +604,20 @@ def setup_logging():
 @click.option('-p', '--port', 'http_port', default=8001, type=int, help="HTTP port for the interface", envvar='BLOCKTOPUS_HTTP_PORT')
 @click.option('--ws-host', default='localhost', type=str, help="Hostname for the websocket")
 @click.option('--ws-port', default=9000, type=int, help="Port for the websocket")
-def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000):
+@click.option('--plugins-dir', 'local_plugins_dir', default=None, type=click.Path(exists=True, file_okay=False, dir_okay=True), help="Local plugins directory")
+def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000, local_plugins_dir: str = None):
 	import sys
 	from pathlib import Path
+	from octopus.blocktopus import plugins, block_registry
+
 	setup_logging()
 
 	set_data_path(Path(data_dir))
+
+	block_registry.register_builtin_blocks()
+
+	if local_plugins_dir is not None:
+		plugins.add_plugins_dir(Path(local_plugins_dir))
 
 	ws_factory = makeWebsocketServerFactory(ws_host, ws_port)
 	reactor.listenTCP(ws_port, ws_factory)

@@ -10,6 +10,12 @@ from octopus import data
 from octopus.constants import State
 import octopus.transport.basic
 
+# Do not auto-register these classes
+__exclude_blocks__ = [
+	"connection_declaration",
+	"machine_declaration",
+]
+
 
 class connection_declaration (Block):
 	pass

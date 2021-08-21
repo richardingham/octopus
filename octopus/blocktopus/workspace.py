@@ -72,16 +72,7 @@ def get_connection_js_definitions ():
 			pass
 
 
-def populate_blocks ():
-	from .blocks import mathematics, text, logic, controls, variables, machines, dependents, images, colour
-	get_block_plugin_modules()
-
-	Workspace.blocks = { c.__name__: c for c in _subclasses(Block) }
-
-
 class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
-	blocks = {}
-	
 	log = Logger()
 
 	def __init__ (self):
@@ -92,6 +83,8 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		self.variables = Variables()
 
 	def addBlock (self, id, type, fields = None, x = 0, y = 0):
+		from octopus.blocktopus.block_registry import get_block_class
+
 		self.log.debug(
 			"Add block to workspace. ID: {block_id} type: {block_type}, fields: {fields}",
 			block_id = id, block_type = type, fields = fields
@@ -99,7 +92,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		try:
 			blockType = type
-			blockClass = self.blocks[blockType]
+			blockClass = get_block_class(blockType)
 		except KeyError:
 			self.log.warn("Unknown block type {block_type} requested", block_type = blockType)
 			raise Exception("Unknown Block: %s" %  blockType)
@@ -1463,4 +1456,4 @@ class Cancelled (Exception):
 class Aborted (Cancelled):
 	pass
 
-populate_blocks()
+# populate_blocks()

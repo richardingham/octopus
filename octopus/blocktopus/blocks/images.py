@@ -22,6 +22,9 @@ import os
 # Numpy
 import numpy
 
+__exclude_blocks__ = [
+	"_image_block",
+]
 
 class _image_block (Block):
 	def _calculate (self, result):
