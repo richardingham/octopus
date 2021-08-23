@@ -607,6 +607,27 @@ def setup_logging():
 @click.option('--plugins-dir', 'local_plugins_dir', default=None, type=click.Path(exists=True, file_okay=False, dir_okay=True), help="Local plugins directory")
 def run_server_cli(data_dir, http_port, ws_host, ws_port, local_plugins_dir):
 	run_server(data_dir, http_port, ws_host, ws_port, local_plugins_dir)
+
+
+def run_server_with_env_args():
+	server_parameters = {}
+
+	for param_name, environment_variable in dict(
+		data_dir='OCTOPUS_DATA_DIR',
+		http_host='OCTOPUS_WEB_HOST',
+		http_port='OCTOPUS_WEB_PORT',
+		ws_host='OCTOPUS_WS_HOST',
+		ws_port='OCTOPUS_WS_PORT',
+		local_plugins_dir='OCTOPUS_PLUGINS_DIR',
+	).items():
+		try:
+			server_parameters[param_name] = os.environ[environment_variable]
+		except KeyError:
+			pass
+	
+	run_server(**server_parameters)
+
+
 def run_server(data_dir: str = default_data_path, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000, local_plugins_dir: str = None):
 	import sys
 	from pathlib import Path
@@ -641,4 +662,4 @@ def run_server(data_dir: str = default_data_path, http_port: int = 8001, ws_host
 
 
 if __name__ == "__main__":
-	run_server()
+	run_server_with_env_args()

@@ -55,6 +55,7 @@ RUN if [ -f octopus-plugins.txt ]; then pip install -r octopus-plugins.txt; fi
 # Set environment variables
 ARG OCTOPUS_ENV="production"
 ENV OCTOPUS_ENV="${OCTOPUS_ENV}" \
+    OCTOPUS_PLUGINS_DIR="/app/plugins" \
     PYTHONUNBUFFERED="true" \
     PYTHONPATH="." \
     PATH="${PATH}:/home/python/.local/bin" \
