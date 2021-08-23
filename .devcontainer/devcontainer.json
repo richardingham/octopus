@@ -1,21 +1,14 @@
 // For format details, see https://aka.ms/vscode-remote/devcontainer.json or the definition README at
 // https://github.com/microsoft/vscode-dev-containers/tree/master/containers/python-3
 {
-	"name": "Python 3",
-	"context": "..",
-	"dockerFile": "Dockerfile",
-
-	// Uncomment the next line if you want to publish any ports.
-	"appPort": [8001, 9000],
-
-	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "python --version",
-
-	// Uncomment the next line to use a non-root user. See https://aka.ms/vscode-remote/containers/non-root-user.
-	// "runArgs": [ "-u", "1000" ],
-
+	"name": "Octopus (Python 3)",
+	"dockerComposeFile": "../docker-compose.yml",
+	"service": "web",
+	"workspaceFolder": "/app",
+	"shutdownAction": "stopCompose",
 	"extensions": [
-		"ms-python.python"
+		"ms-python.python",
+		"ms-python.vscode-pylance",
 	],
 	"settings": {
 		"python.pythonPath": "/usr/local/bin/python",
@@ -23,7 +16,4 @@
 		"python.linting.pylintPath": "/usr/local/bin/pylint",
 		"python.linting.enabled": true
 	},
-	"mounts": [
-		"source=${localWorkspaceFolder}/plugins,target=/workspaces/octopus-plugins,type=bind,consistency=cached"
-	]
 }
