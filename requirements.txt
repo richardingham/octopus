@@ -1,4 +1,4 @@
-cryptography==3.2.1
+cryptography==3.3.2
 twisted
 pandas==1.2.2
 numpy
