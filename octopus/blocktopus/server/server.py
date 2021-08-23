@@ -662,4 +662,5 @@ def run_server(data_dir: str = default_data_path, http_port: int = 8001, ws_host
 
 
 if __name__ == "__main__":
-	run_server_with_env_args()
+	# Run Click command by default
+	run_server_cli()
