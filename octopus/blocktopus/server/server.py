@@ -605,7 +605,9 @@ def setup_logging():
 @click.option('--ws-host', default='localhost', type=str, help="Hostname for the websocket")
 @click.option('--ws-port', default=9000, type=int, help="Port for the websocket")
 @click.option('--plugins-dir', 'local_plugins_dir', default=None, type=click.Path(exists=True, file_okay=False, dir_okay=True), help="Local plugins directory")
-def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000, local_plugins_dir: str = None):
+def run_server_cli(data_dir, http_port, ws_host, ws_port, local_plugins_dir):
+	run_server(data_dir, http_port, ws_host, ws_port, local_plugins_dir)
+def run_server(data_dir: str = default_data_path, http_port: int = 8001, ws_host: str = 'localhost', ws_port: int = 9000, local_plugins_dir: str = None):
 	import sys
 	from pathlib import Path
 	from octopus.blocktopus import plugins, block_registry
@@ -615,9 +617,15 @@ def run_server(data_dir: str, http_port: int = 8001, ws_host: str = 'localhost',
 	set_data_path(Path(data_dir))
 
 	block_registry.register_builtin_blocks()
+	plugins.register_installed_entrypoint_blocks()
 
 	if local_plugins_dir is not None:
 		plugins.add_plugins_dir(Path(local_plugins_dir))
+	
+	logger.info("Building machine blocks JS files")
+	built_js_dir = Path(__file__).parent.parent / 'resources' / 'blockly' / 'pack'
+	plugins.build_machine_block_definition_js(built_js_dir / 'octopus-machines.js')
+	plugins.build_connection_block_definition_js(built_js_dir / 'octopus-connections.js')
 
 	ws_factory = makeWebsocketServerFactory(ws_host, ws_port)
 	reactor.listenTCP(ws_port, ws_factory)

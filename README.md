@@ -1,6 +1,6 @@
 
 Octopus provides ability to create control programmes for laboratory automation
-using [Python 3](http://www.python.org) and [Twisted](http://www.twistedmatrix.com),
+using [Python 3.9](http://www.python.org) and [Twisted](http://www.twistedmatrix.com),
 and real-time remote monitoring over http/websockets for running protocols.
 
 It can provide a command-line interface for interacting with machines using
@@ -10,53 +10,86 @@ It is primarily designed for flow chemistry equipment; it is designed to work by
 defining parameters to set for each virtual instrument interface, rather than by
 defining methods to be called.
 
+Blocktopus is a web-based user interface for definind octopus experiments based on
+the Google Blockly block-based programming environment.
 
-Installation
-============
 
-Install the dependencies
-------------------------
+# Blocktopus Installation
 
-```
-$ sudo apt-get install python-setuptools
-$ sudo apt-get install python-pip
-$ sudo apt-get install python-dev
-```
+## Download Repository
+
+### Download by cloning the repository:
 
 ```
-$ sudo pip install twisted
-$ sudo pip install pyserial
-$ sudo pip install crc16
+git clone https://github.com/richardingham/octopus.git
+cd octopus
+mkdir data
 ```
 
-Set up octopus on the Python Path
----------------------------------
+### (Optional) - add plugins:
 
-One way to do this is to install to a directory within your home directory,
-and then add this directory to the Python Path.
-
-For a Raspberry Pi computer, the standard user is `pi`. For other linux computers, 
-substitute `/home/pi` for `/home/[your user]`.
-
- 1.  Make a directory `/home/pi/lib/python` if it does not exist.
-
- 2.  Copy the two directories `octopus` and `twisted` to `/home/pi/lib/python`.
-
- 3.  Create a file: `/usr/lib/python3.x/dist-packages/my-path.pth`
-     containing the contents `/home/pi/lib/python` (or whichever path you have chosen).
-
-Source: [darmawan-salihun.blogspot.co.uk](http://darmawan-salihun.blogspot.co.uk/2012/12/adding-new-path-to-pythonpath.html)
+- Either, rename `octopus-plugins.txt.example` to `octopus-plugins.txt` and add any plugins you want to use.
+- Or, create a `plugins` directory and pull any plugins into that directory.
 
 
-Running the Control Software
-============================
+## Option 1 - Run in Docker
+
+Build and run docker container:
+
+```
+docker build -t "octopus:latest" .
+docker run -it -p 8001:8001 -p 9000:9000 -v /app/data:/app/data octopus:latest
+```
+
+Access the interface:
+
+```
+http://127.0.0.1:8001
+```
+
+
+## Option 2 - Run without Docker
+
+### Install requirements and build
+
+```
+pyenv local 3.9.5
+pip install -r requirements.txt
+pip install -r octopus-plugins.txt
+yarn install
+yarn run build
+```
+
+### Start the application
+
+```
+python octopus/blocktopus/server/server.py --plugins-dir=plugins
+```
+
+Use `--help` for all options.
+
+### Access the interface:
+
+```
+http://127.0.0.1:8001
+```
+
+
+# Octopus only installation
+
+```
+pyenv local 3.9.5
+pip install git+https://github.com/richardingham/octopus.git
+```
+
+## Octopus - command line
 
 ```
 $ python -m octopus.console
 ```
 
 ```python
->>> reactor = vapourtec.R2R4(serial("/dev/ttyUSB0"), baudrate = 19200)
+>>> reactor = vapourtec.R2R4(serial("/dev/ttyUSB0", baudrate = 19200))
 >>> reactor.power.value
 off
 
@@ -77,8 +110,18 @@ disconnection terminate the experiment. For a good introduction to screen,
 visit [aperiodic.net](http://aperiodic.net/screen/start).
 
 
-Available Machine Interfaces
-============================
+# Plugins
+
+Instrument interfaces are provided via plugins.
+
+A plugin is any python package that provides instruments. These should be installed using pip.
+For instruments to be auto-discovered by Blocktopus there should be an entry point to `blocktopus_blocks` 
+defined for each block in the setup.py.
+
+See [octopus_wpi](https://github.com/richardingham/octopus_wpi) for an example.
+
+
+# Available Machine Interfaces
 
  *  [Gilson](doc/Manufacturer%20-%20Gilson.md) - 506C Control Module, 
     233XL Sample Injector, 402 Syringe Pump, 151 UV/Vis.
@@ -87,12 +130,11 @@ Available Machine Interfaces
  *  [Knauer](doc/Manufacturer%20-%20Knauer.md) - K-120, S-100 HPLC pump.
  *  [Mettler Toledo](doc/Manufacturer%20-%20Mettler Toledo.md) - Balance, iC IR connector.
  *  [ThalesNano](doc/Manufacturer%20-%20ThalesNano.md) - H-Cube.
- *  [Vapourtec](doc/Manufacturer%20-%20Vapourtec.md) - R2+/R4.
+ *  [Vapourtec](doc/Manufacturer%20-%20Vapourtec.md) - R2+/R4. (*Contact author for access.*)
  *  [VICI](doc/Manufacturer%20-%20Vici.md) - Multi-Position Valve.
- *  [World Precision Instruments](doc/Manufacturer%20-%20WPI.md) - Aladdin Syringe Pump.
+ *  [World Precision Instruments](https://github.com/richardingham/octopus_wpi) - Aladdin Syringe Pump.
 
-Using Phidgets
-==============
+## Using Phidgets
 
 Drivers for some [Phidgets devices](http://www.phidgets.com) are available. 
 Before use, the DLL and API must be installed.
