@@ -1,4 +1,3 @@
-
 from twisted.logger import Logger
 from pathlib import Path
 from typing import List
@@ -74,7 +73,12 @@ def register_installed_entrypoint_blocks():
 
     from .block_registry import register_block
 
-    for entry_point in importlib_metadata.entry_points()[BLOCKS_ENTRY_POINT]:
+    entry_points = importlib_metadata.entry_points()
+
+    if BLOCKS_ENTRY_POINT not in entry_points:
+        return
+
+    for entry_point in entry_points[BLOCKS_ENTRY_POINT]:
         block_cls = entry_point.load()
 
         log.info(
