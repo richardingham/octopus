@@ -211,7 +211,7 @@ def colorDistance(image: Image, color = BLACK) -> Image:
     pixels = image.data.reshape((-1, 3))   #reshape our matrix to 1xN
     distances = spsd.cdist(pixels, [color]) #calculate the distance each pixel is
     distances *= (255.0 / distances.max()) #normalize to 0 - 255
-    return Image(distances.reshape((image.width, image.height)), colorspace = image.colorspace) #return an Image
+    return Image(distances.reshape((image.width, image.height)), colorspace=ColorSpace.GRAY) #return an Image
 
 def hueDistance(image: Image, color = BLACK, minsaturation = 20, minvalue = 20, maxvalue = 255) -> Image:
     """
@@ -264,7 +264,7 @@ def hueDistance(image: Image, color = BLACK, minsaturation = 20, minvalue = 20, 
         distances * (255.0 / 90.0), #normalize 0 - 90 -> 0 - 255
         255.0) #use the maxvalue if it false outside of our value/saturation tolerances
 
-    return Image(distances.reshape((image.width, image.height)), colorspace = image.colorspace)
+    return Image(distances.reshape((image.width, image.height)), colorspace=ColorSpace.GRAY)
 
 
 def crop(image: Image, x, y, w, h, centered=False, smart=False):
