@@ -267,7 +267,7 @@ def hueDistance(image: Image, color = BLACK, minsaturation = 20, minvalue = 20, 
     return Image(distances.reshape((image.width, image.height)), colorspace = image.colorspace)
 
 
-def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
+def crop(image: Image, x, y, w, h, centered=False, smart=False):
         """
         
         **SUMMARY**
@@ -322,130 +322,130 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
         """
 
         if smart:
-          if x > self.width:
-            x = self.width
+          if x > image.width:
+            x = image.width
           elif x < 0:
             x = 0
-          elif y > self.height:
-            y = self.height
+          elif y > image.height:
+            y = image.height
           elif y < 0:
             y = 0
-          elif (x + w) > self.width:
-            w = self.width - x
-          elif (y + h) > self.height:
-            h = self.height - y
+          elif (x + w) > image.width:
+            w = image.width - x
+          elif (y + h) > image.height:
+            h = image.height - y
           
-        if(isinstance(x,numpy.ndarray)):
-            x = x.tolist()
-        if(isinstance(y,numpy.ndarray)):
-            y = y.tolist()
+        # if(isinstance(x,numpy.ndarray)):
+        #     x = x.tolist()
+        # if(isinstance(y,numpy.ndarray)):
+        #     y = y.tolist()
 
         #If it's a feature extract what we need
-        if(isinstance(x, Feature)):
-            theFeature = x
-            x = theFeature.points[0][0]
-            y = theFeature.points[0][1]
-            w = theFeature.width()
-            h = theFeature.height()
+        # if(isinstance(x, Feature)):
+        #     theFeature = x
+        #     x = theFeature.points[0][0]
+        #     y = theFeature.points[0][1]
+        #     w = theFeature.width()
+        #     h = theFeature.height()
 
-        elif(isinstance(x, (tuple,list)) and len(x) == 4 and isinstance(x[0],(int, long, float))
-             and y == None and w == None and h == None):
-                x,y,w,h = x
-        # x of the form [(x,y),(x1,y1),(x2,y2),(x3,y3)]
-        # x of the form [[x,y],[x1,y1],[x2,y2],[x3,y3]]
-        # x of the form ([x,y],[x1,y1],[x2,y2],[x3,y3])
-        # x of the form ((x,y),(x1,y1),(x2,y2),(x3,y3))
-        # x of the form (x,y,x1,y2) or [x,y,x1,y2]            
-        elif( isinstance(x, (list,tuple)) and
-              isinstance(x[0],(list,tuple)) and
-              (len(x) == 4 and len(x[0]) == 2 ) and
-              y == None and w == None and h == None):
-            if (len(x[0])==2 and len(x[1])==2 and len(x[2])==2 and len(x[3])==2):
-                xmax = numpy.max([x[0][0],x[1][0],x[2][0],x[3][0]])
-                ymax = numpy.max([x[0][1],x[1][1],x[2][1],x[3][1]])
-                xmin = numpy.min([x[0][0],x[1][0],x[2][0],x[3][0]])
-                ymin = numpy.min([x[0][1],x[1][1],x[2][1],x[3][1]])
-                x = xmin
-                y = ymin
-                w = xmax-xmin
-                h = ymax-ymin
-            else:
-                logger.warning("x should be in the form  ((x,y),(x1,y1),(x2,y2),(x3,y3))")
-                return None
+        # elif(isinstance(x, (tuple,list)) and len(x) == 4 and isinstance(x[0],(int, long, float))
+        #      and y == None and w == None and h == None):
+        #         x,y,w,h = x
+        # # x of the form [(x,y),(x1,y1),(x2,y2),(x3,y3)]
+        # # x of the form [[x,y],[x1,y1],[x2,y2],[x3,y3]]
+        # # x of the form ([x,y],[x1,y1],[x2,y2],[x3,y3])
+        # # x of the form ((x,y),(x1,y1),(x2,y2),(x3,y3))
+        # # x of the form (x,y,x1,y2) or [x,y,x1,y2]            
+        # elif( isinstance(x, (list,tuple)) and
+        #       isinstance(x[0],(list,tuple)) and
+        #       (len(x) == 4 and len(x[0]) == 2 ) and
+        #       y == None and w == None and h == None):
+        #     if (len(x[0])==2 and len(x[1])==2 and len(x[2])==2 and len(x[3])==2):
+        #         xmax = numpy.max([x[0][0],x[1][0],x[2][0],x[3][0]])
+        #         ymax = numpy.max([x[0][1],x[1][1],x[2][1],x[3][1]])
+        #         xmin = numpy.min([x[0][0],x[1][0],x[2][0],x[3][0]])
+        #         ymin = numpy.min([x[0][1],x[1][1],x[2][1],x[3][1]])
+        #         x = xmin
+        #         y = ymin
+        #         w = xmax-xmin
+        #         h = ymax-ymin
+        #     else:
+        #         logger.warning("x should be in the form  ((x,y),(x1,y1),(x2,y2),(x3,y3))")
+        #         return None
  
-        # x,y of the form [x1,x2,x3,x4,x5....] and y similar
-        elif(isinstance(x, (tuple,list)) and
-             isinstance(y, (tuple,list)) and
-             len(x) > 4 and len(y) > 4 ):
-            if(isinstance(x[0],(int, long, float)) and isinstance(y[0],(int, long, float))):
-                xmax = numpy.max(x)
-                ymax = numpy.max(y)
-                xmin = numpy.min(x)
-                ymin = numpy.min(y)
-                x = xmin
-                y = ymin
-                w = xmax-xmin
-                h = ymax-ymin
-            else:
-                logger.warning("x should be in the form x = [1,2,3,4,5] y =[0,2,4,6,8]")
-                return None
+        # # x,y of the form [x1,x2,x3,x4,x5....] and y similar
+        # elif(isinstance(x, (tuple,list)) and
+        #      isinstance(y, (tuple,list)) and
+        #      len(x) > 4 and len(y) > 4 ):
+        #     if(isinstance(x[0],(int, long, float)) and isinstance(y[0],(int, long, float))):
+        #         xmax = numpy.max(x)
+        #         ymax = numpy.max(y)
+        #         xmin = numpy.min(x)
+        #         ymin = numpy.min(y)
+        #         x = xmin
+        #         y = ymin
+        #         w = xmax-xmin
+        #         h = ymax-ymin
+        #     else:
+        #         logger.warning("x should be in the form x = [1,2,3,4,5] y =[0,2,4,6,8]")
+        #         return None
 
-        # x of the form [(x,y),(x,y),(x,y),(x,y),(x,y),(x,y)]
-        elif(isinstance(x, (list,tuple)) and
-             len(x) > 4 and len(x[0]) == 2 and y == None and w == None and h == None):
-            if(isinstance(x[0][0],(int, long, float))):
-                xs = [pt[0] for pt in x]
-                ys = [pt[1] for pt in x]
-                xmax = numpy.max(xs)
-                ymax = numpy.max(ys)
-                xmin = numpy.min(xs)
-                ymin = numpy.min(ys)
-                x = xmin
-                y = ymin
-                w = xmax-xmin
-                h = ymax-ymin
-            else:
-                logger.warning("x should be in the form [(x,y),(x,y),(x,y),(x,y),(x,y),(x,y)]")
-                return None
+        # # x of the form [(x,y),(x,y),(x,y),(x,y),(x,y),(x,y)]
+        # elif(isinstance(x, (list,tuple)) and
+        #      len(x) > 4 and len(x[0]) == 2 and y == None and w == None and h == None):
+        #     if(isinstance(x[0][0],(int, long, float))):
+        #         xs = [pt[0] for pt in x]
+        #         ys = [pt[1] for pt in x]
+        #         xmax = numpy.max(xs)
+        #         ymax = numpy.max(ys)
+        #         xmin = numpy.min(xs)
+        #         ymin = numpy.min(ys)
+        #         x = xmin
+        #         y = ymin
+        #         w = xmax-xmin
+        #         h = ymax-ymin
+        #     else:
+        #         logger.warning("x should be in the form [(x,y),(x,y),(x,y),(x,y),(x,y),(x,y)]")
+        #         return None
 
         # x of the form [(x,y),(x1,y1)]
-        elif(isinstance(x,(list,tuple)) and len(x) == 2 and isinstance(x[0],(list,tuple)) and isinstance(x[1],(list,tuple)) and y == None and w == None and h == None):
-            if (len(x[0])==2 and len(x[1])==2):
-                xt = numpy.min([x[0][0],x[1][0]])
-                yt = numpy.min([x[0][0],x[1][0]])
-                w = numpy.abs(x[0][0]-x[1][0])
-                h = numpy.abs(x[0][1]-x[1][1])
-                x = xt
-                y = yt
-            else:
-                logger.warning("x should be in the form [(x1,y1),(x2,y2)]")
-                return None
+        # elif(isinstance(x,(list,tuple)) and len(x) == 2 and isinstance(x[0],(list,tuple)) and isinstance(x[1],(list,tuple)) and y == None and w == None and h == None):
+        #     if (len(x[0])==2 and len(x[1])==2):
+        #         xt = numpy.min([x[0][0],x[1][0]])
+        #         yt = numpy.min([x[0][0],x[1][0]])
+        #         w = numpy.abs(x[0][0]-x[1][0])
+        #         h = numpy.abs(x[0][1]-x[1][1])
+        #         x = xt
+        #         y = yt
+        #     else:
+        #         logger.warning("x should be in the form [(x1,y1),(x2,y2)]")
+        #         return None
 
         # x and y of the form (x,y),(x1,y2)
-        elif(isinstance(x, (tuple,list)) and isinstance(y,(tuple,list)) and w == None and h == None):
-            if (len(x)==2 and len(y)==2):
-                xt = numpy.min([x[0],y[0]])
-                yt = numpy.min([x[1],y[1]])
-                w = numpy.abs(y[0]-x[0])
-                h = numpy.abs(y[1]-x[1])
-                x = xt
-                y = yt
+        # elif(isinstance(x, (tuple,list)) and isinstance(y,(tuple,list)) and w == None and h == None):
+        #     if (len(x)==2 and len(y)==2):
+        #         xt = numpy.min([x[0],y[0]])
+        #         yt = numpy.min([x[1],y[1]])
+        #         w = numpy.abs(y[0]-x[0])
+        #         h = numpy.abs(y[1]-x[1])
+        #         x = xt
+        #         y = yt
                 
-            else:
-                logger.warning("if x and y are tuple it should be in the form (x1,y1) and (x2,y2)")
-                return None
+        #     else:
+        #         logger.warning("if x and y are tuple it should be in the form (x1,y1) and (x2,y2)")
+        #         return None
 
 
 
-        if(y == None or w == None or h == None):
+        if y == None or w == None or h == None:
             print ("Please provide an x, y, width, height to function")
 
-        if( w <= 0 or h <= 0 ):
+        if w <= 0 or h <= 0:
             logger.warning("Can't do a negative crop!")
             return None
 
-        retVal = cv2.CreateImage((int(w),int(h)), cv2.IPL_DEPTH_8U, 3)
-        if( x < 0 or y < 0 ):
+        # retVal = cv2.CreateImage((int(w),int(h)), cv2.IPL_DEPTH_8U, 3)
+        if x < 0 or y < 0:
             logger.warning("Crop will try to help you, but you have a negative crop position, your width and height may not be what you want them to be.")
 
 
@@ -454,22 +454,85 @@ def crop(self, x , y = None, w = None, h = None, centered=False, smart=False):
         else:
             rectangle = (int(x), int(y), int(w), int(h))
 
-        (topROI, bottomROI) = self._rectOverlapROIs((rectangle[2],rectangle[3]),(self.width,self.height),(rectangle[0],rectangle[1]))
+        (topROI, bottomROI) = _rectOverlapROIs(
+            (rectangle[2], rectangle[3]), 
+            (image.width, image.height), 
+            (rectangle[0], rectangle[1])
+        )
 
-        if( bottomROI is None ):
+        if bottomROI is None:
             logger.warning("Hi, your crop rectangle doesn't even overlap your image. I have no choice but to return None.")
             return None
 
-        retVal = numpy.zeros((bottomROI[3],bottomROI[2],3),dtype='uint8')
+        # retVal = numpy.zeros((bottomROI[3],bottomROI[2],3), dtype='uint8')
 
-        retVal= self.getNumpyCv2()[bottomROI[1]:bottomROI[1] + bottomROI[3],bottomROI[0]:bottomROI[0] + bottomROI[2],:] 
+        retVal = image.data[bottomROI[1]:bottomROI[1] + bottomROI[3], bottomROI[0]:bottomROI[0] + bottomROI[2], :] 
         
-        img = Image(retVal, colorSpace=self._colorSpace,cv2image = True)
+        img = Image(retVal, colorspace=image.colorspace)
 
-        #Buffering the top left point (x, y) in a image.
-        img._uncroppedX = self._uncroppedX + int(x)
-        img._uncroppedY = self._uncroppedY + int(y)
         return img
+
+
+def _rectOverlapROIs(top, bottom, pos):
+    """
+    top is a rectangle (w,h)
+    bottom is a rectangle (w,h)
+    pos is the top left corner of the top rectangle with respect to the bottom rectangle's top left corner
+    method returns none if the two rectangles do not overlap. Otherwise returns the top rectangle's ROI (x,y,w,h)
+    and the bottom rectangle's ROI (x,y,w,h)
+    """
+    # the position of the top rect coordinates give bottom top right = (0,0)
+    tr = (pos[0]+top[0],pos[1])
+    tl = pos
+    br = (pos[0]+top[0],pos[1]+top[1])
+    bl = (pos[0],pos[1]+top[1])
+
+    # do an overlap test to weed out corner cases and errors
+    def inBounds(a, b):
+        w, h = a
+        x, y = b
+        return not (x < 0 or y < 0 or x > w or y > h)
+
+    trc = inBounds(bottom,tr)
+    tlc = inBounds(bottom,tl)
+    brc = inBounds(bottom,br)
+    blc = inBounds(bottom,bl)
+
+    if not trc and not tlc and not brc and not blc: # no overlap
+        return None, None
+    elif trc and tlc and brc and blc: # easy case top is fully inside bottom
+        tRet = (0,0,top[0],top[1])
+        bRet = (pos[0],pos[1],top[0],top[1])
+        return tRet, bRet
+
+    # let's figure out where the top rectangle sits on the bottom
+    # we clamp the corners of the top rectangle to live inside
+    # the bottom rectangle and from that get the x,y,w,h
+    tl = (numpy.clip(tl[0],0,bottom[0]), numpy.clip(tl[1],0,bottom[1]))
+    br = (numpy.clip(br[0],0,bottom[0]), numpy.clip(br[1],0,bottom[1]))
+
+    bx = tl[0]
+    by = tl[1]
+    bw = abs(tl[0]-br[0])
+    bh = abs(tl[1]-br[1])
+
+    # now let's figure where the bottom rectangle is in the top rectangle
+    # we do the same thing with different coordinates
+    pos = (-1*pos[0], -1*pos[1])
+
+    #recalculate the bottoms's corners with respect to the top.
+    tr = (pos[0]+bottom[0],pos[1])
+    tl = pos
+    br = (pos[0]+bottom[0],pos[1]+bottom[1])
+    bl = (pos[0],pos[1]+bottom[1])
+    tl = (numpy.clip(tl[0],0,top[0]), numpy.clip(tl[1],0,top[1]))
+    br = (numpy.clip(br[0],0,top[0]), numpy.clip(br[1],0,top[1]))
+    tx = tl[0]
+    ty = tl[1]
+    tw = abs(br[0]-tl[0])
+    th = abs(br[1]-tl[1])
+
+    return (tx,ty,tw,th), (bx,by,bw,bh)
 
 
 def _image_or_number (other: typing.Union[Image, int, float]) -> typing.Union[numpy.ndarray, int, float]:

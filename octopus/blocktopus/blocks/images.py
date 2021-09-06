@@ -110,7 +110,7 @@ class image_crop (_image_block):
 		if result is None:
 			return None
 
-		return result.crop(x, y, w, h)
+		return image_functions.crop(result, x, y, w, h)
 
 
 class image_intensityfn (_image_block):

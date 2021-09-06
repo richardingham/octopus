@@ -134,8 +134,8 @@
 		<block type="image_invert"></block>
 		<block type="image_colourdistance"></block>
 		<block type="image_huedistance"></block>
-		<!--block type="image_crop"></block-->
-		<!--block type="image_intensityfn"></block-->
+		<block type="image_crop"></block>
+		<block type="image_intensityfn"></block>
 		<!--block type="image_tonumber"></block-->
 	</category>
 	<category name="Math" icon="superscript">
