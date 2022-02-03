@@ -10,7 +10,7 @@ from collections import deque
 
 # Sibling Imports
 from ..data import Variable as data_Variable
-from ..util import now, Event
+from ..util import now
 from ..events import Event
 from ..machine import Machine, Component
 from ..machine.interface import InterfaceSection, InterfaceSectionSet
@@ -38,7 +38,7 @@ class LogFile (object):
 		self.time_zero = time_zero
 
 	def write (self, time, value):
-		self.f.write("{:.2f},{:.2f},{}\n".format(time, time - self.time_zero, value).encode())
+		self.f.write("{:.2f},{:.2f},{}\n".format(time, time - self.time_zero, value))
 
 	def close (self):
 		self.f.close()
@@ -173,7 +173,7 @@ class Experiment (object):
 		def run_experiment ():
 			# wait for machines to be ready
 			# todo: with some timeout
-			self._log("Waiting for machines")
+			self._log("Waiting for machines", level=logging.DEBUG)
 			try:
 				result = yield defer.gatherResults(
 					[m.waitUntilReady() for m in self._machines]
@@ -184,7 +184,7 @@ class Experiment (object):
 
 			# reset machines
 			# todo: with some timeout
-			self._log("Resetting machines")
+			self._log("Resetting machines", level=logging.DEBUG)
 			try:
 				result = yield defer.gatherResults(
 					[defer.maybeDeferred(m.reset) for m in self._machines]
@@ -195,15 +195,14 @@ class Experiment (object):
 
 			# start logging
 			# add event listeners to step
-			self._log("Starting logging")
+			self._log("Starting logging", level=logging.DEBUG)
 			self.set_log_output(self.default_log_output)
 
-			self.interface.event += self._interface_event #(log, passthrough to marshal)
-			self.step.event += self._step_event #(log, passthrough to marshal)
-			self.step.log += self._step_log #(log, passthrough to marshal)
+			self.step.on("all", self._step_event) #(log, passthrough to marshal)
+			self.step.on("log", self._step_log) #(log, passthrough to marshal)
 
 			# run step
-			self._log("Running experiment sequence")
+			self._log("Running experiment sequence", level=logging.DEBUG)
 			try:
 				self.started()
 				yield self.step.run()
@@ -217,13 +216,8 @@ class Experiment (object):
 
 			finally:
 				# remove event listeners
-				self.interface.event -= self._interface_event
-				self.step.event -= self._step_event
-				self.step.log -= self._step_log
-
-				# pop experiment from marshal
-				# self._log("Waiting for marshal")
-				# yield self._marshal.popExperiment()
+				self.step.off("all", self._step_event)
+				self.step.off("log", self._step_log)
 
 				# stop logging
 				self.stop_logging()
@@ -244,11 +238,14 @@ class Experiment (object):
 		# Finished will callback once the experiment is complete
 		return finished
 
-	def _interface_event (self, item, **data):
-		data["item"] = item.name
-		# self._marshal.event(EventType.INTERFACE, data)
+	def _step_event (self, event, data):
+		
+		if "item" not in data:
+			return
 
-	def _step_event (self, item, **data):
+		item = data.pop("item")
+
+		data["event"] = event
 		data["step"] = item.id
 		data["type"] = item.type
 
@@ -264,18 +261,15 @@ class Experiment (object):
 		# send to event log
 		self._event_log.write(now(), "step:" + str(data))
 
-		# self._marshal.event(EventType.STEP, data)
+	def _step_log (self, data):
+		message = data.get("message", "")
+		level = data.get("level", logging.INFO)
 
-	def _step_log (self, message, level = None):
-		data = {
-			"level": level or "info",
-			"message": message
-		}
-
-		# send to log
+		# send to experiment log
 		self._msg_log.write(now(), message)
 
-		# self._marshal.event(EventType.LOG, data)
+		# send to logger
+		self._log(message, level=level)
 
 	def pause (self):
 		"""
@@ -352,7 +346,7 @@ class Experiment (object):
 
 			self._log_variables.update(self.interface.properties)
 
-		items = self._log_variables.iteritems()
+		items = self._log_variables.items()
 
 		for key, var in items:
 			try:
@@ -379,7 +373,7 @@ class Experiment (object):
 	def stop_logging (self):
 		self._logging = False
 
-		items = self._log_variables.iteritems()
+		items = self._log_variables.items()
 
 		for key, var in items:
 			try:

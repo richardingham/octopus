@@ -3,6 +3,7 @@ import os
 
 # Twised Imports
 from twisted.internet import reactor, defer
+from twisted.python.failure import Failure
 
 # Sibling Imports
 from .sequence import Step
@@ -69,6 +70,9 @@ def run (step):
 	def _finished (result):
 		if started_reactor:
 			reactor.stop()
+		
+		if isinstance(result, Failure):
+			raise result
 
 	def _run ():
 		d = _experiment.run()
